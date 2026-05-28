@@ -5,8 +5,10 @@ const bcrypt = require('bcryptjs');
 const DB_PATH     = process.env.DB_PATH ? path.resolve(process.env.DB_PATH) : path.join(__dirname, 'data.json');
 const BACKUP_DIR  = process.env.BACKUP_DIR ? path.resolve(process.env.BACKUP_DIR) : path.join(__dirname, 'backups');
 
-// ── Ensure backup directory exists ──
-if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR);
+// ── Ensure directories exist (critical for Render persistent disk) ──
+if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
+const dbDir = path.dirname(DB_PATH);
+if (dbDir !== '.' && !fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
 
 // Default seed passwords — only used when data.json doesn't exist (first install).
 // CHANGE these passwords immediately after first login in production.

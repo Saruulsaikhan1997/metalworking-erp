@@ -16,8 +16,13 @@ const upload = multer({
 });
 
 // Multer setup for image uploads (disk, 8MB max, jpg/png/heic/webp)
+// UPLOAD_DIR: persistent disk on Render, local folder in dev
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '..', 'public', 'uploads');
+const NEWS_UPLOAD_DIR = path.join(UPLOAD_DIR, 'news');
+if (!fs.existsSync(NEWS_UPLOAD_DIR)) fs.mkdirSync(NEWS_UPLOAD_DIR, { recursive: true });
+
 const newsImageStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, path.join(__dirname, '..', 'public', 'uploads', 'news')),
+  destination: (req, file, cb) => cb(null, NEWS_UPLOAD_DIR),
   filename: (req, file, cb) => {
     const ext = (file.originalname.match(/\.[a-z0-9]+$/i) || ['.jpg'])[0].toLowerCase();
     const name = 'news_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8) + ext;

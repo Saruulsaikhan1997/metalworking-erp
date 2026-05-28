@@ -18,6 +18,10 @@ app.use((req, res, next) => {
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Serve uploaded files from persistent storage (Render disk or local)
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, 'public', 'uploads');
+app.use('/uploads', express.static(UPLOAD_DIR));
+
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api', require('./routes/api'));
 
