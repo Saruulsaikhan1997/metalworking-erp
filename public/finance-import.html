@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no">
+<meta name="format-detection" content="date=no">
+<meta name="format-detection" content="address=no">
+<meta name="format-detection" content="email=no">
+<title>Хуулга оруулах — Метал ворkинг Центр</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --brand: #6d28d9; --brand-dark: #5b21b6;
+  --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+  --gray-400: #9ca3af; --gray-600: #4b5563; --gray-900: #111827;
+}
+body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; background: var(--gray-50); color: var(--gray-900); padding-bottom: 30px; -webkit-font-smoothing: antialiased; }
+
+.id-bar {
+  background: linear-gradient(135deg, #5b21b6 0%, #6d28d9 100%);
+  color: #fff; padding: 18px 20px;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 4px 12px rgba(91,33,182,0.18);
+}
+.id-top { display: flex; align-items: center; gap: 12px; }
+.id-back { font-size: 22px; color: #fff; text-decoration: none; padding: 4px 8px; }
+.id-title { font-size: 17px; font-weight: 700; }
+.id-sub { font-size: 11px; opacity: 0.85; margin-top: 3px; }
+
+.section { padding: 18px 16px 0; }
+.section-label { font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 1.3px; margin-bottom: 12px; padding: 0 4px; }
+
+/* ── Stepper ── */
+.stepper { display: flex; align-items: center; padding: 14px 16px; }
+.step { flex: 1; text-align: center; }
+.step-num {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--gray-200); color: var(--gray-600);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto; font-weight: 700; font-size: 14px;
+}
+.step.active .step-num { background: var(--brand-dark); color: #fff; }
+.step.done .step-num { background: #059669; color: #fff; }
+.step-label { font-size: 10.5px; color: var(--gray-600); margin-top: 6px; font-weight: 600; }
+.step.active .step-label { color: var(--brand-dark); }
+.step-line { flex: 0 0 30px; height: 2px; background: var(--gray-200); margin-top: 16px; }
+.step-line.done { background: #059669; }
+
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ── Step 1: Bank select ── */
+.bank-list { padding: 18px 16px 0; }
+.bank-card {
+  background: #fff; border-radius: 14px;
+  padding: 18px 18px; margin-bottom: 10px;
+  border: 2px solid var(--gray-200);
+  display: flex; align-items: center; gap: 14px;
+  cursor: pointer; transition: all 0.15s;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: rgba(91,33,182,0.1);
+  -webkit-user-select: none;
+  user-select: none;
+}
+.no-tel {
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none;
+  user-select: none;
+  pointer-events: none;
+}
+.bank-card:active { transform: scale(0.98); }
+.bank-card.selected { border-color: var(--brand-dark); background: #faf5ff; }
+.bank-icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  background: var(--gray-100);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+}
+.bank-name { font-size: 14px; font-weight: 700; color: var(--gray-900); }
+.bank-meta { font-size: 11px; color: var(--gray-600); margin-top: 3px; }
+.bank-card.disabled { opacity: 0.5; cursor: not-allowed; }
+.bank-card.disabled .bank-meta { color: #d97706; font-weight: 600; }
+
+/* ── Step 2: Upload ── */
+.upload-zone {
+  background: #fff;
+  border: 2px dashed var(--brand);
+  border-radius: 16px;
+  padding: 36px 20px;
+  text-align: center;
+  cursor: pointer;
+  display: block;
+  position: relative;
+  z-index: 2;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.upload-zone.dragover { background: #faf5ff; border-color: var(--brand-dark); }
+.upload-zone * { pointer-events: none; }
+.upload-icon { font-size: 42px; line-height: 1; margin-bottom: 10px; }
+.upload-title { font-size: 14px; font-weight: 700; color: var(--gray-900); margin-bottom: 4px; }
+.upload-sub { font-size: 11px; color: var(--gray-600); }
+#fileInput {
+  position: absolute;
+  width: 1px; height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.action-btn {
+  width: 100%; padding: 14px;
+  background: var(--brand-dark); color: #fff;
+  border: none; border-radius: 12px;
+  font-size: 14px; font-weight: 700;
+  cursor: pointer; margin-top: 14px;
+}
+.action-btn:disabled { background: var(--gray-300); cursor: not-allowed; }
+.action-btn.success { background: #059669; }
+
+/* ── Sticky bottom confirm bar ── */
+.sticky-confirm {
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(to top, #fff 80%, rgba(255,255,255,0));
+  padding: 14px 0 calc(14px + env(safe-area-inset-bottom, 0));
+  margin-top: 12px;
+  z-index: 50;
+}
+.sticky-confirm .action-btn {
+  margin-top: 0;
+  box-shadow: 0 -4px 14px rgba(0,0,0,0.08);
+  font-size: 15px;
+  padding: 16px;
+}
+.sticky-summary {
+  background: var(--gray-100);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 11px; font-weight: 600;
+  color: var(--gray-600);
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.back-btn {
+  width: 100%; padding: 12px;
+  background: #fff; color: var(--gray-600);
+  border: 1px solid var(--gray-200); border-radius: 12px;
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; margin-top: 8px;
+}
+
+/* ── Step 3: Review summary ── */
+.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.sum-box {
+  background: #fff; border-radius: 12px; padding: 12px 14px;
+  border: 1px solid var(--gray-200);
+}
+.sum-box-lbl { font-size: 10px; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+.sum-box-val { font-size: 17px; font-weight: 800; margin-top: 4px; color: var(--gray-900); }
+.sum-box.dup { border-left: 4px solid #9ca3af; }
+.sum-box.new { border-left: 4px solid #059669; }
+.sum-box.auto { border-left: 4px solid #1565c0; }
+.sum-box.warn { border-left: 4px solid #f59e0b; }
+
+.filter-tabs { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 12px; scrollbar-width: none; }
+.filter-tabs::-webkit-scrollbar { display: none; }
+.f-tab {
+  flex-shrink: 0; padding: 8px 14px;
+  border: 1.5px solid var(--gray-200); border-radius: 20px;
+  background: #fff; font-size: 12px; font-weight: 600;
+  color: var(--gray-600); cursor: pointer; white-space: nowrap;
+}
+.f-tab.active { background: var(--brand-dark); border-color: var(--brand-dark); color: #fff; }
+.f-tab-count { display: inline-block; margin-left: 4px; padding: 1px 6px; background: rgba(0,0,0,0.08); border-radius: 8px; font-size: 10px; }
+.f-tab.active .f-tab-count { background: rgba(255,255,255,0.2); }
+
+/* ── Review row ── */
+.rev-row {
+  background: #fff; border-radius: 12px;
+  padding: 12px 14px; margin-bottom: 8px;
+  border: 1px solid var(--gray-200);
+  border-left: 4px solid #059669;
+}
+.rev-row.dup { border-left-color: #9ca3af; opacity: 0.65; }
+.rev-row.review { border-left-color: #f59e0b; background: #fffbeb; }
+.rev-row.rejected { border-left-color: #c62828; opacity: 0.5; background: #fef2f2; }
+
+.rev-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.rev-badges { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+.rev-badge {
+  display: inline-block; font-size: 9.5px; font-weight: 700;
+  padding: 2px 7px; border-radius: 5px;
+  background: var(--gray-100); color: var(--gray-600);
+}
+.rev-badge.dup    { background: #f3f4f6; color: #4b5563; }
+.rev-badge.new    { background: #d1fae5; color: #065f46; }
+.rev-badge.review { background: #fef3c7; color: #92400e; }
+.rev-badge.foreign{ background: #ede9fe; color: #5b21b6; }
+.rev-badge.code   { background: #dbeafe; color: #1e40af; font-family: monospace; }
+.rev-amt { font-size: 14px; font-weight: 800; white-space: nowrap; }
+.rev-amt.in { color: #059669; }
+.rev-amt.out { color: #1565c0; }
+
+.rev-desc { font-size: 12.5px; color: var(--gray-900); margin-top: 6px; font-weight: 600; }
+.rev-meta { font-size: 10.5px; color: var(--gray-400); margin-top: 5px; }
+.rev-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.code-btn {
+  padding: 5px 10px; font-size: 10px; font-weight: 700;
+  border: 1.5px solid var(--gray-200); border-radius: 6px;
+  background: #fff; cursor: pointer; font-family: monospace;
+}
+.code-btn:active { transform: scale(0.95); }
+.code-btn.selected { background: var(--brand-dark); border-color: var(--brand-dark); color: #fff; }
+.reject-btn {
+  padding: 5px 10px; font-size: 10px; font-weight: 700;
+  border: 1.5px solid #c62828; border-radius: 6px;
+  background: #fff; color: #c62828; cursor: pointer; margin-left: auto;
+}
+.reject-btn.rejected { background: #c62828; color: #fff; }
+
+.status-box {
+  padding: 14px; border-radius: 12px;
+  margin-bottom: 14px; font-size: 12px;
+}
+.status-box.info { background: #eff6ff; color: #1e40af; }
+.status-box.success { background: #d1fae5; color: #065f46; }
+.status-box.error { background: #fee2e2; color: #991b1b; }
+.status-box.loading { background: #fffbeb; color: #92400e; }
+</style>
+</head>
+<body>
+
+<div class="id-bar">
+  <div class="id-top">
+    <a class="id-back" href="/finance">‹</a>
+    <div style="flex:1">
+      <div class="id-title">📥 Хуулга оруулах</div>
+      <div class="id-sub">Банкны PDF-аас гүйлгээ оруулах</div>
+    </div>
+  </div>
+</div>
+
+<div class="stepper">
+  <div class="step active" id="step1">
+    <div class="step-num">1</div>
+    <div class="step-label">Банк</div>
+  </div>
+  <div class="step-line" id="line1"></div>
+  <div class="step" id="step2">
+    <div class="step-num">2</div>
+    <div class="step-label">PDF</div>
+  </div>
+  <div class="step-line" id="line2"></div>
+  <div class="step" id="step3">
+    <div class="step-num">3</div>
+    <div class="step-label">Шалгах</div>
+  </div>
+  <div class="step-line" id="line3"></div>
+  <div class="step" id="step4">
+    <div class="step-num">4</div>
+    <div class="step-label">Дуусгах</div>
+  </div>
+</div>
+
+<!-- PANEL 1: Bank Select -->
+<div id="panel-1" class="panel active">
+  <div class="section">
+    <div class="section-label">Аль банкны хуулга?</div>
+    <div class="bank-list" style="padding:0">
+      <div class="bank-card" onclick="selectBank('tdb','TDB (Компани)','MN910004000803060739')">
+        <div class="bank-icon" style="background:#dbeafe">🏦</div>
+        <div style="flex:1;pointer-events:none">
+          <div class="bank-name">TDB — Худалдаа хөгжлийн банк</div>
+          <div class="bank-meta"><span class="no-tel">803060739</span> · Компанийн данс</div>
+        </div>
+        <div style="color:#9ca3af;font-size:18px;pointer-events:none">›</div>
+      </div>
+      <div class="bank-card" onclick="selectBank('khan','Хаан банк (Касс)','MN020005005304716376')">
+        <div class="bank-icon" style="background:#cffafe">💵</div>
+        <div style="flex:1;pointer-events:none">
+          <div class="bank-name">Хаан банк — Касс</div>
+          <div class="bank-meta"><span class="no-tel">5304716376</span> · Кассын данс</div>
+        </div>
+        <div style="color:#9ca3af;font-size:18px;pointer-events:none">›</div>
+      </div>
+      <div class="bank-card disabled">
+        <div class="bank-icon" style="background:#f3f4f6">⏳</div>
+        <div style="flex:1">
+          <div class="bank-name">Шинэ банк нэмэх</div>
+          <div class="bank-meta">Удахгүй боломжтой болно</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL 2: Upload -->
+<div id="panel-2" class="panel">
+  <div class="section">
+    <div class="section-label">PDF хуулга сонгох</div>
+    <div id="bankInfo" style="background:#faf5ff;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#5b21b6;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none"></div>
+    <label class="upload-zone" id="uploadZone" for="fileInput">
+      <div class="upload-icon">📄</div>
+      <div class="upload-title">PDF файл сонгох эсвэл чирэх</div>
+      <div class="upload-sub">Зөвхөн .pdf файл · Max 5MB</div>
+    </label>
+    <input type="file" id="fileInput" accept=".pdf" onchange="onFileSelected()">
+    <div id="uploadStatus"></div>
+    <button class="back-btn" onclick="goStep(1)">‹ Буцах</button>
+  </div>
+</div>
+
+<!-- PANEL 3: Review -->
+<div id="panel-3" class="panel">
+  <div class="section">
+    <div class="section-label">Шалгах</div>
+
+    <div class="summary-grid">
+      <div class="sum-box new"><div class="sum-box-lbl">Шинэ</div><div class="sum-box-val" id="cntNew">0</div></div>
+      <div class="sum-box dup"><div class="sum-box-lbl">Давхардсан</div><div class="sum-box-val" id="cntDup">0</div></div>
+      <div class="sum-box auto"><div class="sum-box-lbl">Автомат код</div><div class="sum-box-val" id="cntAuto">0</div></div>
+      <div class="sum-box warn"><div class="sum-box-lbl">Код шаардлагатай</div><div class="sum-box-val" id="cntReview">0</div></div>
+    </div>
+
+    <div class="filter-tabs" id="filterTabs"></div>
+
+    <div id="reviewList"></div>
+
+    <div class="sticky-confirm">
+      <div class="sticky-summary" id="stickySummary">—</div>
+      <button class="action-btn" id="confirmBtn" onclick="confirmImport()">✓ Баталгаажуулж хадгалах</button>
+      <button class="back-btn" onclick="goStep(2)">‹ Шинэ PDF сонгох</button>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL 4: Done -->
+<div id="panel-4" class="panel">
+  <div class="section" style="padding:40px 20px;text-align:center">
+    <div style="font-size:56px;margin-bottom:16px">✅</div>
+    <div style="font-size:18px;font-weight:800;color:#059669;margin-bottom:8px">Амжилттай хадгаллаа</div>
+    <div id="doneStats" style="font-size:13px;color:#4b5563;margin-bottom:24px;line-height:1.6"></div>
+    <a href="/finance" class="action-btn success" style="display:inline-block;text-decoration:none;padding:14px 24px">Санхүү рүү буцах</a>
+    <button class="back-btn" onclick="restartImport()">+ Дахин хуулга оруулах</button>
+  </div>
+</div>
+
+<script src="/js/bottom-nav.js"></script>
+<script>
+const token = localStorage.getItem('token');
+const user  = JSON.parse(localStorage.getItem('user') || '{}');
+if (!token) window.location.href = '/';
+if (user.role !== 'admin') { alert('Зөвхөн админ-д зориулсан'); window.location.href = '/finance'; }
+
+let selectedBank = null;
+let parsedData = null;
+let activeFilter = 'all';
+
+async function api(path, opts = {}) {
+  const r = await fetch('/api' + path, {
+    ...opts,
+    headers: { 'Authorization': 'Bearer ' + token, ...(opts.headers||{}) }
+  });
+  if (r.status === 401) { localStorage.clear(); window.location.href = '/'; }
+  return r.json();
+}
+function fmt(n) { return Number(n||0).toLocaleString('mn-MN'); }
+
+function goStep(n) {
+  for (let i = 1; i <= 4; i++) {
+    document.getElementById('panel-' + i).classList.toggle('active', i === n);
+    document.getElementById('step' + i).classList.toggle('active', i === n);
+    document.getElementById('step' + i).classList.toggle('done', i < n);
+    if (i < 4) document.getElementById('line' + i).classList.toggle('done', i < n);
+  }
+  window.scrollTo(0, 0);
+}
+
+function selectBank(id, label, account) {
+  selectedBank = { id, label, account };
+  document.getElementById('bankInfo').innerHTML = `📋 Сонгосон: <b>${label}</b> · <span class="no-tel">${account}</span>`;
+  goStep(2);
+}
+
+async function onFileSelected() {
+  const file = document.getElementById('fileInput').files[0];
+  if (!file) return;
+
+  const status = document.getElementById('uploadStatus');
+  status.innerHTML = '<div class="status-box loading">⏳ PDF боловсруулж байна...</div>';
+
+  const fd = new FormData();
+  fd.append('file', file);
+  const r = await fetch('/api/finance/import/preview', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token },
+    body: fd,
+  });
+  const data = await r.json();
+
+  if (!data.ok) {
+    status.innerHTML = `<div class="status-box error">✗ Алдаа: ${data.error || 'Тодорхойгүй'}</div>`;
+    return;
+  }
+
+  // Verify bank match
+  if (selectedBank && !data.account_label.toLowerCase().includes(selectedBank.id === 'tdb' ? 'tdb' : 'хаан')) {
+    status.innerHTML = `<div class="status-box error">⚠️ Сонгосон банк (${selectedBank.label}) PDF доторхтой таарахгүй (${data.account_label}). Дахин сонгоно уу.</div>`;
+    return;
+  }
+
+  parsedData = data;
+  status.innerHTML = '';
+  showReview();
+  goStep(3);
+}
+
+function showReview() {
+  document.getElementById('cntNew').textContent    = parsedData.total - parsedData.duplicates;
+  document.getElementById('cntDup').textContent    = parsedData.duplicates;
+  document.getElementById('cntAuto').textContent   = parsedData.auto_categorized;
+  document.getElementById('cntReview').textContent = parsedData.needs_review;
+  updateStickySummary();
+
+  // Filter tabs
+  const tabs = [
+    { key: 'all',    label: '📋 Бүгд',           count: parsedData.total },
+    { key: 'new',    label: '✨ Шинэ',           count: parsedData.total - parsedData.duplicates },
+    { key: 'review', label: '⚠️ Код шаардлагатай', count: parsedData.needs_review },
+    { key: 'dup',    label: '🔁 Давхардсан',     count: parsedData.duplicates },
+  ];
+  document.getElementById('filterTabs').innerHTML = tabs.map(t => `
+    <button class="f-tab ${t.key === activeFilter ? 'active' : ''}" onclick="setFilter('${t.key}')">
+      ${t.label} <span class="f-tab-count">${t.count}</span>
+    </button>`).join('');
+
+  renderRows();
+}
+
+function setFilter(key) {
+  activeFilter = key;
+  showReview();
+}
+
+function getFilteredTxs() {
+  let list = parsedData.transactions;
+  if (activeFilter === 'new')    list = list.filter(t => !t._is_duplicate);
+  if (activeFilter === 'dup')    list = list.filter(t => t._is_duplicate);
+  if (activeFilter === 'review') list = list.filter(t => t._needs_review && !t._is_duplicate);
+  return list;
+}
+
+function renderRows() {
+  const list = getFilteredTxs();
+  const el = document.getElementById('reviewList');
+  if (!list.length) { el.innerHTML = '<div style="text-align:center;color:#9ca3af;padding:30px">Гүйлгээ байхгүй</div>'; return; }
+
+  const CODES = ['SALE','REC','ADV','INV','LOAN_IN','LOAN_OUT','IMP','SAL','TRN','TRIP','EQP','TAX','OFF','UTIL','FEE','TRF','OTHER'];
+
+  el.innerHTML = list.map((t, idx) => {
+    const realIdx = parsedData.transactions.indexOf(t);
+    const cls = t._rejected ? 'rejected' : t._is_duplicate ? 'dup' : t._needs_review && !t.code ? 'review' : '';
+    const sign = t.direction === 'credit' ? '+' : '−';
+    const amtCls = t.direction === 'credit' ? 'in' : 'out';
+
+    let badges = '';
+    if (t._is_duplicate) badges += '<span class="rev-badge dup">🔁 Давхардсан</span>';
+    else badges += '<span class="rev-badge new">✨ Шинэ</span>';
+    if (t._is_foreign) badges += '<span class="rev-badge foreign">🌍 Гадаад</span>';
+    const currentCode = t.code || t._auto_code;
+    if (currentCode) badges += `<span class="rev-badge code">${currentCode}</span>`;
+    else badges += '<span class="rev-badge review">⚠️ Код алга</span>';
+
+    let actions = '';
+    if (!t._is_duplicate) {
+      actions = CODES.map(c => `<button class="code-btn ${currentCode === c ? 'selected' : ''}" onclick="setCode(${realIdx},'${c}')">${c}</button>`).join('');
+      actions += `<button class="reject-btn ${t._rejected ? 'rejected' : ''}" onclick="toggleReject(${realIdx})">${t._rejected ? '↺ Сэргээх' : '✕ Татгалзах'}</button>`;
+    }
+
+    return `<div class="rev-row ${cls}">
+      <div class="rev-top">
+        <div class="rev-badges">${badges}</div>
+        <div class="rev-amt ${amtCls}">${sign}${fmt(t.amount)}₮</div>
+      </div>
+      <div class="rev-desc">${t.description || '—'}</div>
+      <div class="rev-meta">📅 ${t.date}${t.time ? ' ' + t.time : ''}${t.counterparty ? ' · #' + t.counterparty : ''}</div>
+      ${actions ? `<div class="rev-actions">${actions}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function setCode(idx, code) {
+  parsedData.transactions[idx].code = code;
+  renderRows();
+  recountSummary();
+}
+
+function toggleReject(idx) {
+  parsedData.transactions[idx]._rejected = !parsedData.transactions[idx]._rejected;
+  renderRows();
+  recountSummary();
+}
+
+function recountSummary() {
+  const remaining = parsedData.transactions.filter(t =>
+    !t._is_duplicate && !t._rejected && !(t.code || t._auto_code)
+  ).length;
+  document.getElementById('cntReview').textContent = remaining;
+  updateStickySummary();
+}
+
+function updateStickySummary() {
+  if (!parsedData) return;
+  const willAdd = parsedData.transactions.filter(t => !t._is_duplicate && !t._rejected).length;
+  const dup = parsedData.duplicates;
+  const rej = parsedData.transactions.filter(t => t._rejected).length;
+  document.getElementById('stickySummary').innerHTML =
+    `✨ <b style="color:#059669">${willAdd}</b> хадгалагдана · 🔁 ${dup} давхардсан${rej ? ' · ✕ ' + rej + ' татгалзсан' : ''}`;
+}
+
+async function confirmImport() {
+  if (!parsedData) return;
+
+  // Check for review-needed items without code
+  const unresolvedReview = parsedData.transactions.filter(t =>
+    !t._is_duplicate && !t._rejected && !(t.code || t._auto_code)
+  );
+
+  if (unresolvedReview.length > 0) {
+    if (!confirm(`${unresolvedReview.length} гүйлгээ код тогтоогдоогүй байна. Дараа нь "Needs Review" жагсаалтад орох болно. Үргэлжлүүлэх үү?`)) {
+      return;
+    }
+  }
+
+  const btn = document.getElementById('confirmBtn');
+  btn.disabled = true; btn.textContent = '⏳ Хадгалж байна...';
+
+  const r = await api('/finance/import/confirm', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      transactions: parsedData.transactions,
+      filename: parsedData.filename,
+    }),
+  });
+
+  btn.disabled = false; btn.textContent = '✓ Баталгаажуулж хадгалах';
+
+  if (r.ok) {
+    document.getElementById('doneStats').innerHTML = `
+      ✨ <b>${r.added}</b> шинэ гүйлгээ нэмэгдсэн<br>
+      🔁 <b>${r.skipped}</b> давхардсан алгассан<br>
+      ✕ <b>${r.rejected}</b> татгалзсан
+    `;
+    goStep(4);
+  } else {
+    alert('Алдаа: ' + (r.error || 'Тодорхойгүй'));
+  }
+}
+
+function restartImport() {
+  selectedBank = null; parsedData = null; activeFilter = 'all';
+  document.getElementById('fileInput').value = '';
+  document.getElementById('uploadStatus').innerHTML = '';
+  goStep(1);
+}
+
+// Drag and drop
+const zone = document.getElementById('uploadZone');
+if (zone) {
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    const f = e.dataTransfer.files[0];
+    if (f) {
+      document.getElementById('fileInput').files = e.dataTransfer.files;
+      onFileSelected();
+    }
+  });
+}
+</script>
+</body>
+</html>

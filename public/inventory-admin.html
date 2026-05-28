@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+<title>Складын хяналт</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --brand: #0891b2; --brand-dark: #0e7490;
+  --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+  --gray-300: #d1d5db; --gray-400: #9ca3af; --gray-600: #4b5563;
+  --gray-700: #374151; --gray-900: #111827;
+}
+body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; background: var(--gray-50); color: var(--gray-900); padding-bottom: 40px; -webkit-font-smoothing: antialiased; }
+
+.id-bar {
+  background: linear-gradient(135deg, #0e7490 0%, #0891b2 100%);
+  color: #fff; padding: 18px 20px;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 4px 12px rgba(14,116,144,0.18);
+}
+.id-top { display: flex; align-items: center; gap: 12px; }
+.id-back { font-size: 22px; color: #fff; text-decoration: none; padding: 4px 8px; }
+.id-title { font-size: 16px; font-weight: 700; }
+.id-sub { font-size: 11px; opacity: 0.85; margin-top: 3px; }
+
+.section-nav {
+  position: sticky; top: 0; z-index: 50;
+  background: #fff; border-bottom: 1px solid var(--gray-200);
+  display: flex; overflow-x: auto; padding: 0 12px;
+  scrollbar-width: none;
+}
+.section-nav::-webkit-scrollbar { display: none; }
+.section-nav a {
+  flex-shrink: 0; padding: 12px 14px;
+  font-size: 12px; font-weight: 600; color: var(--gray-600);
+  text-decoration: none; border-bottom: 3px solid transparent;
+  white-space: nowrap;
+}
+.section-nav a.active { color: var(--brand-dark); border-bottom-color: var(--brand-dark); }
+
+.section { padding: 18px 16px 0; scroll-margin-top: 60px; }
+.section-label { font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 1.3px; margin-bottom: 10px; padding: 0 4px; }
+.card { background: #fff; border-radius: 14px; padding: 16px 18px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid var(--gray-200); }
+.note { background: #ecfeff; border-left: 4px solid var(--brand); border-radius: 8px; padding: 11px 14px; font-size: 11.5px; color: #155e75; margin-bottom: 12px; line-height: 1.5; }
+.note.warn { background: #fffbeb; border-left-color: #d97706; color: #92400e; }
+
+/* ── Reconciliation hero ── */
+.recon-hero {
+  border-radius: 16px; padding: 22px 20px;
+  margin-bottom: 14px; text-align: center;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.10);
+}
+.recon-hero.ok   { background: linear-gradient(135deg, #047857 0%, #059669 100%); }
+.recon-hero.fail { background: linear-gradient(135deg, #991b1b 0%, #dc2626 100%); }
+.recon-hero-icon { font-size: 38px; line-height: 1; margin-bottom: 8px; }
+.recon-hero-title { font-size: 18px; font-weight: 800; letter-spacing: 0.3px; }
+.recon-hero-sub { font-size: 12px; opacity: 0.92; margin-top: 5px; }
+
+.recon-list { background: #fff; border-radius: 12px; border: 1px solid var(--gray-200); overflow: hidden; margin-bottom: 12px; }
+.recon-row { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--gray-100); }
+.recon-row:last-child { border-bottom: none; }
+.recon-row.fail { background: #fef2f2; }
+.recon-row.adjusted { background: #fffbeb; }
+.recon-icon { font-size: 22px; flex-shrink: 0; }
+.recon-info { flex: 1; min-width: 0; }
+.recon-name { font-size: 13px; font-weight: 700; color: var(--gray-900); }
+.recon-meta { font-size: 11px; color: var(--gray-600); margin-top: 3px; }
+.recon-adj-badge { display: inline-block; font-size: 9.5px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #fef3c7; color: #92400e; margin-left: 6px; }
+
+.recon-help {
+  font-size: 11px; color: var(--gray-400);
+  padding: 10px 12px; background: var(--gray-50);
+  border-radius: 8px; line-height: 1.5;
+}
+
+/* ── Item rows ── */
+.item-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 0; border-bottom: 1px solid var(--gray-100);
+}
+.item-row:last-child { border-bottom: none; }
+.item-info { flex: 1; min-width: 0; }
+.item-code { font-family: "SF Mono", monospace; font-size: 10.5px; font-weight: 700; color: var(--brand-dark); }
+.item-name { font-size: 13px; font-weight: 700; color: var(--gray-900); margin-top: 2px; }
+.item-meta { font-size: 10.5px; color: var(--gray-600); margin-top: 3px; }
+.item-qty { text-align: right; flex-shrink: 0; }
+.item-qty-val { font-size: 16px; font-weight: 800; color: var(--gray-900); }
+.item-qty-unit { font-size: 10px; color: var(--gray-400); }
+
+.cat-tag {
+  display: inline-block; font-size: 9.5px; font-weight: 700;
+  padding: 2px 7px; border-radius: 5px;
+  letter-spacing: 0.3px;
+}
+.cat-tag.raw      { background: #e0e7ff; color: #3730a3; }
+.cat-tag.wip      { background: #fef3c7; color: #92400e; }
+.cat-tag.finished { background: #d1fae5; color: #065f46; }
+
+.act-btn {
+  padding: 6px 11px; border-radius: 7px;
+  font-size: 11px; font-weight: 700; cursor: pointer;
+  border: 1.5px solid; background: #fff;
+}
+.act-btn.edit { border-color: var(--brand); color: var(--brand); background: #ecfeff; }
+
+/* ── Add form ── */
+.add-form { background: var(--gray-50); border-radius: 10px; padding: 14px; margin-top: 12px; border: 1.5px solid var(--gray-200); }
+.field { margin-bottom: 10px; }
+.field:last-child { margin-bottom: 0; }
+.field label { display: block; font-size: 11px; font-weight: 700; color: var(--gray-600); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px; }
+.field input, .field select { width: 100%; padding: 10px 12px; border: 1.5px solid var(--gray-200); border-radius: 8px; font-size: 14px; outline: none; background: #fff; -webkit-appearance: none; appearance: none; }
+.field input:focus, .field select:focus { border-color: var(--brand-dark); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.add-btn { width: 100%; padding: 11px; background: var(--brand-dark); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 8px; }
+
+/* ── Modal ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 100; display: none; align-items: flex-end; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: #fff; border-radius: 18px 18px 0 0;
+  width: 100%; max-width: 520px;
+  padding: 16px 18px calc(20px + env(safe-area-inset-bottom, 0));
+  max-height: 92vh; overflow-y: auto;
+}
+.modal-handle { width: 40px; height: 4px; background: var(--gray-200); border-radius: 2px; margin: 6px auto 14px; }
+.modal-box h3 { font-size: 15px; font-weight: 800; margin-bottom: 14px; }
+.modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+.modal-save { flex: 1; padding: 12px; background: var(--brand-dark); color: #fff; border: none; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.modal-cancel { padding: 12px 18px; background: var(--gray-100); color: var(--gray-600); border: none; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+.qty-locked-note {
+  background: #fef3c7; border-left: 3px solid #d97706;
+  border-radius: 6px; padding: 8px 10px; font-size: 11px;
+  color: #92400e; margin-top: 8px;
+}
+
+/* ── Developer Tools ── */
+.dev-details { background: #fff; border-radius: 12px; border: 1px solid var(--gray-200); overflow: hidden; }
+.dev-summary { list-style: none; display: flex; align-items: center; gap: 10px; padding: 14px 16px; cursor: pointer; user-select: none; background: var(--gray-50); }
+.dev-summary::-webkit-details-marker { display: none; }
+.dev-summary-text { font-size: 13px; font-weight: 700; color: var(--gray-700); }
+.dev-summary-hint { font-size: 10.5px; color: var(--gray-400); flex: 1; }
+.dev-summary-icon { font-size: 14px; color: var(--gray-400); transition: transform 0.2s; }
+.dev-details[open] .dev-summary-icon { transform: rotate(180deg); }
+.dev-content { padding: 16px; background: #fafafa; }
+.dev-section-label { font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 1px; margin: 16px 0 10px; padding: 0 4px; }
+.dev-section-label:first-of-type { margin-top: 0; }
+.schema-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+.schema-table th { text-align: left; padding: 8px 10px; background: var(--gray-100); color: var(--gray-700); font-weight: 700; font-size: 10px; letter-spacing: 0.4px; text-transform: uppercase; }
+.schema-table td { padding: 8px 10px; border-top: 1px solid var(--gray-100); vertical-align: top; }
+.schema-table .field-name { font-family: monospace; font-weight: 700; color: var(--brand-dark); }
+.schema-table .field-type { font-family: monospace; color: var(--gray-600); font-size: 10.5px; }
+
+.movement-list { display: flex; flex-direction: column; gap: 6px; }
+.movement-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--gray-50); border-radius: 6px; font-size: 11.5px; }
+.movement-code { font-family: monospace; font-weight: 800; min-width: 130px; }
+.movement-code.in  { color: #059669; }
+.movement-code.out { color: #1565c0; }
+.movement-code.any { color: var(--gray-700); }
+.movement-label { flex: 1; color: var(--gray-700); }
+
+.empty { text-align: center; color: var(--gray-400); padding: 22px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="id-bar">
+  <div class="id-top">
+    <a class="id-back" href="/inventory">‹</a>
+    <div style="flex:1">
+      <div class="id-title">📦 Складын хяналт</div>
+      <div class="id-sub">Каталог, тэнцэл, бүрэн бүтэн байдал</div>
+    </div>
+  </div>
+</div>
+
+<div class="section-nav" id="sectionNav">
+  <a href="#recon" class="active">Тэнцлийн хяналт</a>
+  <a href="#catalog">Материалын каталог</a>
+  <a href="#devtools">Developer ▼</a>
+</div>
+
+<!-- Reconciliation (most important — top) -->
+<div class="section" id="recon">
+  <div class="section-label">✅ Тэнцлийн хяналт</div>
+  <div id="reconStatus"><div class="empty">Шалгаж байна...</div></div>
+</div>
+
+<!-- Material Catalog -->
+<div class="section" id="catalog">
+  <div class="section-label">📦 Материалын каталог</div>
+  <div class="note">
+    Үлдэгдэл (qty) шууд засагдахгүй. Зөвхөн хөдөлгөөн (IN/OUT) бүртгэх замаар өөрчилнө. Шинэ материал үргэлж qty=0-аас эхэлнэ.
+  </div>
+  <div class="card" id="itemsList"><div class="empty">Ачааллаж байна...</div></div>
+
+  <div class="card">
+    <div class="section-label" style="margin:0 0 10px">Шинэ материал нэмэх</div>
+    <div class="add-form">
+      <div class="row2">
+        <div class="field">
+          <label>Код (SKU)</label>
+          <input type="text" id="newCode" placeholder="MAT-NEW-01">
+        </div>
+        <div class="field">
+          <label>Нэр</label>
+          <input type="text" id="newName" placeholder="Материалын нэр">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Категори</label>
+          <select id="newCategory">
+            <option value="raw">Түүхий эд (raw)</option>
+            <option value="wip">Хагас бэлэн (wip)</option>
+            <option value="finished">Бүтээгдэхүүн (finished)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Нэгж</label>
+          <select id="newUnit">
+            <option>ширхэг</option>
+            <option>кг</option>
+            <option>тонн</option>
+            <option>м²</option>
+            <option>м</option>
+            <option>л</option>
+          </select>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Байршил</label>
+          <input type="text" id="newLocation" placeholder="central" value="central">
+        </div>
+        <div class="field">
+          <label>Доод хязгаар</label>
+          <input type="number" id="newThreshold" placeholder="0" value="0">
+        </div>
+      </div>
+      <button class="add-btn" onclick="addItem()">+ Нэмэх (qty=0)</button>
+    </div>
+  </div>
+</div>
+
+<!-- Developer Tools -->
+<div class="section" id="devtools">
+  <details class="dev-details">
+    <summary class="dev-summary">
+      <span class="dev-summary-text">🛠 Developer Tools</span>
+      <span class="dev-summary-hint">Movement types, schema</span>
+      <span class="dev-summary-icon">▾</span>
+    </summary>
+    <div class="dev-content">
+
+      <div class="dev-section-label">Хөдөлгөөний төрлүүд</div>
+      <div class="card">
+        <div class="movement-list" id="movementsList"></div>
+      </div>
+
+      <div class="dev-section-label">Архитектурын зарчим</div>
+      <div class="card" style="background:#fef3c7;border-color:#fde68a">
+        <div style="font-size:12px;line-height:1.6;color:#78350f">
+          🔒 <b>Quantity cannot silently change</b><br>
+          Authoritative truth = inventory_log (movement ledger).<br>
+          item.qty = cached value, зөвхөн validated movement-ээр шинэчилнэ.<br>
+          PUT /inventory/item-д qty шууд засах → 403 Forbidden.
+        </div>
+      </div>
+
+      <div class="dev-section-label">Өгөгдлийн бүтэц</div>
+      <div class="card">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px">📦 inventory[]</div>
+        <table class="schema-table">
+          <tr><th>Талбар</th><th>Утга</th></tr>
+          <tr><td class="field-name">code</td><td>SKU</td></tr>
+          <tr><td class="field-name">category</td><td class="field-type">raw | wip | finished</td></tr>
+          <tr><td class="field-name">status</td><td class="field-type">available | reserved | damaged | in_transit</td></tr>
+          <tr><td class="field-name">unit</td><td>ширхэг / кг / тонн / м² / м / л</td></tr>
+          <tr><td class="field-name">location</td><td>central / factory / plastic-center</td></tr>
+          <tr><td class="field-name">qty</td><td class="field-type">number (CACHED — ledger-аас computed)</td></tr>
+          <tr><td class="field-name">threshold</td><td>Low stock alert level</td></tr>
+          <tr><td class="field-name">cost_per_unit</td><td>Valuation-д</td></tr>
+          <tr><td class="field-name">has_manual_adjustment</td><td class="field-type">boolean (admin override flag)</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px">📋 inventory_log[]</div>
+        <table class="schema-table">
+          <tr><th>Талбар</th><th>Утга</th></tr>
+          <tr><td class="field-name">type</td><td class="field-type">in | out</td></tr>
+          <tr><td class="field-name">source</td><td class="field-type">IMPORT_IN | PRODUCTION_IN | PRODUCTION_OUT | SALES_OUT | MANUAL_ADJUSTMENT | TRANSFER</td></tr>
+          <tr><td class="field-name">source_id</td><td>Холбоот record-ийн ID</td></tr>
+          <tr><td class="field-name">qty</td><td>Always positive (direction implied by type)</td></tr>
+          <tr><td class="field-name">reason</td><td>Required if MANUAL_ADJUSTMENT</td></tr>
+          <tr><td class="field-name">before_qty / after_qty</td><td>Audit trail</td></tr>
+          <tr><td class="field-name">by, by_role</td><td>Хийсэн хэрэглэгч</td></tr>
+        </table>
+      </div>
+
+      <div class="dev-section-label">Модуль хоорондын холбоо</div>
+      <div class="card">
+        <div style="font-size:12px;line-height:1.7;color:var(--gray-700)">
+          <div>📥 Import → Inventory · <b>AUTO</b> (Phase 3)</div>
+          <div>📤 Production → Inventory · <b>AUTO</b> (Phase 5)</div>
+          <div>📦 Sales → Inventory · <b>AUTO</b> (Phase 4)</div>
+          <div>✋ Manual adjustment · <b>admin only, reason required</b></div>
+        </div>
+      </div>
+
+    </div>
+  </details>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal" onclick="if(event.target===this)closeEditModal()">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <h3>Материалын мэдээлэл засах</h3>
+    <div class="qty-locked-note">⚠️ Үлдэгдэл (qty) энд засагдахгүй. Зөвхөн movement бүртгэх замаар өөрчилнө.</div>
+    <div class="row2">
+      <div class="field">
+        <label>Код (SKU)</label>
+        <input type="text" id="ed-code">
+      </div>
+      <div class="field">
+        <label>Нэр</label>
+        <input type="text" id="ed-name">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Категори</label>
+        <select id="ed-category">
+          <option value="raw">Түүхий эд</option>
+          <option value="wip">Хагас бэлэн</option>
+          <option value="finished">Бүтээгдэхүүн</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Төлөв</label>
+        <select id="ed-status">
+          <option value="available">Хэрэглэхэд бэлэн</option>
+          <option value="reserved">Зарахаар хадгалсан</option>
+          <option value="damaged">Эвдэрсэн</option>
+          <option value="in_transit">Замд</option>
+        </select>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Нэгж</label>
+        <select id="ed-unit">
+          <option>ширхэг</option><option>кг</option><option>тонн</option><option>м²</option><option>м</option><option>л</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Байршил</label>
+        <input type="text" id="ed-location">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Доод хязгаар</label>
+        <input type="number" id="ed-threshold">
+      </div>
+      <div class="field">
+        <label>Нэгжийн өртөг ₮</label>
+        <input type="number" id="ed-cost" placeholder="optional">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeEditModal()">Болих</button>
+      <button class="modal-save" onclick="saveEdit()">Хадгалах</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/bottom-nav.js"></script>
+<script>
+const token = localStorage.getItem('token');
+const user  = JSON.parse(localStorage.getItem('user') || '{}');
+if (!token) window.location.href = '/';
+if (!['admin','warehouse'].includes(user.role)) { alert('Зөвхөн админ/складын ажилтанд'); window.location.href = '/inventory'; }
+
+async function api(path, opts = {}) {
+  const r = await fetch('/api' + path, {
+    ...opts,
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', ...(opts.headers||{}) }
+  });
+  if (r.status === 401) { localStorage.clear(); window.location.href = '/'; }
+  return r.json();
+}
+
+function fmt(n) { return Number(n||0).toLocaleString('mn-MN'); }
+function escHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ── Section nav scroll spy ──
+const navLinks = document.querySelectorAll('.section-nav a');
+function updateActiveNav() {
+  const sections = ['recon','catalog','devtools'];
+  let active = sections[0];
+  for (const id of sections) {
+    const el = document.getElementById(id);
+    if (el && el.getBoundingClientRect().top < 100) active = id;
+  }
+  navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + active));
+}
+window.addEventListener('scroll', updateActiveNav);
+
+// ── Reconciliation ──
+async function loadReconciliation() {
+  const el = document.getElementById('reconStatus');
+  try {
+    const r = await api('/inventory/reconcile');
+    const list = (r.items || []);
+    const adjustedCount = list.filter(x => x.has_manual_adjustment).length;
+
+    const rowsHtml = list.map(it => {
+      const rowCls = !it.ok ? 'fail' : it.has_manual_adjustment ? 'adjusted' : '';
+      const icon = !it.ok ? '🔴' : it.has_manual_adjustment ? '⚠️' : '✅';
+      const adj = it.has_manual_adjustment ? '<span class="recon-adj-badge">⚠️ MANUAL ADJ</span>' : '';
+      return `<div class="recon-row ${rowCls}">
+        <div class="recon-icon">${icon}</div>
+        <div class="recon-info">
+          <div class="recon-name">${escHtml(it.name)} ${adj}</div>
+          <div class="recon-meta">${escHtml(it.code || '')} · ${it.log_count} хөдөлгөөн · cached: ${fmt(it.cached_qty)} · ledger: ${fmt(it.ledger_qty)}${!it.ok ? ' · <b>зөрүү ' + fmt(Math.abs(it.diff)) + '</b>' : ''}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    if (r.all_ok) {
+      el.innerHTML = `
+        <div class="recon-hero ok">
+          <div class="recon-hero-icon">✅</div>
+          <div class="recon-hero-title">Бүгд зөв</div>
+          <div class="recon-hero-sub">${r.total_items} материал · cached qty болон ledger sum таарч байна${adjustedCount ? ' · ' + adjustedCount + ' manual adjustment' : ''}</div>
+        </div>
+        <div class="recon-list">${rowsHtml}</div>
+        <div class="recon-help">🔒 Үлдэгдэл (qty) зөвхөн validated movement-ээр шинэчлэгдэнэ. Шууд засах боломжгүй.</div>`;
+    } else {
+      const failCount = r.mismatches.length;
+      el.innerHTML = `
+        <div class="recon-hero fail">
+          <div class="recon-hero-icon">🔴</div>
+          <div class="recon-hero-title">Тэнцэл зөрсөн</div>
+          <div class="recon-hero-sub">${failCount} материалд cached qty болон ledger sum таарахгүй</div>
+        </div>
+        <div class="recon-list">${rowsHtml}</div>
+        <div class="recon-help">🔍 Магадгүй шалтгаан: гар оруулгын алдаа · удаан backup-аас сэргээгдсэн · ledger-аас гадуурх засвар хийгдсэн</div>`;
+    }
+  } catch (e) {
+    el.innerHTML = '<div class="empty">Ачаалж чадсангүй</div>';
+  }
+}
+
+// ── Items ──
+let items = [];
+const CAT_LABEL = { raw: 'Түүхий', wip: 'Хагас', finished: 'Бүтээгдэхүүн' };
+
+async function loadItems() {
+  items = await api('/inventory') || [];
+  const el = document.getElementById('itemsList');
+  if (!items.length) { el.innerHTML = '<div class="empty">Материал байхгүй</div>'; return; }
+  el.innerHTML = items.map(it => `
+    <div class="item-row">
+      <div class="item-info">
+        <div class="item-code">${escHtml(it.code || '—')}</div>
+        <div class="item-name">${escHtml(it.name)} <span class="cat-tag ${it.category}">${CAT_LABEL[it.category] || it.category}</span></div>
+        <div class="item-meta">${escHtml(it.location || '')}${it.threshold ? ' · хязгаар ' + it.threshold : ''}${it.has_manual_adjustment ? ' · ⚠️ adjusted' : ''}</div>
+      </div>
+      <div class="item-qty">
+        <div class="item-qty-val">${fmt(it.qty)}</div>
+        <div class="item-qty-unit">${escHtml(it.unit || '')}</div>
+      </div>
+      <button class="act-btn edit" onclick="openEdit(${it.id})">Засах</button>
+    </div>`).join('');
+}
+
+async function addItem() {
+  const body = {
+    code:      document.getElementById('newCode').value.trim(),
+    name:      document.getElementById('newName').value.trim(),
+    category:  document.getElementById('newCategory').value,
+    unit:      document.getElementById('newUnit').value,
+    location:  document.getElementById('newLocation').value.trim() || 'central',
+    threshold: parseInt(document.getElementById('newThreshold').value) || 0,
+  };
+  if (!body.name) { alert('Нэр оруулна уу'); return; }
+  const r = await api('/inventory/item', { method: 'POST', body: JSON.stringify(body) });
+  if (r.id) {
+    ['newCode','newName','newThreshold'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('newLocation').value = 'central';
+    loadItems(); loadReconciliation();
+  } else {
+    alert('Алдаа: ' + (r.error || 'Тодорхойгүй'));
+  }
+}
+
+// ── Edit modal ──
+let editId = null;
+function openEdit(id) {
+  const it = items.find(x => x.id === id);
+  if (!it) return;
+  editId = id;
+  document.getElementById('ed-code').value      = it.code || '';
+  document.getElementById('ed-name').value      = it.name || '';
+  document.getElementById('ed-category').value  = it.category || 'raw';
+  document.getElementById('ed-status').value    = it.status || 'available';
+  document.getElementById('ed-unit').value      = it.unit || 'ширхэг';
+  document.getElementById('ed-location').value  = it.location || '';
+  document.getElementById('ed-threshold').value = it.threshold || 0;
+  document.getElementById('ed-cost').value      = it.cost_per_unit != null ? it.cost_per_unit : '';
+  document.getElementById('editModal').classList.add('open');
+}
+function closeEditModal() { document.getElementById('editModal').classList.remove('open'); editId = null; }
+async function saveEdit() {
+  if (!editId) return;
+  const body = {
+    code:          document.getElementById('ed-code').value.trim(),
+    name:          document.getElementById('ed-name').value.trim(),
+    category:      document.getElementById('ed-category').value,
+    status:        document.getElementById('ed-status').value,
+    unit:          document.getElementById('ed-unit').value,
+    location:      document.getElementById('ed-location').value.trim(),
+    threshold:     parseInt(document.getElementById('ed-threshold').value) || 0,
+    cost_per_unit: document.getElementById('ed-cost').value ? parseFloat(document.getElementById('ed-cost').value) : null,
+  };
+  if (!body.name) { alert('Нэр оруулна уу'); return; }
+  const r = await api('/inventory/item/' + editId, { method: 'PUT', body: JSON.stringify(body) });
+  if (r.ok) { closeEditModal(); loadItems(); }
+  else alert('Алдаа: ' + (r.error || 'Тодорхойгүй'));
+}
+
+// ── Movement types reference ──
+async function loadMovementTypes() {
+  const r = await api('/inventory/movement-types');
+  const types = r.types || {};
+  const el = document.getElementById('movementsList');
+  el.innerHTML = Object.entries(types).map(([code, info]) => `
+    <div class="movement-row">
+      <span class="movement-code ${info.dir}">${code}</span>
+      <span class="movement-label">${info.label}</span>
+    </div>`).join('');
+}
+
+loadReconciliation();
+loadItems();
+loadMovementTypes();
+
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) { loadReconciliation(); loadItems(); }
+});
+</script>
+</body>
+</html>

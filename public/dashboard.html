@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+<title>Метал ворkинг Центр</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --brand-dark: #1b5e20;
+  --brand: #2e7d32;
+  --brand-light: #43a047;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+}
+body {
+  font-family: -apple-system, "Helvetica Neue", "SF Pro Text", Arial, sans-serif;
+  background: var(--gray-50);
+  color: var(--gray-900);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Identity Top Bar ── */
+.id-bar {
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 60%, #388e3c 100%);
+  color: #fff;
+  padding: 22px 20px 24px;
+  border-radius: 0 0 24px 24px;
+  box-shadow: 0 4px 16px rgba(27,94,32,0.18);
+  position: relative; overflow: hidden;
+}
+.id-bar::before {
+  content: ''; position: absolute; top: -50px; right: -50px;
+  width: 180px; height: 180px; border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+}
+.id-top { display: flex; justify-content: space-between; align-items: center; }
+.id-brand { display: flex; align-items: center; gap: 12px; }
+.id-logo {
+  width: 52px; height: 52px; border-radius: 14px;
+  background: rgba(255,255,255,0.18);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; font-weight: 900;
+  border: 1.5px solid rgba(255,255,255,0.35);
+}
+.id-name { font-size: 15px; font-weight: 700; letter-spacing: 0.4px; }
+.id-slogan { font-size: 11px; opacity: 0.9; margin-top: 3px; font-style: italic; }
+.logout-btn {
+  font-size: 11px; color: #fff;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  padding: 7px 12px; border-radius: 9px;
+  cursor: pointer; font-weight: 500;
+}
+.id-date {
+  margin-top: 16px; font-size: 11.5px; opacity: 0.88;
+  letter-spacing: 0.3px;
+}
+
+/* ── Sections ── */
+.section { padding: 22px 16px 0; }
+.section-label {
+  font-size: 11px; font-weight: 700;
+  color: var(--gray-400);
+  text-transform: uppercase; letter-spacing: 1.3px;
+  margin-bottom: 12px; padding: 0 4px;
+}
+
+/* ── News (PROMINENT top) ── */
+.news-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 22px 20px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  border: 1px solid var(--gray-200);
+  border-top: 5px solid #6a1b9a;
+  position: relative; overflow: hidden;
+  cursor: pointer; text-decoration: none; color: inherit; display: block;
+}
+.news-card:active { transform: scale(0.98); }
+.news-card::after {
+  content: ''; position: absolute; top: -30px; right: -30px;
+  width: 100px; height: 100px; border-radius: 50%;
+  background: rgba(106,27,154,0.06);
+}
+.news-icon { font-size: 36px; line-height: 1; margin-bottom: 10px; }
+.news-title { font-size: 17px; font-weight: 800; color: var(--gray-900); }
+.news-sub { font-size: 12.5px; color: var(--gray-600); margin-top: 5px; line-height: 1.5; }
+.news-meta { font-size: 11px; color: var(--gray-400); margin-top: 8px; font-weight: 600; }
+
+/* ── Operational cards ── */
+.op-list { display: flex; flex-direction: column; gap: 10px; }
+.op-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 18px 18px;
+  text-decoration: none;
+  display: flex; align-items: center; gap: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  border: 1px solid var(--gray-200);
+  transition: all 0.2s;
+  position: relative; overflow: hidden;
+}
+.op-card:active { transform: scale(0.98); }
+.op-card::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px;
+  background: var(--brand);
+}
+.op-card.import::before    { background: #1565c0; }
+.op-card.warehouse::before { background: #00838f; }
+.op-card.production::before { background: #d97706; }
+.op-card.sales::before     { background: #059669; }
+.op-card.finance::before   { background: #6d28d9; }
+
+.op-icon {
+  width: 52px; height: 52px; flex-shrink: 0;
+  border-radius: 12px;
+  background: var(--gray-100);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+}
+.op-card.import .op-icon    { background: #dbeafe; }
+.op-card.warehouse .op-icon { background: #cffafe; }
+.op-card.production .op-icon { background: #fef3c7; }
+.op-card.sales .op-icon     { background: #d1fae5; }
+.op-card.finance .op-icon   { background: #ede9fe; }
+
+.op-text { flex: 1; }
+.op-title { font-size: 16px; font-weight: 700; color: var(--gray-900); line-height: 1.2; }
+.op-sub { font-size: 12px; color: var(--gray-600); margin-top: 4px; line-height: 1.4; }
+.op-arrow { color: var(--gray-300); font-size: 22px; font-weight: 400; }
+
+/* ── Settings tiny footer ── */
+.admin-footer {
+  padding: 24px 16px 16px;
+  display: none;
+  text-align: center;
+}
+.admin-footer.shown { display: block; }
+.admin-link {
+  display: inline-block; padding: 8px 16px;
+  font-size: 11px; color: var(--gray-400);
+  text-decoration: none; font-weight: 600;
+  border: 1px solid var(--gray-200); border-radius: 20px;
+  background: #fff;
+}
+</style>
+</head>
+<body>
+
+<div class="id-bar">
+  <div class="id-top">
+    <div class="id-brand">
+      <div class="id-logo">М</div>
+      <div>
+        <div class="id-name">МЕТАЛВОРКИНГ ЦЕНТР ХХК</div>
+        <div class="id-slogan">«Бид хөгжил өөд сэтгэнэ»</div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="logout()">Гарах</button>
+  </div>
+  <div class="id-date" id="dateLine">—</div>
+</div>
+
+<div class="section">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:0 4px">
+    <div class="section-label" style="margin:0">📰 Мэдээ ба зарлал</div>
+    <a href="/news" style="font-size:11px;color:#6a1b9a;font-weight:700;text-decoration:none">Бүгдийг харах ›</a>
+  </div>
+  <div id="newsPreview">
+    <a class="news-card" href="/news">
+      <div class="news-icon">📰</div>
+      <div class="news-title">Ачааллаж байна...</div>
+      <div class="news-sub">Хамгийн сүүлийн мэдээллийг харуулна.</div>
+    </a>
+  </div>
+</div>
+
+<style>
+.dash-news-item {
+  background: #fff; border-radius: 14px;
+  padding: 14px 16px; margin-bottom: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--gray-200);
+  text-decoration: none; display: block; color: inherit;
+}
+.dash-news-item:active { transform: scale(0.98); }
+.dash-news-item.urgent    { border-left: 4px solid #dc2626; }
+.dash-news-item.important { border-left: 4px solid #d97706; }
+.dash-news-item.normal    { border-left: 4px solid #6b7280; }
+.dash-news-row { display: flex; gap: 12px; align-items: center; }
+.dash-news-thumb {
+  width: 56px; height: 56px; border-radius: 10px;
+  background-size: cover; background-position: center;
+  background-color: var(--gray-100); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; color: var(--gray-400);
+}
+.dash-news-info { flex: 1; min-width: 0; }
+.dash-news-h { display: flex; gap: 6px; align-items: center; margin-bottom: 3px; }
+.dash-news-prio {
+  display: inline-block; font-size: 9px; font-weight: 800;
+  padding: 1px 6px; border-radius: 4px; letter-spacing: 0.3px;
+}
+.dash-news-prio.urgent    { background: #fee2e2; color: #991b1b; }
+.dash-news-prio.important { background: #ffedd5; color: #9a3412; }
+.dash-news-prio.normal    { background: #f3f4f6; color: #4b5563; }
+.dash-news-title-text { font-size: 13px; font-weight: 700; color: var(--gray-900); line-height: 1.3;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.dash-news-meta { font-size: 10.5px; color: var(--gray-400); margin-top: 3px; }
+</style>
+
+<div class="section">
+  <div class="section-label">⚡ Үйл ажиллагаа</div>
+  <div class="op-list">
+
+    <a class="op-card import" href="/imports">
+      <div class="op-icon">🚢</div>
+      <div class="op-text">
+        <div class="op-title">Импорт</div>
+        <div class="op-sub">Худалдан авалт, тээвэр, гаалийн төлөв</div>
+      </div>
+      <div class="op-arrow">›</div>
+    </a>
+
+    <a class="op-card warehouse" href="/inventory">
+      <div class="op-icon">📦</div>
+      <div class="op-text">
+        <div class="op-title">Склад</div>
+        <div class="op-sub">Материал, бүтээгдэхүүн, үлдэгдэл</div>
+      </div>
+      <div class="op-arrow">›</div>
+    </a>
+
+    <a class="op-card production" href="/production">
+      <div class="op-icon">🔥</div>
+      <div class="op-text">
+        <div class="op-title">Үйлдвэрлэл</div>
+        <div class="op-sub">Төлөвлөгөө, гүйцэтгэл, гаралт</div>
+      </div>
+      <div class="op-arrow">›</div>
+    </a>
+
+    <a class="op-card sales" href="/sales">
+      <div class="op-icon">📊</div>
+      <div class="op-text">
+        <div class="op-title">Нийт борлуулалт</div>
+        <div class="op-sub">Бүтээгдэхүүний гаралт, амжилт</div>
+      </div>
+      <div class="op-arrow">›</div>
+    </a>
+
+    <a class="op-card finance" href="/finance">
+      <div class="op-icon">💰</div>
+      <div class="op-text">
+        <div class="op-title">Санхүү</div>
+        <div class="op-sub">Үлдэгдэл, орлого, зарлага</div>
+      </div>
+      <div class="op-arrow">›</div>
+    </a>
+
+  </div>
+</div>
+
+<div id="adminFooter" class="admin-footer">
+  <a class="admin-link" href="/settings">⚙️ Удирдлагын тохиргоо</a>
+</div>
+
+<script>
+const token = localStorage.getItem('token');
+const user  = JSON.parse(localStorage.getItem('user') || '{}');
+if (!token) window.location.href = '/';
+
+function updateDate() {
+  const d = new Date();
+  const days = ['Ня','Да','Мя','Лх','Пү','Ба','Бя'];
+  document.getElementById('dateLine').textContent =
+    `${days[d.getDay()]} · ${d.getFullYear()} оны ${d.getMonth()+1} сарын ${d.getDate()} · ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+updateDate();
+setInterval(updateDate, 60000);
+
+async function logout() {
+  try { await fetch('/api/auth/logout', { method: 'POST' }); } catch(_) {}
+  localStorage.clear();
+  window.location.href = '/';
+}
+
+function escapeHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function timeAgo(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const diff = (new Date() - d) / 1000;
+  if (diff < 60) return 'дөнгөж сая';
+  if (diff < 3600) return Math.floor(diff/60) + ' минутын өмнө';
+  if (diff < 86400) return Math.floor(diff/3600) + ' цагийн өмнө';
+  if (diff < 86400 * 7) return Math.floor(diff/86400) + ' өдрийн өмнө';
+  return d.toISOString().slice(0,10);
+}
+
+const PRIO_LABEL = { urgent: '🔴 ЯАРАЛТАЙ', important: '🟠 ЧУХАЛ', normal: '⚪ ЭНГИЙН' };
+
+async function loadNews() {
+  try {
+    const r = await fetch('/api/news', { headers: { 'Authorization': 'Bearer ' + token } });
+    if (!r.ok) throw new Error('failed');
+    const list = await r.json();
+    const el = document.getElementById('newsPreview');
+
+    if (!list.length) {
+      el.innerHTML = `
+        <a class="news-card" href="/news">
+          <div class="news-icon">📭</div>
+          <div class="news-title">Мэдээ хараахан байхгүй</div>
+          <div class="news-sub">Анхны мэдээ нийтэлсэн үед эндээс харагдана.</div>
+        </a>`;
+      return;
+    }
+
+    const top3 = list.slice(0, 3);
+    el.innerHTML = top3.map(n => {
+      const img = (n.images && n.images[0]) ? `<div class="dash-news-thumb" style="background-image:url('${n.images[0]}')"></div>` : `<div class="dash-news-thumb">📰</div>`;
+      return `
+        <a class="dash-news-item ${n.priority || 'normal'}" href="/news">
+          <div class="dash-news-row">
+            ${img}
+            <div class="dash-news-info">
+              <div class="dash-news-h">
+                <span class="dash-news-prio ${n.priority || 'normal'}">${PRIO_LABEL[n.priority] || 'ЭНГИЙН'}</span>
+              </div>
+              <div class="dash-news-title-text">${escapeHtml(n.title)}</div>
+              <div class="dash-news-meta">${escapeHtml(n.created_by || '')} · ${timeAgo(n.created_at)}</div>
+            </div>
+          </div>
+        </a>`;
+    }).join('');
+  } catch (_) {
+    // Silent fail — keep placeholder
+  }
+}
+loadNews();
+
+// Refresh news on page show (back-nav from /news)
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted || document.visibilityState === 'visible') loadNews();
+});
+
+if (user.role === 'admin') {
+  document.getElementById('adminFooter').classList.add('shown');
+}
+</script>
+</body>
+</html>

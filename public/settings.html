@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+<title>Тохиргоо</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color: #1a1a1a; padding-bottom: 40px; }
+
+.header { background: #1a1a2e; color: #fff; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 30; }
+.header h1 { font-size: 15px; font-weight: 700; }
+.nav { display: flex; gap: 6px; }
+.nav a { font-size: 11px; color: #aaa; text-decoration: none; padding: 4px 8px; border: 1px solid #444; border-radius: 6px; }
+
+.tabs { display: flex; gap: 0; background: #fff; border-bottom: 2px solid #f0f0f0; padding: 0 14px; position: sticky; top: 49px; z-index: 20; }
+.stab { padding: 12px 16px; font-size: 12px; font-weight: 600; color: #aaa; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; background: none; border-top: none; border-left: none; border-right: none; }
+.stab.active { color: #1a1a2e; border-bottom-color: #1a1a2e; }
+
+.section { padding: 14px 14px 0; }
+.sec { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 8px; }
+.card { background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ── List rows ── */
+.list-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+.list-row:last-child { border-bottom: none; }
+.list-row .lr-main { flex: 1; }
+.list-row .lr-name { font-size: 13px; font-weight: 600; color: #1a1a2e; }
+.list-row .lr-sub  { font-size: 11px; color: #888; margin-top: 2px; }
+.list-row .lr-price { font-size: 14px; font-weight: 700; color: #1565c0; width: 100px; text-align: right; flex-shrink: 0; }
+.inactive .lr-name { color: #bbb; }
+.inactive .lr-price { color: #ddd; }
+
+.tag { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; display: inline-block; }
+.tag.active   { background: #e8f5e9; color: #2e7d32; }
+.tag.inactive { background: #f5f5f5; color: #bbb; }
+
+/* ── Action buttons ── */
+.act-btn { padding: 6px 12px; border-radius: 7px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1.5px solid; }
+.act-btn.edit     { border-color: #1565c0; color: #1565c0; background: #e3f2fd; }
+.act-btn.disable  { border-color: #e53935; color: #e53935; background: #fff; }
+.act-btn.enable   { border-color: #2e7d32; color: #2e7d32; background: #e8f5e9; }
+
+/* ── Add form ── */
+.add-form { background: #f9f9f9; border-radius: 10px; padding: 13px 14px; margin-top: 10px; border: 1.5px solid #e8e8e8; }
+.add-form .af-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #1a1a2e; margin-bottom: 10px; }
+.field { margin-top: 10px; }
+.field:first-of-type { margin-top: 0; }
+.field label { display: block; font-size: 11px; font-weight: 600; color: #555; margin-bottom: 4px; }
+.field input { width: 100%; padding: 9px 12px; border: 1.5px solid #e0e0e0; border-radius: 8px; font-size: 14px; outline: none; background: #fff; }
+.field input:focus { border-color: #1a1a2e; }
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.add-btn { width: 100%; padding: 11px; background: #1a1a2e; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 12px; }
+
+/* ── Edit modal ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display: none; align-items: center; justify-content: center; padding: 16px; }
+.modal-overlay.open { display: flex; }
+.modal-box { background: #fff; border-radius: 14px; padding: 20px; width: 100%; max-width: 420px; }
+.modal-box h3 { font-size: 14px; font-weight: 700; color: #1a1a2e; margin-bottom: 14px; }
+.modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+.modal-save { flex: 1; padding: 11px; background: #1a1a2e; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.modal-cancel { padding: 11px 16px; background: #f5f5f5; color: #555; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+.empty { text-align: center; color: #bbb; padding: 20px; font-size: 13px; }
+.notice { background: #fff8e1; border-left: 3px solid #ffa000; border-radius: 8px; padding: 10px 12px; font-size: 11px; color: #555; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚙️ Тохиргоо</h1>
+  <div class="nav">
+    <a href="/dashboard">Нүүр</a>
+    <a href="/sales">Борлуулалт</a>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="stab active" id="stab-products"  onclick="showSTab('products')">Бүтээгдэхүүн</button>
+  <button class="stab"        id="stab-branches"  onclick="showSTab('branches')">Салбар</button>
+  <button class="stab"        id="stab-banks"     onclick="showSTab('banks')">Дансууд</button>
+</div>
+
+<!-- PRODUCTS -->
+<div id="panel-products" class="panel active">
+  <div class="section">
+    <div class="notice">⚠️ Үнэ өөрчлөхөд зөвхөн шинэ борлуулалтад нөлөөлнө. Хуучин бүртгэлийн үнэ хэвээр хадгалагдана.</div>
+    <div class="sec">Бүтээгдэхүүний жагсаалт</div>
+    <div class="card" id="prodList"><div class="empty">Ачааллаж байна...</div></div>
+
+    <div class="sec">Шинэ бүтээгдэхүүн нэмэх</div>
+    <div class="add-form">
+      <div class="g2">
+        <div class="field">
+          <label>Нэр</label>
+          <input type="text" id="npName" placeholder="Бүтээгдэхүүний нэр">
+        </div>
+        <div class="field">
+          <label>Үнэ ₮</label>
+          <input type="number" id="npPrice" placeholder="0">
+        </div>
+      </div>
+      <button class="add-btn" onclick="addProduct()">+ Нэмэх</button>
+    </div>
+  </div>
+</div>
+
+<!-- BRANCHES -->
+<div id="panel-branches" class="panel">
+  <div class="section">
+    <div class="sec">Салбарын жагсаалт</div>
+    <div class="card" id="branchList"><div class="empty">Ачааллаж байна...</div></div>
+
+    <div class="sec">Шинэ салбар нэмэх</div>
+    <div class="add-form">
+      <div class="field">
+        <label>Салбарын нэр</label>
+        <input type="text" id="nbName" placeholder="Пластик Центр — Салбар 2...">
+      </div>
+      <button class="add-btn" onclick="addBranch()">+ Нэмэх</button>
+    </div>
+  </div>
+</div>
+
+<!-- BANK ACCOUNTS -->
+<div id="panel-banks" class="panel">
+  <div class="section">
+    <div class="notice" style="background:#ede9fe;border-left-color:#5b21b6;color:#4c1d95">
+      🔀 <b>Шилжсэн:</b> Дансны удирдлага одоо <a href="/finance-admin" style="color:#5b21b6;font-weight:700;text-decoration:underline">Finance Module Control Center</a> (/finance-admin) дотор байрлана. Энд харагдах хуудас одоохондоо backward-compat үлдсэн.
+    </div>
+    <div class="notice">⚠️ Дансны нэр өөрчлөхөд хуучин бүртгэлийн дансны нэр хэвээр хадгалагдана.</div>
+    <div class="sec">Дансны жагсаалт</div>
+    <div class="card" id="bankList"><div class="empty">Ачааллаж байна...</div></div>
+
+    <div class="sec">Шинэ данс нэмэх</div>
+    <div class="add-form">
+      <div class="field">
+        <label>Дансны нэр</label>
+        <input type="text" id="nbkName" placeholder="Хаан банк — Бизнес (9988776655)">
+      </div>
+      <button class="add-btn" onclick="addBank()">+ Нэмэх</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal" onclick="handleModalBg(event)">
+  <div class="modal-box">
+    <h3 id="modalTitle">Засах</h3>
+    <div id="modalFields"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal()">Болих</button>
+      <button class="modal-save"   onclick="saveModal()">Хадгалах</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('token');
+const user  = JSON.parse(localStorage.getItem('user') || '{}');
+if (!token) window.location.href = '/';
+if (user.role !== 'admin') window.location.href = '/dashboard';
+
+async function api(path, opts = {}) {
+  const r = await fetch('/api' + path, {
+    ...opts,
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', ...(opts.headers||{}) }
+  });
+  if (r.status === 401) { localStorage.clear(); window.location.href = '/'; }
+  return r.json();
+}
+
+function fmt(n) { return Number(n||0).toLocaleString(); }
+
+// ── Tabs ─────────────────────────────────────────────────
+function showSTab(name) {
+  document.querySelectorAll('.panel').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.stab').forEach(el => el.classList.remove('active'));
+  document.getElementById('panel-'  + name).classList.add('active');
+  document.getElementById('stab-' + name).classList.add('active');
+}
+
+// ── Products ──────────────────────────────────────────────
+async function loadProducts() {
+  const list = await api('/products');
+  const el   = document.getElementById('prodList');
+  if (!list.length) { el.innerHTML = '<div class="empty">Бүтээгдэхүүн байхгүй</div>'; return; }
+  el.innerHTML = list.map(p => `
+    <div class="list-row ${p.active === false ? 'inactive' : ''}">
+      <div class="lr-main">
+        <div class="lr-name">${p.name}</div>
+        <div class="lr-sub"><span class="tag ${p.active !== false ? 'active' : 'inactive'}">${p.active !== false ? 'Идэвхтэй' : 'Идэвхгүй'}</span></div>
+      </div>
+      <div class="lr-price">${p.price > 0 ? fmt(p.price) + ' ₮' : '—'}</div>
+      <button class="act-btn edit" onclick="editProduct('${p.id}','${escQ(p.name)}',${p.price})">Засах</button>
+      ${p.active !== false
+        ? `<button class="act-btn disable" onclick="toggleProduct('${p.id}', false)">Хаах</button>`
+        : `<button class="act-btn enable"  onclick="toggleProduct('${p.id}', true)">Нээх</button>`}
+    </div>`).join('');
+}
+
+async function addProduct() {
+  const name  = document.getElementById('npName').value.trim();
+  const price = parseInt(document.getElementById('npPrice').value) || 0;
+  if (!name) { alert('Нэр оруулна уу'); return; }
+  await api('/products', { method: 'POST', body: JSON.stringify({ name, price }) });
+  document.getElementById('npName').value  = '';
+  document.getElementById('npPrice').value = '';
+  loadProducts();
+}
+
+async function toggleProduct(id, active) {
+  await api('/products/' + id, { method: 'PUT', body: JSON.stringify({ active }) });
+  loadProducts();
+}
+
+// ── Branches ──────────────────────────────────────────────
+async function loadBranches() {
+  const list = await api('/branches');
+  const el   = document.getElementById('branchList');
+  if (!list.length) { el.innerHTML = '<div class="empty">Салбар байхгүй</div>'; return; }
+  el.innerHTML = list.map(b => `
+    <div class="list-row">
+      <div class="lr-main">
+        <div class="lr-name">${b.name}</div>
+      </div>
+      <button class="act-btn edit"    onclick="editBranch(${b.id},'${escQ(b.name)}')">Засах</button>
+      <button class="act-btn disable" onclick="toggleBranch(${b.id}, false)">Хаах</button>
+    </div>`).join('');
+}
+
+async function addBranch() {
+  const name = document.getElementById('nbName').value.trim();
+  if (!name) { alert('Нэр оруулна уу'); return; }
+  await api('/branches', { method: 'POST', body: JSON.stringify({ name }) });
+  document.getElementById('nbName').value = '';
+  loadBranches();
+}
+
+async function toggleBranch(id, active) {
+  await api('/branches/' + id, { method: 'PUT', body: JSON.stringify({ active }) });
+  loadBranches();
+}
+
+// ── Bank accounts ─────────────────────────────────────────
+async function loadBanks() {
+  const list = await api('/bank-accounts');
+  const el   = document.getElementById('bankList');
+  if (!list.length) { el.innerHTML = '<div class="empty">Данс байхгүй</div>'; return; }
+  el.innerHTML = list.map(a => `
+    <div class="list-row ${a.active === false ? 'inactive' : ''}">
+      <div class="lr-main">
+        <div class="lr-name">${a.name}</div>
+        <div class="lr-sub"><span class="tag ${a.active !== false ? 'active' : 'inactive'}">${a.active !== false ? 'Идэвхтэй' : 'Идэвхгүй'}</span></div>
+      </div>
+      <button class="act-btn edit" onclick="editBank('${a.id}','${escQ(a.name)}')">Засах</button>
+      ${a.active !== false
+        ? `<button class="act-btn disable" onclick="toggleBank('${a.id}', false)">Хаах</button>`
+        : `<button class="act-btn enable"  onclick="toggleBank('${a.id}', true)">Нээх</button>`}
+    </div>`).join('');
+}
+
+async function addBank() {
+  const name = document.getElementById('nbkName').value.trim();
+  if (!name) { alert('Нэр оруулна уу'); return; }
+  await api('/bank-accounts', { method: 'POST', body: JSON.stringify({ name }) });
+  document.getElementById('nbkName').value = '';
+  loadBanks();
+}
+
+async function toggleBank(id, active) {
+  await api('/bank-accounts/' + id, { method: 'PUT', body: JSON.stringify({ active }) });
+  loadBanks();
+}
+
+// ── Modal ─────────────────────────────────────────────────
+let modalCb = null;
+
+function openModal(title, fieldsHtml, onSave) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalFields').innerHTML  = fieldsHtml;
+  modalCb = onSave;
+  document.getElementById('editModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('editModal').classList.remove('open');
+  modalCb = null;
+}
+
+function handleModalBg(e) {
+  if (e.target === document.getElementById('editModal')) closeModal();
+}
+
+async function saveModal() {
+  if (modalCb) await modalCb();
+  closeModal();
+}
+
+function editProduct(id, name, price) {
+  openModal('Бүтээгдэхүүн засах', `
+    <div class="field"><label>Нэр</label><input id="ep_name" value="${name}"></div>
+    <div class="field"><label>Үнэ ₮</label><input id="ep_price" type="number" value="${price}"></div>`,
+    async () => {
+      const n = document.getElementById('ep_name').value.trim();
+      const p = parseInt(document.getElementById('ep_price').value) || 0;
+      await api('/products/' + id, { method: 'PUT', body: JSON.stringify({ name: n, price: p }) });
+      loadProducts();
+    }
+  );
+}
+
+function editBranch(id, name) {
+  openModal('Салбар засах', `
+    <div class="field"><label>Нэр</label><input id="eb_name" value="${name}"></div>`,
+    async () => {
+      const n = document.getElementById('eb_name').value.trim();
+      await api('/branches/' + id, { method: 'PUT', body: JSON.stringify({ name: n }) });
+      loadBranches();
+    }
+  );
+}
+
+function editBank(id, name) {
+  openModal('Данс засах', `
+    <div class="field"><label>Нэр</label><input id="ebk_name" value="${name}"></div>`,
+    async () => {
+      const n = document.getElementById('ebk_name').value.trim();
+      await api('/bank-accounts/' + id, { method: 'PUT', body: JSON.stringify({ name: n }) });
+      loadBanks();
+    }
+  );
+}
+
+function escQ(s) { return (s||'').replace(/'/g, "\\'"); }
+
+// ── Init ─────────────────────────────────────────────────
+loadProducts();
+loadBranches();
+loadBanks();
+</script>
+<script src="/js/bottom-nav.js"></script>
+</body>
+</html>

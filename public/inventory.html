@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+<title>Склад — Метал ворkинг Центр</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --brand: #00838f; --brand-dark: #006064;
+  --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+  --gray-400: #9ca3af; --gray-600: #4b5563; --gray-900: #111827;
+}
+body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; background: var(--gray-50); color: var(--gray-900); padding-bottom: 30px; -webkit-font-smoothing: antialiased; }
+
+.id-bar {
+  background: linear-gradient(135deg, #006064 0%, #00838f 100%);
+  color: #fff; padding: 18px 20px;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 4px 12px rgba(0,96,100,0.18);
+}
+.id-top { display: flex; align-items: center; gap: 12px; }
+.id-back { font-size: 22px; color: #fff; text-decoration: none; padding: 4px 8px; }
+.id-title { font-size: 17px; font-weight: 700; }
+.id-sub { font-size: 11px; opacity: 0.85; margin-top: 3px; }
+
+.section { padding: 18px 16px 0; }
+.section-label { font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 1.3px; margin-bottom: 12px; padding: 0 4px; }
+
+/* Quick actions */
+.qa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.qa-card {
+  background: #fff; border-radius: 14px; padding: 16px 14px;
+  text-decoration: none; color: inherit;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--gray-200);
+  display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+  cursor: pointer; min-height: 100px;
+}
+.qa-card:active { transform: scale(0.97); }
+.qa-icon { font-size: 26px; line-height: 1; }
+.qa-title { font-size: 13px; font-weight: 700; color: var(--gray-900); line-height: 1.25; }
+.qa-sub { font-size: 10.5px; color: var(--gray-600); }
+.qa-card.in     { border-top: 3px solid #2e7d32; }
+.qa-card.out    { border-top: 3px solid #c62828; }
+.qa-card.stock  { border-top: 3px solid #1565c0; }
+
+/* Tabs */
+.tabs-row {
+  display: flex; gap: 6px; overflow-x: auto;
+  padding: 4px 0 12px; scrollbar-width: none;
+}
+.tabs-row::-webkit-scrollbar { display: none; }
+.tab-pill {
+  flex-shrink: 0; padding: 9px 14px;
+  border: 1.5px solid var(--gray-200); border-radius: 22px;
+  background: #fff; font-size: 12px; font-weight: 600;
+  color: var(--gray-600); cursor: pointer; white-space: nowrap;
+}
+.tab-pill.active { background: var(--brand-dark); border-color: var(--brand-dark); color: #fff; }
+
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* Items */
+.item-card {
+  background: #fff; border-radius: 12px;
+  padding: 13px 16px; margin-bottom: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05); border: 1px solid var(--gray-200);
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+}
+.item-info { flex: 1; }
+.item-code {
+  display: inline-block; font-family: monospace; font-size: 10px; font-weight: 800;
+  padding: 2px 7px; border-radius: 5px; background: var(--gray-100); color: var(--gray-600);
+  margin-bottom: 4px;
+}
+.item-name { font-size: 13.5px; font-weight: 600; color: var(--gray-900); }
+.item-meta { font-size: 11px; color: var(--gray-400); margin-top: 3px; }
+.item-qty { font-size: 16px; font-weight: 800; color: var(--brand-dark); white-space: nowrap; }
+.item-unit { font-size: 10px; color: var(--gray-400); margin-left: 3px; font-weight: 500; }
+
+.cat-tag {
+  display: inline-block; font-size: 9px; font-weight: 700;
+  padding: 2px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle;
+}
+.cat-tag.raw      { background: #e0e7ff; color: #3730a3; }
+.cat-tag.wip      { background: #fef3c7; color: #92400e; }
+.cat-tag.finished { background: #d1fae5; color: #065f46; }
+
+.low-stock { border-left: 3px solid #dc2626; }
+.low-stock-badge {
+  display: inline-block; font-size: 9px; font-weight: 700;
+  padding: 2px 6px; border-radius: 4px;
+  background: #fee2e2; color: #991b1b; margin-top: 3px;
+}
+
+.source-badge {
+  display: inline-block; font-size: 9px; font-weight: 700;
+  padding: 2px 6px; border-radius: 4px; margin-left: 6px;
+  background: var(--gray-100); color: var(--gray-600);
+}
+
+.empty { text-align: center; color: var(--gray-400); padding: 40px 20px; font-size: 13px; }
+.coming-soon {
+  background: #fffbeb; border: 1px dashed #f59e0b;
+  border-radius: 12px; padding: 16px;
+  text-align: center; color: #92400e;
+  font-size: 12px; line-height: 1.6;
+}
+
+.settings-link {
+  display: block; text-align: center;
+  margin: 24px 16px 0; padding: 10px;
+  font-size: 11px; color: var(--gray-400); font-weight: 600;
+  background: #fff; border: 1px solid var(--gray-200); border-radius: 14px;
+  text-decoration: none;
+}
+
+/* ── Material Intake Form ── */
+.intake-card {
+  background: #fff; border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05); border: 1px solid var(--gray-200);
+  border-top: 4px solid #059669;
+}
+.intake-title { font-size: 15px; font-weight: 800; color: var(--gray-900); margin-bottom: 3px; }
+.intake-sub { font-size: 11px; color: var(--gray-600); margin-bottom: 16px; }
+
+.ifield { margin-bottom: 12px; }
+.ifield label {
+  display: block; font-size: 11px; font-weight: 700;
+  color: var(--gray-600); margin-bottom: 5px;
+  text-transform: uppercase; letter-spacing: 0.4px;
+}
+.ifield .req { color: #c62828; }
+.ifield input, .ifield select {
+  width: 100%; padding: 11px 13px;
+  border: 1.5px solid var(--gray-200); border-radius: 8px;
+  font-size: 14px; background: #fff; outline: none;
+  -webkit-appearance: none; appearance: none;
+}
+.ifield input:focus, .ifield select:focus { border-color: #059669; }
+.ifield input[readonly] { background: var(--gray-50); color: var(--gray-600); }
+.i-row2 { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
+
+.reason-hint { font-size: 10.5px; color: #92400e; margin-top: 5px; padding: 6px 8px; background: #fef3c7; border-radius: 5px; }
+
+.intake-btn {
+  width: 100%; padding: 14px;
+  background: linear-gradient(135deg, #047857 0%, #059669 100%);
+  color: #fff; border: none; border-radius: 12px;
+  font-size: 14px; font-weight: 800; cursor: pointer;
+  margin-top: 8px;
+  box-shadow: 0 4px 12px rgba(5,150,105,0.25);
+}
+.intake-btn:active { transform: scale(0.98); }
+.intake-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.intake-status { margin-top: 12px; padding: 10px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; display: none; }
+.intake-status.ok { background: #d1fae5; color: #065f46; display: block; }
+.intake-status.err { background: #fee2e2; color: #991b1b; display: block; }
+</style>
+</head>
+<body>
+
+<div class="id-bar">
+  <div class="id-top">
+    <a class="id-back" href="/dashboard">‹</a>
+    <div style="flex:1">
+      <div class="id-title">📦 Склад</div>
+      <div class="id-sub">Материал, бүтээгдэхүүн, хөдөлгөөн</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">⚡ Хурдан үйлдэл</div>
+  <div class="qa-grid">
+    <a class="qa-card in" onclick="showTab('in')">
+      <div class="qa-icon">📥</div>
+      <div class="qa-title">Материал хүлээн авах</div>
+      <div class="qa-sub">Импорт, худалдан авалт, буцаалт</div>
+    </a>
+    <a class="qa-card in" onclick="showTab('in')">
+      <div class="qa-icon">🧱</div>
+      <div class="qa-title">Бүтээгдэхүүний орлого</div>
+      <div class="qa-sub">Үйлдвэрлэлээс</div>
+    </a>
+    <a class="qa-card out" onclick="showTab('out')">
+      <div class="qa-icon">📤</div>
+      <div class="qa-title">Складны гаралт</div>
+      <div class="qa-sub">Борлуулалт, зарцуулалт</div>
+    </a>
+    <a class="qa-card stock" onclick="showTab('stock')">
+      <div class="qa-icon">📋</div>
+      <div class="qa-title">Үлдэгдэл харах</div>
+      <div class="qa-sub">Одоогийн нөөц</div>
+    </a>
+  </div>
+</div>
+
+<div class="section">
+  <div class="tabs-row">
+    <button class="tab-pill active" id="t-stock" onclick="showTab('stock')">Үлдэгдэл</button>
+    <button class="tab-pill" id="t-in" onclick="showTab('in')">Орлого</button>
+    <button class="tab-pill" id="t-out" onclick="showTab('out')">Гаралт</button>
+    <button class="tab-pill" id="t-hist" onclick="showTab('hist')">Хөдөлгөөний түүх</button>
+  </div>
+
+  <div id="panel-stock" class="panel active"><div id="stockList"></div></div>
+
+  <div id="panel-in" class="panel">
+    <div class="intake-card">
+      <div class="intake-title">📥 Материал хүлээн авах</div>
+      <div class="intake-sub">Импорт, дотоод худалдан авалт, буцаалт</div>
+
+      <div class="ifield">
+        <label>Эх үүсвэр <span class="req">*</span></label>
+        <select id="in-source">
+          <option value="IMPORT_IN">🚢 Импорт</option>
+          <option value="IMPORT_IN__LOCAL">🛒 Дотоод худалдан авалт</option>
+          <option value="MANUAL_ADJUSTMENT__RETURN">↩️ Буцаан орсон</option>
+          <option value="MANUAL_ADJUSTMENT__ADJUST">⚠️ Гар тохируулга</option>
+        </select>
+      </div>
+
+      <div class="ifield">
+        <label>Материал <span class="req">*</span></label>
+        <select id="in-item" onchange="onIntakeItemChange()">
+          <option value="">— сонгох —</option>
+        </select>
+      </div>
+
+      <div class="i-row2">
+        <div class="ifield">
+          <label>Тоо хэмжээ <span class="req">*</span></label>
+          <input type="number" id="in-qty" placeholder="0" min="1" step="any">
+        </div>
+        <div class="ifield">
+          <label>Нэгж</label>
+          <input type="text" id="in-unit" readonly placeholder="—">
+        </div>
+      </div>
+
+      <div class="ifield">
+        <label>Байршил</label>
+        <select id="in-location">
+          <option value="central">Central warehouse</option>
+          <option value="factory">Factory</option>
+          <option value="plastic-center">Plastic Center</option>
+        </select>
+      </div>
+
+      <div class="ifield" id="in-reason-wrap" style="display:none">
+        <label>Шалтгаан <span class="req">*</span></label>
+        <input type="text" id="in-reason" placeholder="Жишээ: Туршилтаас буцаан орсон, тооцоолох алдаа залруулга">
+        <div class="reason-hint">⚠️ Гар тохируулга/буцаалт хийсэн тэмдэглэгээ үлдэнэ</div>
+      </div>
+
+      <div class="ifield">
+        <label>Тэмдэглэл (заавал биш)</label>
+        <input type="text" id="in-note" placeholder="Container ID, shipment note...">
+      </div>
+
+      <button class="intake-btn" id="intakeBtn" onclick="submitIntake()">📥 Орлого бүртгэх</button>
+      <div id="intakeStatus" class="intake-status"></div>
+    </div>
+  </div>
+
+  <div id="panel-out" class="panel">
+    <div class="intake-card" style="border-top-color:#c62828">
+      <div class="intake-title">📤 Складны гаралт</div>
+      <div class="intake-sub">Борлуулалт, үйлдвэрлэлд зарцуулалт, шилжүүлэг</div>
+
+      <div class="ifield">
+        <label>Шалтгаан <span class="req">*</span></label>
+        <select id="out-source" onchange="updateOutReasonVisibility()">
+          <option value="SALES_OUT">🛒 Борлуулалт</option>
+          <option value="PRODUCTION_OUT">🏭 Үйлдвэрлэлд</option>
+          <option value="TRANSFER">🔄 Шилжүүлэг</option>
+          <option value="MANUAL_ADJUSTMENT">⚠️ Гар тохируулга (хасах)</option>
+        </select>
+      </div>
+
+      <div class="ifield">
+        <label>Материал <span class="req">*</span></label>
+        <select id="out-item" onchange="onOutItemChange()">
+          <option value="">— сонгох —</option>
+        </select>
+      </div>
+
+      <div id="out-stock-info" style="display:none;margin-bottom:12px;padding:8px 12px;border-radius:8px;background:#f0f9ff;border:1px solid #bae6fd;font-size:12px;color:#0c4a6e">
+        Одоогийн үлдэгдэл: <b id="out-stock-qty">0</b> <span id="out-stock-unit"></span>
+      </div>
+
+      <div class="i-row2">
+        <div class="ifield">
+          <label>Тоо хэмжээ <span class="req">*</span></label>
+          <input type="number" id="out-qty" placeholder="0" min="1" step="any">
+        </div>
+        <div class="ifield">
+          <label>Нэгж</label>
+          <input type="text" id="out-unit" readonly placeholder="—">
+        </div>
+      </div>
+
+      <div class="ifield" id="out-reason-wrap" style="display:none">
+        <label>Шалтгаан <span class="req">*</span></label>
+        <input type="text" id="out-reason" placeholder="Тайлбар бичнэ үү">
+        <div class="reason-hint">⚠️ Гар тохируулга хийсэн тэмдэглэгээ үлдэнэ</div>
+      </div>
+
+      <div class="ifield">
+        <label>Тэмдэглэл (заавал биш)</label>
+        <input type="text" id="out-note" placeholder="Захиалгын дугаар, хүлээн авагч г.м.">
+      </div>
+
+      <button class="intake-btn" id="outBtn" onclick="submitOut()" style="background:linear-gradient(135deg,#991b1b 0%,#dc2626 100%);box-shadow:0 4px 12px rgba(220,38,38,0.25)">📤 Гаралт бүртгэх</button>
+      <div id="outStatus" class="intake-status"></div>
+    </div>
+  </div>
+
+  <div id="panel-hist" class="panel"><div id="historyList"></div></div>
+</div>
+
+<div id="adminSection" style="display:none;padding:18px 16px 0">
+  <a href="/inventory-admin" style="display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#0e7490,#0891b2);color:#fff;border-radius:14px;padding:14px 18px;text-decoration:none;box-shadow:0 4px 14px rgba(14,116,144,0.25)">
+    <div style="width:42px;height:42px;border-radius:10px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:22px">⚙️</div>
+    <div style="flex:1">
+      <div style="font-size:14px;font-weight:800">Складын хяналт</div>
+      <div style="font-size:11px;opacity:0.88;margin-top:2px">Каталог, тэнцэл, бүрэн бүтэн байдал</div>
+    </div>
+    <div style="font-size:20px;opacity:0.7">›</div>
+  </a>
+</div>
+
+<script src="/js/bottom-nav.js"></script>
+<script>
+const token = localStorage.getItem('token');
+const user  = JSON.parse(localStorage.getItem('user') || '{}');
+if (!token) window.location.href = '/';
+
+if (['admin','warehouse'].includes(user.role)) document.getElementById('adminSection').style.display = '';
+
+async function api(path, opts = {}) {
+  const r = await fetch('/api' + path, {
+    ...opts,
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', ...(opts.headers||{}) }
+  });
+  if (r.status === 401) { localStorage.clear(); window.location.href = '/'; }
+  return r.json();
+}
+
+function showTab(name) {
+  document.querySelectorAll('.panel').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-pill').forEach(el => el.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  const tab = document.getElementById('t-' + name);
+  if (tab) tab.classList.add('active');
+  if (name === 'stock') loadStock();
+  if (name === 'hist')  loadHistory();
+  if (name === 'in')    loadIntakeForm();
+  if (name === 'out')   loadOutForm();
+}
+
+// ── Material Intake (IN) ──
+let catalogItems = [];
+
+async function loadIntakeForm() {
+  catalogItems = await api('/inventory') || [];
+  const sel = document.getElementById('in-item');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— сонгох —</option>' +
+    catalogItems.filter(i => i.active !== false).map(i =>
+      `<option value="${i.id}">${(i.code ? i.code + ' · ' : '')}${i.name}</option>`
+    ).join('');
+
+  // Reset form
+  document.getElementById('in-qty').value = '';
+  document.getElementById('in-unit').value = '';
+  document.getElementById('in-note').value = '';
+  document.getElementById('in-reason').value = '';
+  document.getElementById('intakeStatus').className = 'intake-status';
+  document.getElementById('intakeStatus').textContent = '';
+  updateReasonVisibility();
+
+  // Source change → reason visibility
+  document.getElementById('in-source').onchange = updateReasonVisibility;
+}
+
+function onIntakeItemChange() {
+  const id = parseInt(document.getElementById('in-item').value);
+  const it = catalogItems.find(x => x.id === id);
+  document.getElementById('in-unit').value = it ? (it.unit || '') : '';
+  if (it && it.location) document.getElementById('in-location').value = it.location;
+}
+
+function updateReasonVisibility() {
+  const src = document.getElementById('in-source').value;
+  const needsReason = src.startsWith('MANUAL_ADJUSTMENT');
+  document.getElementById('in-reason-wrap').style.display = needsReason ? '' : 'none';
+}
+
+async function submitIntake() {
+  const srcUi = document.getElementById('in-source').value;
+  const itemId = parseInt(document.getElementById('in-item').value);
+  const qty    = parseFloat(document.getElementById('in-qty').value);
+  const note   = document.getElementById('in-note').value.trim();
+  const loc    = document.getElementById('in-location').value;
+  const reason = document.getElementById('in-reason').value.trim();
+  const status = document.getElementById('intakeStatus');
+
+  // Validation
+  if (!itemId)        { showIntakeError('Материал сонгоно уу'); return; }
+  if (!qty || qty <= 0) { showIntakeError('Тоо хэмжээ оруулна уу'); return; }
+
+  // Map UI source → backend code
+  const backendSource = srcUi.startsWith('MANUAL_ADJUSTMENT') ? 'MANUAL_ADJUSTMENT' : 'IMPORT_IN';
+  if (backendSource === 'MANUAL_ADJUSTMENT' && !reason) {
+    showIntakeError('Шалтгаан оруулна уу');
+    return;
+  }
+
+  const body = {
+    item_id:     itemId,
+    source:      backendSource,
+    qty,
+    location_to: loc,
+    note:        note || (srcUi === 'IMPORT_IN__LOCAL' ? 'Дотоод худалдан авалт' : ''),
+  };
+  if (backendSource === 'MANUAL_ADJUSTMENT') {
+    body.reason    = reason;
+    body.direction = 'in';  // intake = incoming
+  }
+
+  const btn = document.getElementById('intakeBtn');
+  btn.disabled = true; btn.textContent = '⏳ Бүртгэж байна...';
+
+  const r = await api('/inventory/log', { method: 'POST', body: JSON.stringify(body) });
+
+  btn.disabled = false; btn.textContent = '📥 Орлого бүртгэх';
+
+  if (r.ok) {
+    const it = catalogItems.find(x => x.id === itemId);
+    status.className = 'intake-status ok';
+    status.innerHTML = `✅ Амжилттай · <b>${it ? it.name : ''}</b> +${qty} ${it ? (it.unit||'') : ''} · Шинэ үлдэгдэл: <b>${r.new_qty}</b>`;
+    // Reset form (keep source + location for batch entry)
+    document.getElementById('in-item').value = '';
+    document.getElementById('in-qty').value = '';
+    document.getElementById('in-unit').value = '';
+    document.getElementById('in-note').value = '';
+    document.getElementById('in-reason').value = '';
+    // Refresh catalog cache for accurate qty
+    catalogItems = await api('/inventory') || [];
+  } else {
+    showIntakeError(r.error || 'Алдаа гарлаа');
+  }
+}
+
+function showIntakeError(msg) {
+  const status = document.getElementById('intakeStatus');
+  status.className = 'intake-status err';
+  status.textContent = '✗ ' + msg;
+}
+
+const CAT_LABEL = { raw: 'Түүхий', wip: 'Хагас', finished: 'Бэлэн' };
+const SOURCE_LABEL = {
+  IMPORT_IN: '🚢 Импорт', PRODUCTION_IN: '🏭 Үйлдвэрлэл→',
+  PRODUCTION_OUT: '🏭 →Үйлдвэрлэл', SALES_OUT: '🛒 Борлуулалт',
+  MANUAL_ADJUSTMENT: '⚠️ Тохируулга', TRANSFER: '🔄 Шилжүүлэг'
+};
+
+async function loadStock() {
+  const items = await api('/inventory') || [];
+  catalogItems = items; // keep in sync
+  const el = document.getElementById('stockList');
+  if (!items.length) {
+    el.innerHTML = '<div class="empty">Нөөцийн бүртгэл хараахан байхгүй<br><small style="display:block;margin-top:6px">Бараа ирмэгц орлого бүртгэх ёстой</small></div>';
+    return;
+  }
+  el.innerHTML = items.filter(i => i.active !== false).map(i => {
+    const isLow = i.threshold > 0 && i.qty <= i.threshold;
+    return `<div class="item-card${isLow ? ' low-stock' : ''}">
+    <div class="item-info">
+      ${i.code ? `<span class="item-code">${i.code}</span>` : ''}
+      <div class="item-name">${i.name || '—'}<span class="cat-tag ${i.category || 'raw'}">${CAT_LABEL[i.category] || i.category || ''}</span></div>
+      <div class="item-meta">📍 ${i.location || 'central'}${i.status && i.status !== 'available' ? ' · ' + i.status : ''}</div>
+      ${isLow ? '<div class="low-stock-badge">⚠ Доод хязгаарт</div>' : ''}
+    </div>
+    <div class="item-qty">${i.qty || 0}<span class="item-unit">${i.unit || 'ш'}</span></div>
+  </div>`;
+  }).join('');
+}
+
+async function loadHistory() {
+  const logs = await api('/inventory/log') || [];
+  const el = document.getElementById('historyList');
+  if (!logs.length) {
+    el.innerHTML = '<div class="empty">Хөдөлгөөний бүртгэл байхгүй</div>';
+    return;
+  }
+  logs.sort((a,b) => (b.created_at||b.date||'').localeCompare(a.created_at||a.date||''));
+  el.innerHTML = logs.map(l => {
+    const isIn = l.type === 'in';
+    const color = isIn ? '#2e7d32' : '#c62828';
+    const srcLabel = SOURCE_LABEL[l.source] || l.source || '';
+    return `<div class="item-card">
+    <div class="item-info">
+      <div class="item-name">${l.item_name} <span style="font-weight:400;color:${color};margin-left:6px">${isIn?'↑ Орлого':'↓ Гаралт'}</span></div>
+      <div class="item-meta">${l.date}${l.time ? ' ' + l.time : ''} · ${l.by || ''}<span class="source-badge">${srcLabel}</span></div>
+      <div class="item-meta">${l.before_qty != null ? l.before_qty + ' → ' + l.after_qty + ' ' + (l.unit||'') : ''}${l.note ? ' · ' + l.note : ''}${l.reason ? ' · 💬 ' + l.reason : ''}</div>
+    </div>
+    <div class="item-qty" style="color:${color}">${isIn?'+':'−'}${l.qty}<span class="item-unit">${l.unit||''}</span></div>
+  </div>`;
+  }).join('');
+}
+
+// ── Material Output (OUT) ──
+function loadOutForm() {
+  const sel = document.getElementById('out-item');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— сонгох —</option>' +
+    catalogItems.filter(i => i.active !== false && i.qty > 0).map(i =>
+      `<option value="${i.id}">${(i.code ? i.code + ' · ' : '')}${i.name} (${i.qty} ${i.unit||''})</option>`
+    ).join('');
+  document.getElementById('out-qty').value = '';
+  document.getElementById('out-unit').value = '';
+  document.getElementById('out-note').value = '';
+  document.getElementById('out-reason').value = '';
+  document.getElementById('out-stock-info').style.display = 'none';
+  document.getElementById('outStatus').className = 'intake-status';
+  document.getElementById('outStatus').textContent = '';
+  updateOutReasonVisibility();
+}
+
+function onOutItemChange() {
+  const id = parseInt(document.getElementById('out-item').value);
+  const it = catalogItems.find(x => x.id === id);
+  document.getElementById('out-unit').value = it ? (it.unit || '') : '';
+  if (it) {
+    document.getElementById('out-stock-info').style.display = '';
+    document.getElementById('out-stock-qty').textContent = it.qty;
+    document.getElementById('out-stock-unit').textContent = it.unit || '';
+  } else {
+    document.getElementById('out-stock-info').style.display = 'none';
+  }
+}
+
+function updateOutReasonVisibility() {
+  const src = document.getElementById('out-source').value;
+  const wrap = document.getElementById('out-reason-wrap');
+  wrap.style.display = (src === 'MANUAL_ADJUSTMENT' || src === 'TRANSFER') ? '' : 'none';
+}
+
+async function submitOut() {
+  const source = document.getElementById('out-source').value;
+  const itemId = parseInt(document.getElementById('out-item').value);
+  const qty    = parseFloat(document.getElementById('out-qty').value);
+  const note   = document.getElementById('out-note').value.trim();
+  const reason = document.getElementById('out-reason').value.trim();
+  const status = document.getElementById('outStatus');
+
+  if (!itemId)          { showOutError('Материал сонгоно уу'); return; }
+  if (!qty || qty <= 0) { showOutError('Тоо хэмжээ оруулна уу'); return; }
+
+  const it = catalogItems.find(x => x.id === itemId);
+  if (it && qty > it.qty) { showOutError(`Нөөц хүрэлцэхгүй. Одоогийн: ${it.qty} ${it.unit||''}`); return; }
+
+  if (source === 'MANUAL_ADJUSTMENT' && !reason) { showOutError('Шалтгаан оруулна уу'); return; }
+  if (source === 'TRANSFER' && !reason) { showOutError('Хаашаа шилжүүлж байгаа тайлбар оруулна уу'); return; }
+
+  const body = { item_id: itemId, source, qty, note, direction: 'out' };
+  if (reason) body.reason = reason;
+
+  const btn = document.getElementById('outBtn');
+  btn.disabled = true; btn.textContent = '⏳ Бүртгэж байна...';
+
+  const r = await api('/inventory/log', { method: 'POST', body: JSON.stringify(body) });
+
+  btn.disabled = false; btn.textContent = '📤 Гаралт бүртгэх';
+
+  if (r.ok) {
+    status.className = 'intake-status ok';
+    status.innerHTML = `✅ Амжилттай · <b>${it ? it.name : ''}</b> −${qty} ${it ? (it.unit||'') : ''} · Шинэ үлдэгдэл: <b>${r.new_qty}</b>`;
+    document.getElementById('out-item').value = '';
+    document.getElementById('out-qty').value = '';
+    document.getElementById('out-unit').value = '';
+    document.getElementById('out-note').value = '';
+    document.getElementById('out-reason').value = '';
+    document.getElementById('out-stock-info').style.display = 'none';
+    catalogItems = await api('/inventory') || [];
+    loadOutForm(); // refresh item list with updated qty
+  } else {
+    showOutError(r.error || 'Алдаа гарлаа');
+  }
+}
+
+function showOutError(msg) {
+  const status = document.getElementById('outStatus');
+  status.className = 'intake-status err';
+  status.textContent = '✗ ' + msg;
+}
+
+// Update showTab to load out form too
+const origShowTab = showTab;
+
+loadStock();
+</script>
+</body>
+</html>

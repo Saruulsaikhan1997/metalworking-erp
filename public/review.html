@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+<title>Шалгах — Метал ворkинг Центр</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --brand: #d97706; --brand-dark: #b45309;
+  --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+  --gray-400: #9ca3af; --gray-600: #4b5563; --gray-900: #111827;
+}
+body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; background: var(--gray-50); color: var(--gray-900); padding-bottom: 30px; -webkit-font-smoothing: antialiased; }
+
+.id-bar {
+  background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
+  color: #fff; padding: 18px 20px;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 4px 12px rgba(180,83,9,0.18);
+}
+.id-top { display: flex; align-items: center; gap: 12px; }
+.id-back { font-size: 22px; color: #fff; text-decoration: none; padding: 4px 8px; }
+.id-title { font-size: 17px; font-weight: 700; }
+.id-sub { font-size: 11px; opacity: 0.85; margin-top: 3px; }
+
+.section { padding: 18px 16px 0; }
+.section-label { font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 1.3px; margin-bottom: 12px; padding: 0 4px; }
+
+/* ── Progress ── */
+.progress {
+  background: #fff; border-radius: 12px; padding: 14px 16px;
+  border: 1px solid var(--gray-200);
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 12px;
+}
+.progress-circle {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: #fef3c7; color: #92400e;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 800; flex-shrink: 0;
+}
+.progress-circle.done {
+  background: #d1fae5; color: #065f46;
+}
+.progress-text { flex: 1; }
+.progress-title { font-size: 14px; font-weight: 700; color: var(--gray-900); }
+.progress-sub { font-size: 11px; color: var(--gray-600); margin-top: 2px; }
+
+/* ── Transaction card (clean, operational) ── */
+.tx-card {
+  background: #fff; border-radius: 16px;
+  padding: 18px; margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border: 1px solid var(--gray-200);
+  border-left: 5px solid #f59e0b;
+}
+.tx-card.saved {
+  border-left-color: #059669;
+  background: #f0fdf4;
+}
+
+.tx-amt-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+.tx-direction-tag {
+  display: inline-block; font-size: 10px; font-weight: 700;
+  padding: 3px 9px; border-radius: 5px;
+  background: var(--gray-100); color: var(--gray-600);
+  text-transform: uppercase; letter-spacing: 0.4px;
+}
+.tx-direction-tag.in  { background: #d1fae5; color: #065f46; }
+.tx-direction-tag.out { background: #dbeafe; color: #1e40af; }
+.tx-amount {
+  font-size: 22px; font-weight: 800;
+}
+.tx-amount.in  { color: #059669; }
+.tx-amount.out { color: #1565c0; }
+
+.tx-desc {
+  font-size: 14px; font-weight: 600;
+  color: var(--gray-900); margin-top: 10px; line-height: 1.4;
+}
+.tx-meta {
+  font-size: 11.5px; color: var(--gray-600);
+  margin-top: 8px;
+  display: flex; gap: 12px; flex-wrap: wrap;
+}
+.tx-meta-item { display: inline-flex; align-items: center; gap: 4px; }
+
+/* ── Code selector (clean buttons) ── */
+.code-section {
+  margin-top: 14px; padding-top: 14px;
+  border-top: 1px dashed var(--gray-200);
+}
+.code-label {
+  font-size: 11px; font-weight: 700;
+  color: var(--gray-600); margin-bottom: 8px;
+  text-transform: uppercase; letter-spacing: 0.4px;
+}
+.code-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 6px;
+}
+.code-btn {
+  padding: 9px 8px;
+  border: 1.5px solid var(--gray-200); border-radius: 8px;
+  background: #fff; color: var(--gray-600);
+  font-family: "SF Mono", monospace;
+  font-size: 11.5px; font-weight: 700;
+  cursor: pointer; letter-spacing: 0.3px;
+  transition: all 0.15s;
+}
+.code-btn:active { transform: scale(0.95); }
+.code-btn.income  { color: #065f46; border-color: #6ee7b7; }
+.code-btn.income.selected { background: #059669; color: #fff; border-color: #059669; }
+.code-btn.expense { color: #1e40af; border-color: #93c5fd; }
+.code-btn.expense.selected { background: #1565c0; color: #fff; border-color: #1565c0; }
+.code-btn.special { color: #6b21a8; border-color: #c4b5fd; }
+.code-btn.special.selected { background: #6b21a8; color: #fff; border-color: #6b21a8; }
+.code-btn.gray    { color: #4b5563; border-color: #d1d5db; }
+.code-btn.gray.selected { background: #4b5563; color: #fff; border-color: #4b5563; }
+
+.tx-saved-msg {
+  background: #d1fae5; color: #065f46;
+  padding: 10px 12px; border-radius: 8px;
+  font-size: 12px; font-weight: 600;
+  margin-top: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.empty-state {
+  text-align: center; padding: 60px 20px;
+}
+.empty-state .icon { font-size: 56px; margin-bottom: 16px; }
+.empty-state h2 { font-size: 16px; font-weight: 700; color: var(--gray-900); margin-bottom: 8px; }
+.empty-state p { font-size: 12px; color: var(--gray-600); line-height: 1.6; max-width: 280px; margin: 0 auto; }
+.empty-state .back-btn {
+  display: inline-block; margin-top: 20px;
+  padding: 12px 22px; background: #b45309; color: #fff;
+  border-radius: 10px; text-decoration: none;
+  font-size: 13px; font-weight: 700;
+}
+
+.loading { text-align: center; padding: 40px; color: var(--gray-400); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="id-bar">
+  <div class="id-top">
+    <a class="id-back" href="/finance">‹</a>
+    <div style="flex:1">
+      <div class="id-title">⚠️ Шалгах</div>
+      <div class="id-sub">Код тогтоох шаардлагатай гүйлгээ</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div id="content"><div class="loading">Ачааллаж байна...</div></div>
+</div>
+
+<script src="/js/bottom-nav.js"></script>
+<script>
+const token = localStorage.getItem('token');
+const user  = JSON.parse(localStorage.getItem('user') || '{}');
+if (!token) window.location.href = '/';
+if (user.role !== 'admin') { alert('Зөвхөн админ-д зориулсан'); window.location.href = '/finance'; }
+
+async function api(path, opts = {}) {
+  const r = await fetch('/api' + path, {
+    ...opts,
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', ...(opts.headers||{}) }
+  });
+  if (r.status === 401) { localStorage.clear(); window.location.href = '/'; }
+  return r.json();
+}
+
+function fmt(n) { return Number(n||0).toLocaleString('mn-MN'); }
+
+// Code groups (operational, NO parser internals)
+const CODE_GROUPS = [
+  { label: '🟢 Орлого', codes: ['SALE','REC','ADV','INV','LOAN_IN'], cls: 'income' },
+  { label: '🔵 Зарлага', codes: ['IMP','SAL','TRN','TRIP','EQP','TAX','OFF','UTIL','LOAN_OUT','FEE'], cls: 'expense' },
+  { label: '⚪ Тусгай',  codes: ['TRF','OTHER'], cls: 'gray' },
+];
+
+let pendingTxs = [];
+let savedCount = 0;
+let totalCount = 0;
+
+async function load() {
+  const txs = await api('/finance/transactions') || [];
+  pendingTxs = txs.filter(t => t.needs_review);
+  totalCount = pendingTxs.length;
+  savedCount = 0;
+  render();
+}
+
+function render() {
+  const el = document.getElementById('content');
+
+  if (totalCount === 0) {
+    el.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">✅</div>
+        <h2>Шалгах гүйлгээ алга</h2>
+        <p>Бүх гүйлгээ код тогтоогдсон байна. Шинэ хуулга оруулсны дараа энд орох зүйл гарч ирэх боломжтой.</p>
+        <a class="back-btn" href="/finance">Санхүү рүү буцах</a>
+      </div>`;
+    return;
+  }
+
+  // Progress
+  let html = `
+    <div class="progress">
+      <div class="progress-circle ${savedCount === totalCount ? 'done' : ''}">${savedCount === totalCount ? '✓' : savedCount + '/' + totalCount}</div>
+      <div class="progress-text">
+        <div class="progress-title">${savedCount === totalCount ? 'Бүгд шалгасан!' : `${totalCount - savedCount} гүйлгээ үлдсэн`}</div>
+        <div class="progress-sub">${savedCount === totalCount ? 'Бүх код тогтоогдсон' : 'Доорх гүйлгээний кодыг сонгоно уу'}</div>
+      </div>
+    </div>
+  `;
+
+  // Transactions to review
+  pendingTxs.forEach((tx, idx) => {
+    html += renderTx(tx, idx);
+  });
+
+  el.innerHTML = html;
+}
+
+function renderTx(tx, idx) {
+  const dir = tx.direction === 'credit' ? 'in' : 'out';
+  const dirLabel = tx.direction === 'credit' ? 'Орлого' : 'Зарлага';
+  const sign = tx.direction === 'credit' ? '+' : '−';
+  const cleanDesc = (tx.description || '—').trim();
+  const acctShort = (tx.account_label || '').replace(' (Касс)','').replace(' (Компани)','');
+  const saved = tx._savedHere;
+
+  let codeButtons = '';
+  for (const g of CODE_GROUPS) {
+    codeButtons += `<div class="code-label" style="margin-top:${codeButtons ? '10px' : '0'}">${g.label}</div>`;
+    codeButtons += '<div class="code-grid">';
+    for (const c of g.codes) {
+      const selected = tx.code === c ? 'selected' : '';
+      codeButtons += `<button class="code-btn ${g.cls} ${selected}" onclick="setCode('${tx.id}','${c}')">${c}</button>`;
+    }
+    codeButtons += '</div>';
+  }
+
+  return `
+    <div class="tx-card ${saved ? 'saved' : ''}" id="tx-${tx.id}">
+      <div class="tx-amt-row">
+        <span class="tx-direction-tag ${dir}">${dirLabel}</span>
+        <span class="tx-amount ${dir}">${sign} ${fmt(tx.amount)} ₮</span>
+      </div>
+      <div class="tx-desc">${cleanDesc}</div>
+      <div class="tx-meta">
+        <span class="tx-meta-item">📅 ${tx.date}</span>
+        <span class="tx-meta-item">🏦 ${acctShort}</span>
+      </div>
+      <div class="code-section">
+        <div class="code-label">Гүйлгээний төрөл сонгох:</div>
+        ${codeButtons}
+        ${saved ? `<div class="tx-saved-msg">✅ Хадгалагдлаа: <b>${tx.code}</b></div>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+async function setCode(txId, code) {
+  // Optimistic update
+  const tx = pendingTxs.find(t => t.id === txId);
+  if (!tx) return;
+
+  const previousCode = tx.code;
+  tx.code = code;
+  tx._saving = true;
+
+  // Re-render this card immediately
+  document.getElementById('tx-' + txId).outerHTML = renderTx(tx, pendingTxs.indexOf(tx));
+
+  const r = await api('/finance/transactions/' + txId, {
+    method: 'PUT',
+    body: JSON.stringify({ code }),
+  });
+
+  if (r.ok) {
+    if (!tx._savedHere) {
+      savedCount++;
+      tx._savedHere = true;
+    }
+    tx.needs_review = false;
+
+    // Re-render the card with saved state
+    document.getElementById('tx-' + txId).outerHTML = renderTx(tx, pendingTxs.indexOf(tx));
+
+    // Update progress
+    const progressCircle = document.querySelector('.progress-circle');
+    const progressTitle = document.querySelector('.progress-title');
+    const progressSub = document.querySelector('.progress-sub');
+    if (progressCircle) {
+      if (savedCount === totalCount) {
+        progressCircle.classList.add('done');
+        progressCircle.textContent = '✓';
+        progressTitle.textContent = 'Бүгд шалгасан!';
+        progressSub.textContent = 'Бүх код тогтоогдсон';
+      } else {
+        progressCircle.textContent = savedCount + '/' + totalCount;
+        progressTitle.textContent = (totalCount - savedCount) + ' гүйлгээ үлдсэн';
+      }
+    }
+  } else {
+    // Rollback on error
+    tx.code = previousCode;
+    document.getElementById('tx-' + txId).outerHTML = renderTx(tx, pendingTxs.indexOf(tx));
+    alert('Хадгалахад алдаа: ' + (r.error || 'Тодорхойгүй'));
+  }
+}
+
+load();
+</script>
+</body>
+</html>

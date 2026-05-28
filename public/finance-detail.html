@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+<title>Санхүү</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --brand-dark: #1b5e20;
+  --brand: #2e7d32;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-400: #9ca3af;
+  --gray-600: #4b5563;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+}
+body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; background: var(--gray-50); color: var(--gray-900); padding-bottom: 78px; -webkit-font-smoothing: antialiased; }
+
+.header {
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
+  color: #fff; padding: 18px 20px;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 4px 12px rgba(27,94,32,0.15);
+  margin-bottom: 14px;
+}
+.header h1 { font-size: 18px; font-weight: 700; letter-spacing: 0.3px; }
+.header .nav { display: none; }
+
+.tab-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #e8e8e8; display: flex; z-index: 30; box-shadow: 0 -2px 8px rgba(0,0,0,0.06); }
+.tab-btn { flex: 1; padding: 8px 0 10px; text-align: center; background: none; border: none; cursor: pointer; color: #bbb; position: relative; }
+.tab-btn.active { color: #1a1a2e; }
+.tab-btn .ti { font-size: 20px; display: block; }
+.tab-btn .tl { font-size: 10px; font-weight: 600; margin-top: 2px; display: block; }
+.rbadge { position: absolute; top: 4px; right: 20%; background: #e53935; color: #fff; font-size: 9px; font-weight: 700; border-radius: 10px; padding: 1px 5px; }
+
+.panel { display: none; padding: 0 16px; }
+.panel.active { display: block; }
+
+.sec { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--gray-400); margin: 18px 4px 10px; }
+.card { background: #fff; border-radius: 14px; padding: 16px 18px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid var(--gray-200); }
+
+/* ── Priority KPI (large, business style) ── */
+.priority-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.priority {
+  background: #fff; border-radius: 14px; padding: 14px 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--gray-200);
+  position: relative; overflow: hidden;
+}
+.priority .pri-icon { font-size: 22px; line-height: 1; margin-bottom: 6px; }
+.priority .pri-lbl { font-size: 10.5px; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; }
+.priority .pri-val { font-size: 17px; font-weight: 800; color: var(--gray-900); margin-top: 4px; line-height: 1.1; }
+.priority .pri-sub { font-size: 10.5px; color: var(--gray-400); margin-top: 4px; }
+.priority::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; }
+.priority.green::after  { background: #2e7d32; }
+.priority.blue::after   { background: #1565c0; }
+.priority.red::after    { background: #c62828; }
+.priority.purple::after { background: #6a1b9a; }
+.priority.amber::after  { background: #f57c00; }
+.priority.teal::after   { background: #00838f; }
+.priority.full { grid-column: 1 / -1; }
+
+/* ── Old KPI (kept for back-compat in script) ── */
+.kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.kpi { border-radius: 12px; padding: 12px 14px; color: #fff; }
+.kpi.green  { background: #2e7d32; }
+.kpi.blue   { background: #1565c0; }
+.kpi.amber  { background: #f57c00; }
+.kpi.red    { background: #c62828; }
+.kpi.dark   { background: var(--gray-900); }
+.kpi.gray   { background: #757575; }
+.kpi .lbl  { font-size: 10px; opacity: 0.85; margin-bottom: 4px; line-height: 1.2; }
+.kpi .val  { font-size: 16px; font-weight: 700; line-height: 1.1; }
+.kpi .sub  { font-size: 10px; opacity: 0.7; margin-top: 3px; }
+
+/* ── Quick filter buttons (for history) ── */
+.quick-filters {
+  display: flex; gap: 8px;
+  overflow-x: auto; padding: 4px 0 8px;
+  margin-bottom: 12px; scrollbar-width: none;
+}
+.quick-filters::-webkit-scrollbar { display: none; }
+.qf-btn {
+  flex-shrink: 0;
+  padding: 10px 16px; border-radius: 22px;
+  background: #fff; border: 1.5px solid var(--gray-200);
+  font-size: 12px; font-weight: 600; color: var(--gray-600);
+  cursor: pointer; white-space: nowrap;
+  transition: all 0.15s;
+}
+.qf-btn:active { transform: scale(0.96); }
+.qf-btn.active { background: #1b5e20; border-color: #1b5e20; color: #fff; }
+.qf-btn .qf-icon { margin-right: 4px; }
+
+/* ── Transaction CARDS (new readable format) ── */
+.tx-card {
+  background: #fff; border-radius: 14px;
+  padding: 14px 16px; margin-bottom: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  border: 1px solid var(--gray-200);
+  border-left: 4px solid var(--gray-200);
+}
+.tx-card.tx-income  { border-left-color: #2e7d32; }
+.tx-card.tx-expense { border-left-color: #1565c0; }
+.tx-card.tx-advance { border-left-color: #f57c00; }
+.tx-card.tx-loan    { border-left-color: #6a1b9a; }
+.tx-card.tx-trf     { border-left-color: var(--gray-400); }
+.tx-card.tx-review  { border-left-color: #f59e0b; background: #fffbeb; }
+
+.tx-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.tx-card-code {
+  display: inline-block; font-size: 10px; font-weight: 800;
+  padding: 3px 8px; border-radius: 6px; letter-spacing: 0.4px;
+  font-family: "SF Mono", monospace;
+  background: var(--gray-100); color: var(--gray-600);
+}
+.tx-card-code.income  { background: #dcfce7; color: #166534; }
+.tx-card-code.expense { background: #dbeafe; color: #1e40af; }
+.tx-card-code.advance { background: #fed7aa; color: #9a3412; }
+.tx-card-code.loan    { background: #f3e8ff; color: #6b21a8; }
+.tx-card-code.trf     { background: var(--gray-100); color: var(--gray-600); }
+.tx-card-code.review  { background: #fef3c7; color: #92400e; }
+
+.tx-card-desc { font-size: 14px; font-weight: 600; color: var(--gray-900); margin-top: 8px; line-height: 1.35; }
+.tx-card-amt {
+  font-size: 16px; font-weight: 800; white-space: nowrap; flex-shrink: 0;
+}
+.tx-card-amt.in  { color: #2e7d32; }
+.tx-card-amt.out { color: #1565c0; }
+.tx-card-amt.adv { color: #d97706; }
+.tx-card-amt.neu { color: var(--gray-400); }
+.tx-card-meta {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  font-size: 11px; color: var(--gray-400);
+  margin-top: 8px; padding-top: 8px;
+  border-top: 1px solid var(--gray-100);
+}
+.tx-card-meta .meta-item { display: inline-flex; align-items: center; gap: 4px; }
+.tx-card-raw {
+  font-size: 10.5px; color: var(--gray-400);
+  margin-top: 4px; font-style: italic;
+  display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
+}
+.tx-foreign-badge { background: #fef3c7; color: #92400e; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-left: 4px; }
+
+/* ── Warning banners ── */
+.banner { padding: 12px 14px; border-radius: 10px; margin-bottom: 10px; font-size: 12px; font-weight: 600; }
+.banner.warn  { background: #fff3e0; color: #e65100; border-left: 4px solid #f57c00; }
+.banner.alert { background: #ffebee; color: #c62828; border-left: 4px solid #c62828; }
+.banner.info  { background: #e3f2fd; color: #1565c0; border-left: 4px solid #1565c0; }
+
+/* ── Bar charts ── */
+.bar-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f5f5f5; }
+.bar-row:last-child { border-bottom: none; }
+.bar-lbl { font-size: 11px; color: #555; width: 140px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-track { flex: 1; height: 8px; background: #f0f0f0; border-radius: 4px; }
+.bar-fill  { height: 8px; border-radius: 4px; min-width: 3px; }
+.bar-val   { font-size: 11px; font-weight: 700; width: 90px; text-align: right; flex-shrink: 0; }
+
+/* ── Transaction rows ── */
+.tx-row { padding: 11px 0; border-bottom: 1px solid #f0f0f0; position: relative; }
+.tx-row:last-child { border-bottom: none; }
+.tx-row.review { background: #fff8e1; border-radius: 8px; padding: 11px 12px; margin-bottom: 5px; border-bottom: none; border-left: 4px solid #f57c00; }
+.tx-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.tx-code { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 12px; letter-spacing: 0.5px; font-family: monospace; }
+.tx-code.green { background: #e8f5e9; color: #2e7d32; }
+.tx-code.blue  { background: #e3f2fd; color: #1565c0; }
+.tx-code.amber { background: #fff3e0; color: #e65100; }
+.tx-code.gray  { background: #f5f5f5; color: #666; }
+.tx-code.red   { background: #ffebee; color: #c62828; }
+.tx-desc { font-size: 12px; color: #1a1a2e; line-height: 1.4; margin-top: 4px; }
+.tx-amt { font-size: 14px; font-weight: 700; white-space: nowrap; }
+.tx-amt.green { color: #2e7d32; }
+.tx-amt.blue  { color: #1565c0; }
+.tx-amt.amber { color: #e65100; }
+.tx-amt.gray  { color: #757575; }
+.tx-meta { font-size: 10px; color: #999; margin-top: 4px; line-height: 1.5; }
+.tx-raw  { font-size: 10px; color: #aaa; margin-top: 2px; font-style: italic; }
+
+.review-actions { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px; }
+.code-btn { padding: 5px 10px; font-size: 10px; font-weight: 700; border: 1.5px solid #ddd; border-radius: 6px; background: #fff; cursor: pointer; font-family: monospace; letter-spacing: 0.5px; }
+.code-btn.green { border-color: #2e7d32; color: #2e7d32; }
+.code-btn.blue  { border-color: #1565c0; color: #1565c0; }
+.code-btn.amber { border-color: #f57c00; color: #f57c00; }
+.code-btn.gray  { border-color: #757575; color: #757575; }
+.code-btn:hover { background: #f5f5f5; }
+.code-btn:active { transform: scale(0.95); }
+
+/* ── Filter ── */
+.filter-bar { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.filter-bar input, .filter-bar select {
+  padding: 8px 10px; border: 1.5px solid #e0e0e0; border-radius: 8px;
+  font-size: 12px; outline: none; background: #fff;
+}
+.filter-bar input { flex: 1; min-width: 100px; }
+
+/* ── Upload ── */
+.upload-card { background: #fff8e1; border: 2px dashed #f9a825; border-radius: 12px; padding: 20px 16px; text-align: center; margin-bottom: 10px; }
+.upload-card .ico { font-size: 32px; margin-bottom: 8px; }
+.upload-card h3 { font-size: 13px; font-weight: 700; color: #555; margin-bottom: 4px; }
+.upload-card p { font-size: 11px; color: #888; margin-bottom: 12px; }
+.upload-btn { display: inline-block; padding: 10px 18px; background: #1a1a2e; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
+#fileInput { display: none; }
+.upload-status { margin-top: 12px; padding: 10px 12px; border-radius: 8px; font-size: 12px; }
+.upload-status.ok { background: #e8f5e9; color: #2e7d32; }
+.upload-status.err { background: #ffebee; color: #c62828; }
+.auto-card { background: #e3f2fd; border-radius: 10px; padding: 12px 14px; margin-top: 8px; }
+.auto-card h4 { font-size: 12px; font-weight: 700; color: #1565c0; margin-bottom: 4px; }
+.auto-card p { font-size: 11px; color: #555; margin-bottom: 8px; }
+.auto-btn { padding: 8px 14px; background: #1565c0; color: #fff; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+
+/* ── Reference codes page ── */
+.code-card { background: #fff; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 12px; }
+.code-card .code-label { font-family: monospace; font-size: 13px; font-weight: 700; padding: 4px 10px; border-radius: 6px; min-width: 90px; text-align: center; letter-spacing: 0.5px; }
+.code-card .code-info { flex: 1; }
+.code-card .code-name { font-size: 12px; font-weight: 600; color: #1a1a2e; }
+.code-card .code-example { font-size: 11px; color: #888; font-family: monospace; margin-top: 2px; }
+.code-card .copy-btn { padding: 6px 10px; font-size: 10px; font-weight: 600; background: #f5f5f5; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; }
+
+.empty { text-align: center; color: #bbb; padding: 28px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>💼 Санхүү</h1>
+  <div class="nav">
+    <a href="/dashboard">Нүүр</a>
+    <a href="/sales">Борлуулалт</a>
+    <a href="/finance" class="active">Санхүү</a>
+  </div>
+</div>
+
+<!-- TAB 1: DASHBOARD -->
+<div id="panel-dash" class="panel active">
+
+  <div id="warnings"></div>
+
+  <!-- 4 priority cards (business dashboard feel) -->
+  <div class="sec">Өнөөдрийн тойм</div>
+  <div class="priority-grid">
+    <div class="priority green" style="cursor:pointer" onclick="drillTx('revenue')">
+      <div class="pri-icon">🟢</div>
+      <div class="pri-lbl">Total Cash</div>
+      <div class="pri-val" id="pTotalCash">— ₮</div>
+      <div class="pri-sub" id="pTotalCashSub">TDB + Касс</div>
+    </div>
+    <div class="priority blue" style="cursor:pointer" onclick="drillTx('revenue')">
+      <div class="pri-icon">🛒</div>
+      <div class="pri-lbl">Today Sales</div>
+      <div class="pri-val" id="pTodaySales">0 ₮</div>
+      <div class="pri-sub" id="pTodaySalesSub">0 борлуулалт</div>
+    </div>
+    <div class="priority red" style="cursor:pointer" onclick="drillTx('expense')">
+      <div class="pri-icon">🔵</div>
+      <div class="pri-lbl">Total Expenses</div>
+      <div class="pri-val" id="pTotalExp">0 ₮</div>
+      <div class="pri-sub" id="pTotalExpSub">энэ сар</div>
+    </div>
+    <div class="priority purple">
+      <div class="pri-icon">💼</div>
+      <div class="pri-lbl">Funding</div>
+      <div class="pri-val" id="pFunding">— ₮</div>
+      <div class="pri-sub" id="pFundingSub">Инвесторын зээл</div>
+    </div>
+  </div>
+
+  <!-- Account balances -->
+  <div class="sec">Дансны үлдэгдэл</div>
+  <div class="priority-grid">
+    <div class="priority">
+      <div class="pri-lbl">TDB — Компани</div>
+      <div class="pri-val" id="bTDB">— ₮</div>
+      <div class="pri-sub" id="bTDBdate">—</div>
+    </div>
+    <div class="priority green">
+      <div class="pri-lbl">Касс — Хаан банк</div>
+      <div class="pri-val" id="bKass">— ₮</div>
+      <div class="pri-sub" id="bKassdate">—</div>
+    </div>
+  </div>
+
+  <!-- Additional KPIs -->
+  <div class="sec">Энэ сар — Дэлгэрэнгүй <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#bbb">· дарж харах</span></div>
+  <div class="priority-grid">
+    <div class="priority amber" style="cursor:pointer" onclick="drillTx('adv')">
+      <div class="pri-lbl">🟡 Урьдчилгаа (ADV)</div>
+      <div class="pri-val" id="mAdv">0 ₮</div>
+      <div class="pri-sub" id="mAdvSub">0 гүйлгээ →</div>
+    </div>
+    <div class="priority teal" style="cursor:pointer" onclick="drillTx('loan')">
+      <div class="pri-lbl">🔁 Зээлийн хөдөлгөөн</div>
+      <div class="pri-val" id="mLoan">0 ₮</div>
+      <div class="pri-sub" id="mLoanSub">0 гүйлгээ →</div>
+    </div>
+  </div>
+
+  <!-- Loans -->
+  <div class="sec">Зээлийн төлөв</div>
+  <div class="card">
+    <div style="font-size:12px;font-weight:700;color:#c62828;margin-bottom:8px">📥 Бид авсан зээл</div>
+    <div id="loansReceived" style="margin-bottom:14px"></div>
+    <div style="font-size:12px;font-weight:700;color:#2e7d32;margin-bottom:8px">📤 Бид өгсөн зээл</div>
+    <div id="loansGiven"></div>
+  </div>
+
+  <!-- Breakdowns -->
+  <div class="sec">Зарлагын ангилал</div>
+  <div class="card" id="expBreakdown"></div>
+
+  <div class="sec">Орлогын ангилал</div>
+  <div class="card" id="incBreakdown"></div>
+</div>
+
+<!-- TAB 2: TRANSACTIONS / HISTORY -->
+<div id="panel-tx" class="panel">
+
+  <!-- Quick filters (primary) -->
+  <div class="sec" style="margin-top:14px">Хурдан шүүлтүүр</div>
+  <div class="quick-filters">
+    <button class="qf-btn active" data-qf="all"      onclick="setQuickFilter('all')">📋 Бүгд</button>
+    <button class="qf-btn"        data-qf="income"   onclick="setQuickFilter('income')">🟢 Нийт орлого</button>
+    <button class="qf-btn"        data-qf="expense"  onclick="setQuickFilter('expense')">🔵 Нийт зарлага</button>
+    <button class="qf-btn"        data-qf="sales"    onclick="setQuickFilter('sales')">🛒 Өдрийн борлуулалт</button>
+    <button class="qf-btn"        data-qf="loan_in"  onclick="setQuickFilter('loan_in')">📥 Авсан зээл</button>
+    <button class="qf-btn"        data-qf="loan_out" onclick="setQuickFilter('loan_out')">📤 Түр зээл</button>
+    <button class="qf-btn"        data-qf="review"   onclick="setQuickFilter('review')">⚠️ Needs Review</button>
+  </div>
+
+  <!-- Advanced filters (collapsed by default) -->
+  <details style="margin-bottom:12px">
+    <summary style="font-size:11px;color:var(--gray-600);cursor:pointer;padding:4px 0">Нарийвчилсан шүүлтүүр</summary>
+    <div class="filter-bar" style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+      <input type="text" id="fSearch" placeholder="🔍 Хайх..." oninput="renderTx()" style="flex:1;min-width:120px;padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;outline:none">
+      <select id="fCode" onchange="renderTx()" style="padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;background:#fff"><option value="">Бүх код</option></select>
+      <select id="fAccount" onchange="renderTx()" style="padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;background:#fff"><option value="">Бүх данс</option></select>
+    </div>
+  </details>
+
+  <!-- Active filter banner -->
+  <div id="drillBanner" style="display:none;padding:10px 14px;background:#dbeafe;color:#1e40af;border-radius:10px;margin-bottom:12px;font-size:12px;align-items:center;justify-content:space-between">
+    <span id="drillLabel"></span>
+    <button onclick="clearAllFilters()" style="padding:5px 12px;border:1px solid #1565c0;background:#fff;color:#1565c0;border-radius:8px;font-size:11px;cursor:pointer;font-weight:600">✕</button>
+  </div>
+
+  <div id="txList"></div>
+</div>
+
+<!-- TAB 3: CODES REFERENCE -->
+<div id="panel-codes" class="panel">
+  <div class="sec">Memo код жагсаалт — банкны гүйлгээ хийхэд</div>
+  <div class="banner info">
+    📋 <b>Хэрэглэх дүрэм:</b><br>
+    Гүйлгээний утга дээр эхлээд латин кодыг бичээд, дараа нь кирилл товч тайлбар бичнэ.<br><br>
+    Жишээ: <code style="background:#fff;padding:2px 6px;border-radius:4px;font-family:monospace">SALE: жорлон бүхээг</code>
+  </div>
+  <div id="codeList"></div>
+</div>
+
+<!-- TAB 4: IMPORT -->
+<div id="panel-import" class="panel" data-admin-only>
+  <div class="sec">Банкны хуулга оруулах</div>
+  <div class="upload-card">
+    <div class="ico">📄</div>
+    <h3>PDF хуулга upload хийх</h3>
+    <p>TDB эсвэл Хаан банкны хуулгыг сонгоно</p>
+    <input type="file" id="fileInput" accept=".pdf" onchange="uploadPDF()">
+    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">Файл сонгох</button>
+    <div class="upload-status" id="uploadStatus" style="display:none"></div>
+  </div>
+  <div class="auto-card">
+    <h4>🔄 Автомат импорт</h4>
+    <p>iCloud-аар ирсэн бүх PDF файлуудыг шалгана</p>
+    <button class="auto-btn" onclick="autoImport()">Автомат импорт</button>
+    <div class="upload-status" id="autoStatus" style="display:none"></div>
+  </div>
+</div>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <button class="tab-btn active" id="tb-dash" onclick="showTab('dash')">
+    <span class="ti">📊</span><span class="tl">Тойм</span>
+  </button>
+  <button class="tab-btn" id="tb-tx" onclick="showTab('tx')">
+    <span class="ti">📋</span><span class="tl">Гүйлгээ</span>
+    <span class="rbadge" id="reviewBadge" style="display:none"></span>
+  </button>
+  <button class="tab-btn" id="tb-codes" onclick="showTab('codes')">
+    <span class="ti">📖</span><span class="tl">Кодууд</span>
+  </button>
+  <button class="tab-btn" id="tb-import" onclick="showTab('import')" data-admin-only>
+    <span class="ti">⬆️</span><span class="tl">Импорт</span>
+  </button>
+</div>
+
+<script>
+const token = localStorage.getItem('token');
+const user  = JSON.parse(localStorage.getItem('user') || '{}');
+if (!token) window.location.href = '/';
+
+if (user.role !== 'admin') {
+  document.querySelectorAll('[data-admin-only]').forEach(el => el.style.display = 'none');
+}
+
+async function api(path, opts = {}) {
+  const r = await fetch('/api' + path, {
+    ...opts,
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', ...(opts.headers||{}) }
+  });
+  if (r.status === 401) { localStorage.clear(); window.location.href = '/'; }
+  return r.json();
+}
+
+function fmt(n) { return Number(n||0).toLocaleString(); }
+function thisMonth() { return new Date().toISOString().slice(0,7); }
+
+let transactions = [];
+let codes = {};
+let loansReceived = [];
+
+function showTab(name) {
+  document.querySelectorAll('.panel').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.getElementById('tb-' + name).classList.add('active');
+  if (name === 'dash') renderDash();
+  if (name === 'tx')   renderTx();
+  if (name === 'codes') renderCodes();
+}
+
+async function loadAll() {
+  codes = await api('/finance/codes');
+  transactions = await api('/finance/transactions') || [];
+  loansReceived = await api('/finance/loans-received') || [];
+
+  // Filter dropdown populate
+  const fc = document.getElementById('fCode');
+  fc.innerHTML = '<option value="">Бүх код</option>' +
+    Object.keys(codes).map(c => `<option value="${c}">${c} — ${codes[c].label}</option>`).join('');
+
+  const accounts = new Set();
+  for (const t of transactions) if (t.account_label) accounts.add(t.account_label);
+  const fa = document.getElementById('fAccount');
+  fa.innerHTML = '<option value="">Бүх данс</option>' + [...accounts].map(a => `<option value="${a}">${a}</option>`).join('');
+
+  // Review badge
+  const reviewCount = transactions.filter(t => t.needs_review).length;
+  const badge = document.getElementById('reviewBadge');
+  if (reviewCount > 0) {
+    badge.textContent = reviewCount;
+    badge.style.display = '';
+  } else badge.style.display = 'none';
+}
+
+// ── Helper: code color & direction ─────────────────────────
+function codeColor(code) {
+  if (!code) return 'red';
+  return codes[code]?.color || 'red';
+}
+function isRevenue(code) { return ['SALE','REC'].includes(code); }
+function isCapital(code) { return code === 'INV'; }
+function isLoanIn(code) { return code === 'LOAN_IN'; }
+function isExpense(code) { return ['IMP','SAL','TRN','TRIP','EQP','TAX','OFF','UTIL','FEE','LOAN_OUT','OTHER'].includes(code); }
+function isAdv(code)     { return code === 'ADV'; }
+function isTrf(code)     { return code === 'TRF'; }
+
+// ── Dashboard ─────────────────────────────────────────────
+function renderDash() {
+  const mon = thisMonth();
+  const today = new Date().toISOString().slice(0,10);
+
+  // Account balances
+  const compare = (a, b) => {
+    if (a.date !== b.date) return a.date.localeCompare(b.date);
+    if ((a.time||'') !== (b.time||'')) return (a.time||'').localeCompare(b.time||'');
+    return (a.seq||0) - (b.seq||0);
+  };
+  const byAcc = {};
+  for (const t of transactions) {
+    if (!byAcc[t.account_label]) byAcc[t.account_label] = [];
+    byAcc[t.account_label].push(t);
+  }
+  for (const list of Object.values(byAcc)) list.sort(compare);
+
+  const tdbList  = byAcc['TDB (Компани)']  || [];
+  const kassList = byAcc['Хаан банк (Касс)'] || [];
+  let tdbBal = 0, kassBal = 0;
+  if (tdbList.length)  { const t = tdbList[tdbList.length-1];   tdbBal = t.balance_after; document.getElementById('bTDB').textContent  = fmt(t.balance_after) + ' ₮'; document.getElementById('bTDBdate').textContent  = '↻ ' + t.date; }
+  if (kassList.length) { const t = kassList[kassList.length-1]; kassBal = t.balance_after; document.getElementById('bKass').textContent = fmt(t.balance_after) + ' ₮'; document.getElementById('bKassdate').textContent = '↻ ' + t.date; }
+
+  // ── 4 PRIORITY CARDS ──
+  // Total Cash
+  const totalCash = tdbBal + kassBal;
+  document.getElementById('pTotalCash').textContent = fmt(totalCash) + ' ₮';
+
+  // Today Sales (SALE + REC + ADV today)
+  const todayTx = transactions.filter(t => t.date === today);
+  const todaySales = todayTx.filter(t => ['SALE','REC','ADV'].includes(t.code));
+  const todaySalesAmt = todaySales.reduce((s,t) => s + t.amount, 0);
+  document.getElementById('pTodaySales').textContent = fmt(todaySalesAmt) + ' ₮';
+  document.getElementById('pTodaySalesSub').textContent = todaySales.length + ' гүйлгээ · ' + today;
+
+  // Total Expenses (this month, all expense codes)
+  const monthTx = transactions.filter(t => t.date.slice(0,7) === mon);
+  const expense = monthTx.filter(t => isExpense(t.code));
+  document.getElementById('pTotalExp').textContent = fmt(expense.reduce((s,t) => s + t.amount, 0)) + ' ₮';
+  document.getElementById('pTotalExpSub').textContent = expense.length + ' гүйлгээ · ' + mon;
+
+  // Funding (lifetime INV)
+  const allInv = transactions.filter(t => isCapital(t.code));
+  const invTotal = allInv.reduce((s,t) => s + t.amount, 0);
+  document.getElementById('pFunding').textContent = fmt(invTotal) + ' ₮';
+  document.getElementById('pFundingSub').textContent = allInv.length ? `Эхэлсэн: ${allInv[0].date}` : 'Хараахан байхгүй';
+
+  // ── Secondary KPIs ──
+  const revenue = monthTx.filter(t => isRevenue(t.code));
+  const adv     = monthTx.filter(t => isAdv(t.code));
+  const loanIn  = monthTx.filter(t => isLoanIn(t.code));
+  const loanOut = monthTx.filter(t => t.code === 'LOAN_OUT');
+
+  document.getElementById('mAdv').textContent     = fmt(adv.reduce((s,t) => s + t.amount, 0)) + ' ₮';
+  document.getElementById('mAdvSub').textContent  = adv.length + ' гүйлгээ →';
+  const loanTotal = loanIn.reduce((s,t) => s + t.amount, 0) + loanOut.reduce((s,t) => s + t.amount, 0);
+  document.getElementById('mLoan').textContent     = fmt(loanTotal) + ' ₮';
+  document.getElementById('mLoanSub').textContent  = (loanIn.length + loanOut.length) + ' гүйлгээ →';
+
+  // ── Loans ──
+  renderLoans();
+
+  // Warnings
+  let warningHtml = '';
+  const reviewCount = transactions.filter(t => t.needs_review).length;
+  if (reviewCount > 0) {
+    warningHtml += `<div class="banner alert">⚠️ <b>${reviewCount} гүйлгээ</b> код тогтоох шаардлагатай. <a href="#" onclick="document.getElementById('fReview').value='review';showTab('tx');return false" style="color:#c62828;text-decoration:underline">Шалгах →</a></div>`;
+  }
+  const monthTotal = monthTx.reduce((s,t) => s + t.amount, 0);
+  const monthOther = monthTx.filter(t => t.code === 'OTHER').reduce((s,t) => s + t.amount, 0);
+  if (monthTotal > 0 && monthOther/monthTotal > 0.10) {
+    warningHtml += `<div class="banner warn">⚠️ "OTHER" гүйлгээний дүн нийт орлого/зарлагын ${Math.round(monthOther/monthTotal*100)}%-г эзэлж байна. Тодорхой код тавьж засаарай.</div>`;
+  }
+  document.getElementById('warnings').innerHTML = warningHtml;
+
+  // Expense breakdown
+  const expByCode = {};
+  for (const t of expense) {
+    const c = t.code || 'NONE';
+    expByCode[c] = (expByCode[c] || 0) + t.amount;
+  }
+  renderBars('expBreakdown', expByCode, '#1565c0');
+
+  // Income breakdown — SALE + REC + ADV only (capital & loans shown separately above)
+  const incByCode = {};
+  for (const t of [...revenue, ...adv]) {
+    const c = t.code || 'NONE';
+    incByCode[c] = (incByCode[c] || 0) + t.amount;
+  }
+  renderBars('incBreakdown', incByCode, '#2e7d32');
+}
+
+function renderBars(elId, byCode, color) {
+  const entries = Object.entries(byCode).sort((a,b) => b[1]-a[1]);
+  const el = document.getElementById(elId);
+  if (!entries.length) { el.innerHTML = '<div class="empty">Бүртгэл байхгүй</div>'; return; }
+  const mx = Math.max(...entries.map(e => e[1]), 1);
+  el.innerHTML = entries.map(([c, total]) => {
+    const label = codes[c]?.label || c;
+    return `<div class="bar-row">
+      <div class="bar-lbl">${c} · ${label}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.round(total/mx*100)}%;background:${color}"></div></div>
+      <div class="bar-val" style="color:${color}">${fmt(total)}₮</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Quick filter system (Phase 2) ──────────────────────────
+let activeQuickFilter = 'all';
+
+function drillTx(type) {
+  // Map old drill types to quick filter
+  const map = { revenue: 'income', expense: 'expense', adv: 'all', loan: 'loan_out' };
+  activeQuickFilter = map[type] || 'all';
+  showTab('tx');
+}
+
+function setQuickFilter(qf) {
+  activeQuickFilter = qf;
+  document.querySelectorAll('.qf-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.qf === qf);
+  });
+  renderTx();
+}
+
+function clearAllFilters() {
+  activeQuickFilter = 'all';
+  document.querySelectorAll('.qf-btn').forEach(b => b.classList.toggle('active', b.dataset.qf === 'all'));
+  document.getElementById('fSearch').value = '';
+  document.getElementById('fCode').value = '';
+  document.getElementById('fAccount').value = '';
+  renderTx();
+}
+
+function applyQuickFilter(list, qf) {
+  if (qf === 'all') return list;
+  if (qf === 'income')   return list.filter(t => ['SALE','REC','INV','LOAN_IN'].includes(t.code));
+  if (qf === 'expense')  return list.filter(t => isExpense(t.code));
+  if (qf === 'sales')    return list.filter(t => ['SALE','REC','ADV'].includes(t.code));
+  if (qf === 'loan_in')  return list.filter(t => t.code === 'LOAN_IN');
+  if (qf === 'loan_out') return list.filter(t => t.code === 'LOAN_OUT');
+  if (qf === 'review')   return list.filter(t => t.needs_review);
+  return list;
+}
+
+function updateDrillBanner() {
+  const banner = document.getElementById('drillBanner');
+  const label  = document.getElementById('drillLabel');
+  if (activeQuickFilter === 'all') { banner.style.display = 'none'; return; }
+  const labels = {
+    income:   '🟢 Нийт орлого',
+    expense:  '🔵 Нийт зарлага',
+    sales:    '🛒 Борлуулалт ба урьдчилгаа',
+    loan_in:  '📥 Авсан зээл',
+    loan_out: '📤 Түр зээл',
+    review:   '⚠️ Шалгах шаардлагатай',
+  };
+  label.textContent = '🔍 ' + (labels[activeQuickFilter] || activeQuickFilter);
+  banner.style.display = 'flex';
+}
+
+// ── Loans summary ──────────────────────────────────────────
+function renderLoans() {
+  // Group LOAN_OUT and LOAN_IN by counterparty (or description)
+  const given = {};  // we gave loans to these parties
+  for (const t of transactions.filter(t => t.code === 'LOAN_OUT')) {
+    const key = (t.description || t.counterparty || 'Тодорхойгүй').trim();
+    if (!given[key]) given[key] = { given: 0, returned: 0, lastDate: '', txs: [] };
+    given[key].given += t.amount;
+    given[key].lastDate = t.date;
+    given[key].txs.push(t);
+  }
+  for (const t of transactions.filter(t => t.code === 'LOAN_IN')) {
+    const key = (t.description || t.counterparty || 'Тодорхойгүй').trim();
+    // Try to match with given key by similar words; otherwise create new
+    let matched = null;
+    for (const k of Object.keys(given)) {
+      if (k.toLowerCase().includes(key.toLowerCase().split(' ')[0]) ||
+          key.toLowerCase().includes(k.toLowerCase().split(' ')[0])) {
+        matched = k; break;
+      }
+    }
+    if (matched) {
+      given[matched].returned += t.amount;
+      given[matched].txs.push(t);
+    } else {
+      // Orphaned LOAN_IN (no matching LOAN_OUT)
+      given[key] = { given: 0, returned: t.amount, lastDate: t.date, txs: [t] };
+    }
+  }
+
+  const givenEl = document.getElementById('loansGiven');
+  const givenList = Object.entries(given);
+  if (!givenList.length) {
+    givenEl.innerHTML = '<div style="font-size:11px;color:#aaa;padding:6px 0">Бүртгэл байхгүй</div>';
+  } else {
+    givenEl.innerHTML = givenList.map(([name, l]) => {
+      const remaining = l.given - l.returned;
+      const status = remaining <= 0 ? 'returned' : 'active';
+      const color  = status === 'returned' ? '#2e7d32' : '#c62828';
+      const label  = status === 'returned' ? '✅ Бүрэн буцаагдсан' : `🔴 Үлдэгдэл: ${fmt(remaining)}₮`;
+      return `<div style="padding:8px 0;border-bottom:1px solid #f0f0f0">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:600;color:#1a1a2e">${name}</div>
+            <div style="font-size:10px;color:#888;margin-top:2px">Өгсөн: ${fmt(l.given)}₮${l.returned > 0 ? ' · Буцаагдсан: ' + fmt(l.returned) + '₮' : ''}</div>
+          </div>
+          <div style="font-size:11px;font-weight:700;color:${color};white-space:nowrap">${label}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Loans received (loaded from db.loans_received)
+  const recvEl = document.getElementById('loansReceived');
+  if (!loansReceived.length) {
+    recvEl.innerHTML = '<div style="font-size:11px;color:#aaa;padding:6px 0">Бүртгэл байхгүй</div>';
+    return;
+  }
+  recvEl.innerHTML = loansReceived.map(l => {
+    const interestPaid    = (l.interest_schedule || []).filter(s => s.paid).reduce((s,x) => s+x.amount, 0);
+    const interestPending = (l.interest_total || 0) - interestPaid;
+    const upcoming = (l.interest_schedule || []).filter(s => !s.paid).sort((a,b) => a.date.localeCompare(b.date));
+    const nextPay = upcoming[0];
+
+    return `<div style="padding:8px 0;border-bottom:1px solid #f0f0f0">
+      <div style="font-size:13px;font-weight:700;color:#1a1a2e">${l.lender}</div>
+      <div style="font-size:10px;color:#888;margin-top:3px;line-height:1.5">
+        Үндсэн дүн: <b>${fmt(l.principal)}₮</b> (орсон: ${fmt(l.principal_received)}₮ · ${l.principal_received_date})<br>
+        Хүү: <b>${fmt(l.interest_total)}₮</b> · төлсөн ${fmt(interestPaid)}₮ · үлдсэн <span style="color:#c62828">${fmt(interestPending)}₮</span><br>
+        Хугацаа: ${l.term_years} жил (${l.term_end} хүртэл)
+      </div>
+      ${nextPay ? `<div style="margin-top:6px;padding:5px 8px;background:#fff8e1;border-radius:6px;font-size:10px;color:#e65100"><b>📅 Дараагийн төлбөр:</b> ${nextPay.date} · ${fmt(nextPay.amount)}₮ · ${nextPay.note || ''}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── Transactions ───────────────────────────────────────────
+function renderTx() {
+  updateDrillBanner();
+  const search = (document.getElementById('fSearch').value || '').toLowerCase();
+  const codeF  = document.getElementById('fCode').value;
+  const accF   = document.getElementById('fAccount').value;
+
+  let list = applyQuickFilter([...transactions], activeQuickFilter);
+
+  if (codeF) list = list.filter(t => t.code === codeF);
+  if (accF) list = list.filter(t => t.account_label === accF);
+  if (search) list = list.filter(t =>
+    (t.description||'').toLowerCase().includes(search) ||
+    (t.counterparty||'').includes(search) ||
+    (t.code||'').toLowerCase().includes(search)
+  );
+
+  list.sort((a,b) => {
+    if (a.date !== b.date) return b.date.localeCompare(a.date);
+    return (b.time||'').localeCompare(a.time||'');
+  });
+
+  const el = document.getElementById('txList');
+  if (!list.length) { el.innerHTML = '<div class="card"><div class="empty">Гүйлгээ байхгүй</div></div>'; return; }
+
+  // Group by review state
+  const reviewItems   = list.filter(t => t.needs_review);
+  const reviewedItems = list.filter(t => !t.needs_review);
+
+  let html = '';
+
+  if (reviewItems.length) {
+    html += '<div class="sec">⚠️ Код тогтоох (' + reviewItems.length + ')</div>';
+    html += reviewItems.map(renderTxReviewCard).join('');
+  }
+  if (reviewedItems.length) {
+    html += '<div class="sec">✓ Бүртгэгдсэн (' + reviewedItems.length + ')</div>';
+    html += '<div class="card">' + reviewedItems.map(renderTxRow).join('') + '</div>';
+  }
+  el.innerHTML = html;
+}
+
+function txCardCategory(t) {
+  if (t.needs_review) return { card: 'tx-review', code: 'review', amt: 'neu' };
+  if (isRevenue(t.code) || isLoanIn(t.code) || isCapital(t.code)) return { card: 'tx-income', code: 'income', amt: 'in' };
+  if (isAdv(t.code))    return { card: 'tx-advance', code: 'advance', amt: 'adv' };
+  if (t.code === 'LOAN_OUT') return { card: 'tx-loan', code: 'loan', amt: 'out' };
+  if (isTrf(t.code))    return { card: 'tx-trf', code: 'trf', amt: 'neu' };
+  return { card: 'tx-expense', code: 'expense', amt: 'out' };
+}
+
+function renderTxRow(t) {
+  const cat = txCardCategory(t);
+  const sign = (t.direction === 'credit') ? '+' : '−';
+  const code = t.code || (t.needs_review ? 'NEEDS REVIEW' : '—');
+  const acctShort = (t.account_label || '').replace(' (Касс)','').replace(' (Компани)','');
+
+  return `<div class="tx-card ${cat.card}">
+    <div class="tx-card-top">
+      <div style="flex:1;min-width:0">
+        <span class="tx-card-code ${cat.code}">${code}</span>
+        ${t.is_foreign ? '<span class="tx-foreign-badge">🌍 ГАДААД</span>' : ''}
+      </div>
+      <div class="tx-card-amt ${cat.amt}">${sign} ${fmt(t.amount)} ₮</div>
+    </div>
+    <div class="tx-card-desc">${t.description || '—'}</div>
+    <div class="tx-card-meta">
+      <span class="meta-item">📅 ${t.date}${t.time ? ' · ' + t.time : ''}</span>
+      <span class="meta-item">🏦 ${acctShort}</span>
+      ${t.counterparty ? `<span class="meta-item">#${t.counterparty}</span>` : ''}
+      ${t.balance_after != null ? `<span class="meta-item" style="margin-left:auto">Үлд: ${fmt(t.balance_after)}₮</span>` : ''}
+    </div>
+  </div>`;
+}
+
+function renderTxReviewCard(t) {
+  const sign = (t.direction === 'credit') ? '+' : '−';
+  const sortedCodes = ['SALE','REC','ADV','INV','LOAN_IN','LOAN_OUT','IMP','SAL','TRN','TRIP','EQP','TAX','OFF','UTIL','FEE','TRF','OTHER'];
+  const buttons = sortedCodes.filter(c => codes[c]).map(c => {
+    const col = codes[c].color;
+    return `<button class="code-btn ${col}" onclick="setCode('${t.id}','${c}')">${c}</button>`;
+  }).join('');
+  const acctShort = (t.account_label || '').replace(' (Касс)','').replace(' (Компани)','');
+
+  return `<div class="tx-card tx-review">
+    <div class="tx-card-top">
+      <div style="flex:1;min-width:0">
+        <span class="tx-card-code review">⚠️ NEEDS REVIEW</span>
+        ${t.is_foreign ? '<span class="tx-foreign-badge">🌍 ГАДААД</span>' : ''}
+      </div>
+      <div class="tx-card-amt ${t.direction === 'credit' ? 'in' : 'out'}">${sign} ${fmt(t.amount)} ₮</div>
+    </div>
+    <div class="tx-card-desc">${t.description || '—'}</div>
+    <div class="tx-card-meta">
+      <span class="meta-item">📅 ${t.date}${t.time ? ' · ' + t.time : ''}</span>
+      <span class="meta-item">🏦 ${acctShort}</span>
+      ${t.counterparty ? `<span class="meta-item">#${t.counterparty}</span>` : ''}
+    </div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--gray-200)">
+      <div style="font-size:11px;color:var(--gray-600);margin-bottom:8px;font-weight:600">Код тогтоох:</div>
+      <div class="review-actions">${buttons}</div>
+    </div>
+  </div>`;
+}
+
+async function setCode(id, code) {
+  if (user.role !== 'admin') { alert('Зөвхөн admin код тавих боломжтой'); return; }
+  const r = await api('/finance/transactions/' + id, { method: 'PUT', body: JSON.stringify({ code }) });
+  if (r.ok) {
+    // Update local copy
+    const t = transactions.find(t => t.id === id);
+    if (t) { t.code = code; t.needs_review = false; }
+    renderTx();
+    // Update badge
+    const reviewCount = transactions.filter(t => t.needs_review).length;
+    const badge = document.getElementById('reviewBadge');
+    if (reviewCount > 0) { badge.textContent = reviewCount; badge.style.display = ''; }
+    else badge.style.display = 'none';
+  }
+}
+
+// ── Codes reference ────────────────────────────────────────
+function renderCodes() {
+  const examples = {
+    SALE:     'SALE: жорлон бүхээг',
+    REC:      'REC: хашаа М-1 үлдэгдэл',
+    ADV:      'ADV: хашаа М-2 урьдчилгаа',
+    INV:      'INV: Батцацралмаа',
+    LOAN_IN:  'LOAN_IN: Энхбилэг буцаалт',
+    LOAN_OUT: 'LOAN_OUT: Аюурзана зээл',
+    IMP:      'IMP: Yongding төмөр',
+    SAL:      'SAL: захирлын цалин',
+    TRN:      'TRN: Эрээн УБ тээвэр',
+    TRIP:     'TRIP: Хятад томилолт',
+    EQP:      'EQP: CNC засвар',
+    TAX:      'TAX: НДШ',
+    OFF:      'OFF: принтер цаас',
+    UTIL:     'UTIL: цахилгаан',
+    TRF:      'TRF: Касс руу',
+    FEE:      'FEE (автомат)',
+    OTHER:    'OTHER: бусад',
+  };
+  const el = document.getElementById('codeList');
+  el.innerHTML = Object.entries(codes).map(([c, info]) => {
+    const col = info.color;
+    return `<div class="code-card">
+      <div class="code-label tx-code ${col}">${c}</div>
+      <div class="code-info">
+        <div class="code-name">${info.label}</div>
+        <div class="code-example">${examples[c] || c}</div>
+      </div>
+      ${c !== 'FEE' ? `<button class="copy-btn" onclick="navigator.clipboard.writeText('${c} ');this.textContent='✓'">Хуулах</button>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── Import ─────────────────────────────────────────────────
+async function uploadPDF() {
+  const file = document.getElementById('fileInput').files[0];
+  if (!file) return;
+  const status = document.getElementById('uploadStatus');
+  status.style.display = 'block';
+  status.className = 'upload-status';
+  status.textContent = 'Боловсруулж байна...';
+
+  const fd = new FormData();
+  fd.append('file', file);
+  const r = await fetch('/api/finance/import', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token },
+    body: fd,
+  });
+  const data = await r.json();
+
+  if (data.ok) {
+    status.className = 'upload-status ok';
+    status.innerHTML = `✓ ${data.bank.toUpperCase()}<br>Нэмэгдсэн: ${data.added}, Алгассан: ${data.skipped}`;
+    await loadAll();
+  } else {
+    status.className = 'upload-status err';
+    status.textContent = '✗ ' + (data.error || 'Алдаа');
+  }
+  document.getElementById('fileInput').value = '';
+}
+
+async function autoImport() {
+  const status = document.getElementById('autoStatus');
+  status.style.display = 'block';
+  status.className = 'upload-status';
+  status.textContent = 'Шалгаж байна...';
+  const r = await api('/finance/auto-import', { method: 'POST' });
+  if (r.ok) {
+    status.className = 'upload-status ok';
+    status.innerHTML = `✓ ${r.files_processed} файл · Нэмэгдсэн: ${r.added} · Алгассан: ${r.skipped}`;
+    await loadAll();
+  } else {
+    status.className = 'upload-status err';
+    status.textContent = '✗ ' + (r.error || 'Алдаа');
+  }
+}
+
+// ── Init ───────────────────────────────────────────────────
+loadAll().then(() => renderDash());
+</script>
+<script src="/js/bottom-nav.js"></script>
+</body>
+</html>

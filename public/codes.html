@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+<title>Memo код туслах — Метал ворkинг Центр</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --brand-dark: #1b5e20; --brand: #2e7d32;
+  --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+  --gray-400: #9ca3af; --gray-600: #4b5563; --gray-900: #111827;
+}
+body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; background: var(--gray-50); color: var(--gray-900); padding-bottom: 30px; -webkit-font-smoothing: antialiased; }
+
+.id-bar {
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
+  color: #fff; padding: 18px 20px;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 4px 12px rgba(27,94,32,0.15);
+}
+.id-top { display: flex; align-items: center; gap: 12px; }
+.id-back { font-size: 22px; color: #fff; text-decoration: none; padding: 4px 8px; }
+.id-title { font-size: 17px; font-weight: 700; }
+.id-sub { font-size: 11px; opacity: 0.85; margin-top: 3px; }
+
+.section { padding: 18px 16px 0; }
+
+/* ── Format rule (prominent) ── */
+.format-card {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-radius: 14px; padding: 16px 18px; margin-bottom: 14px;
+  border-left: 5px solid #d97706;
+}
+.format-title { font-size: 12px; font-weight: 800; color: #92400e; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+.format-rule { font-family: "SF Mono", monospace; font-size: 16px; font-weight: 800; color: #1f2937; background: #fff; padding: 10px 14px; border-radius: 8px; text-align: center; }
+.format-note { font-size: 11px; color: #78350f; margin-top: 8px; line-height: 1.5; }
+
+/* ── Code group ── */
+.group-label { font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 1.2px; margin: 16px 4px 8px; }
+
+.code-row {
+  background: #fff; border-radius: 12px; padding: 12px 14px;
+  margin-bottom: 8px; display: flex; align-items: center; gap: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid var(--gray-200);
+}
+.code-row.income { border-left: 4px solid #059669; }
+.code-row.expense { border-left: 4px solid #1565c0; }
+.code-row.special { border-left: 4px solid #9ca3af; }
+
+.code-tag {
+  font-family: "SF Mono", monospace;
+  font-size: 13px; font-weight: 800;
+  padding: 5px 10px; border-radius: 6px;
+  min-width: 86px; text-align: center;
+  letter-spacing: 0.4px;
+}
+.code-tag.green  { background: #d1fae5; color: #065f46; }
+.code-tag.blue   { background: #dbeafe; color: #1e40af; }
+.code-tag.amber  { background: #fef3c7; color: #92400e; }
+.code-tag.purple { background: #ede9fe; color: #5b21b6; }
+.code-tag.gray   { background: #f3f4f6; color: #4b5563; }
+.code-tag.teal   { background: #cffafe; color: #155e75; }
+
+.code-info { flex: 1; min-width: 0; }
+.code-name { font-size: 12px; font-weight: 700; color: var(--gray-900); }
+.code-example {
+  font-family: "SF Mono", monospace;
+  font-size: 11.5px; color: var(--gray-600);
+  margin-top: 3px; word-break: break-all;
+}
+
+.copy-btn {
+  padding: 6px 10px; border: none;
+  background: var(--brand-dark); color: #fff;
+  border-radius: 6px; font-size: 11px; font-weight: 700;
+  cursor: pointer; white-space: nowrap;
+}
+.copy-btn.copied { background: #059669; }
+.copy-btn:active { transform: scale(0.95); }
+
+/* ── Workflow examples ── */
+.flow-section {
+  background: #fff; border-radius: 14px; padding: 18px;
+  margin-bottom: 14px; border: 1px solid var(--gray-200);
+}
+.flow-title { font-size: 14px; font-weight: 800; color: var(--gray-900); margin-bottom: 12px; }
+.flow-step {
+  padding: 10px 12px; background: var(--gray-50); border-radius: 8px; margin-bottom: 6px;
+  font-size: 12px; line-height: 1.5;
+}
+.flow-step b { color: var(--brand-dark); }
+.flow-step code {
+  font-family: "SF Mono", monospace; background: #fff; padding: 2px 6px; border-radius: 4px;
+  font-size: 11px; font-weight: 700; color: #1e40af;
+  border: 1px solid var(--gray-200);
+}
+</style>
+</head>
+<body>
+
+<div class="id-bar">
+  <div class="id-top">
+    <a class="id-back" href="javascript:history.back()">‹</a>
+    <div style="flex:1">
+      <div class="id-title">📖 Memo код туслах</div>
+      <div class="id-sub">Банкны гүйлгээ хийхэд хэрэглэх код</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="format-card">
+    <div class="format-title">📌 Бичих дүрэм</div>
+    <div class="format-rule">КОД: тайлбар</div>
+    <div class="format-note">
+      <b>Эхний үг:</b> Латин том үсэг (КОД) · <b>Дараа нь:</b> цэг + зай · <b>Эцэст нь:</b> кирилл тайлбар<br>
+      ⚠️ Жижиг үсэг бичсэн бол систем танихгүй, <b>Needs Review</b> болно.
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="group-label">🟢 Орлого (мөнгө ИРЭХ)</div>
+
+  <div class="code-row income">
+    <div class="code-tag green">SALE</div>
+    <div class="code-info">
+      <div class="code-name">Бүрэн төлсөн борлуулалт</div>
+      <div class="code-example">SALE: жорлон бүхээг</div>
+    </div>
+    <button class="copy-btn" data-copy="SALE: ">Хуулах</button>
+  </div>
+
+  <div class="code-row income">
+    <div class="code-tag green">REC</div>
+    <div class="code-info">
+      <div class="code-name">Авлагын үлдэгдэл</div>
+      <div class="code-example">REC: хашаа М-1 үлдэгдэл</div>
+    </div>
+    <button class="copy-btn" data-copy="REC: ">Хуулах</button>
+  </div>
+
+  <div class="code-row income">
+    <div class="code-tag amber">ADV</div>
+    <div class="code-info">
+      <div class="code-name">Урьдчилгаа (хагас төлбөр)</div>
+      <div class="code-example">ADV: хашаа М-2 урьдчилгаа</div>
+    </div>
+    <button class="copy-btn" data-copy="ADV: ">Хуулах</button>
+  </div>
+
+  <div class="code-row income">
+    <div class="code-tag purple">INV</div>
+    <div class="code-info">
+      <div class="code-name">Хөрөнгө оруулагчийн зээл</div>
+      <div class="code-example">INV: Батцацралмаа</div>
+    </div>
+    <button class="copy-btn" data-copy="INV: ">Хуулах</button>
+  </div>
+
+  <div class="code-row income">
+    <div class="code-tag green">LOAN_IN</div>
+    <div class="code-info">
+      <div class="code-name">Бусдад өгсөн зээл буцаагдсан</div>
+      <div class="code-example">LOAN_IN: Энхбилэг буцаалт</div>
+    </div>
+    <button class="copy-btn" data-copy="LOAN_IN: ">Хуулах</button>
+  </div>
+</div>
+
+<div class="section">
+  <div class="group-label">🔵 Зарлага (мөнгө ГАРАХ)</div>
+
+  <div class="code-row expense">
+    <div class="code-tag blue">IMP</div>
+    <div class="code-info">
+      <div class="code-name">Импортын төлбөр</div>
+      <div class="code-example">IMP: Yongding төмөр</div>
+    </div>
+    <button class="copy-btn" data-copy="IMP: ">Хуулах</button>
+  </div>
+
+  <div class="code-row expense">
+    <div class="code-tag blue">SAL</div>
+    <div class="code-info">
+      <div class="code-name">Цалин</div>
+      <div class="code-example">SAL: захирлын цалин</div>
+    </div>
+    <button class="copy-btn" data-copy="SAL: ">Хуулах</button>
+  </div>
+
+  <div class="code-row expense">
+    <div class="code-tag blue">TRN</div>
+    <div class="code-info">
+      <div class="code-name">Тээвэр / логистик</div>
+      <div class="code-example">TRN: Эрээн УБ тээвэр</div>
+    </div>
+    <button class="copy-btn" data-copy="TRN: ">Хуулах</button>
+  </div>
+
+  <div class="code-row expense">
+    <div class="code-tag blue">TRIP</div>
+    <div class="code-info">
+      <div class="code-name">Томилолт (тийз, орчуулагч, өдрийн зардал)</div>
+      <div class="code-example">TRIP: Хятад тийз</div>
+    </div>
+    <button class="copy-btn" data-copy="TRIP: ">Хуулах</button>
+  </div>
+
+  <div class="code-row expense">
+    <div class="code-tag blue">EQP</div>
+    <div class="code-info">
+      <div class="code-name">Тоног төхөөрөмж, машин, засвар</div>
+      <div class="code-example">EQP: CNC засвар</div>
+    </div>
+    <button class="copy-btn" data-copy="EQP: ">Хуулах</button>
+  </div>
+
+  <div class="code-row expense">
+    <div class="code-tag blue">TAX</div>
+    <div class="code-info">
+      <div class="code-name">Татвар, даатгал</div>
+      <div class="code-example">TAX: НДШ</div>
+    </div>
+    <button class="copy-btn" data-copy="TAX: ">Хуулах</button>
+  </div>
+
+  <div class="code-row expense">
+    <div class="code-tag blue">OFF</div>
+    <div class="code-info">
+      <div class="code-name">Оффисын зардал</div>
+      <div class="code-example">OFF: принтер цаас</div>
+    </div>
+    <button class="copy-btn" data-copy="OFF: ">Хуулах</button>
+  </div>
+
+  <div class="code-row expense">
+    <div class="code-tag blue">UTIL</div>
+    <div class="code-info">
+      <div class="code-name">Тогтмол төлбөр (цахилгаан, ус, түрээс)</div>
+      <div class="code-example">UTIL: цахилгаан</div>
+    </div>
+    <button class="copy-btn" data-copy="UTIL: ">Хуулах</button>
+  </div>
+
+  <div class="code-row expense">
+    <div class="code-tag blue">LOAN_OUT</div>
+    <div class="code-info">
+      <div class="code-name">Хэн нэгэнд зээл өгөх</div>
+      <div class="code-example">LOAN_OUT: Аюурзана зээл</div>
+    </div>
+    <button class="copy-btn" data-copy="LOAN_OUT: ">Хуулах</button>
+  </div>
+</div>
+
+<div class="section">
+  <div class="group-label">⚪ Тусгай</div>
+
+  <div class="code-row special">
+    <div class="code-tag gray">TRF</div>
+    <div class="code-info">
+      <div class="code-name">Данс хооронд шилжүүлэг (TDB ↔ Касс)</div>
+      <div class="code-example">TRF: Касс руу</div>
+    </div>
+    <button class="copy-btn" data-copy="TRF: ">Хуулах</button>
+  </div>
+
+  <div class="code-row special">
+    <div class="code-tag gray">FEE</div>
+    <div class="code-info">
+      <div class="code-name">Банкны шимтгэл (автомат таних)</div>
+      <div class="code-example">— гараар бичих шаардлагагүй —</div>
+    </div>
+  </div>
+
+  <div class="code-row special">
+    <div class="code-tag gray">OTHER</div>
+    <div class="code-info">
+      <div class="code-name">Бусад (ангилахад тохирохгүй)</div>
+      <div class="code-example">OTHER: бусад зардал</div>
+    </div>
+    <button class="copy-btn" data-copy="OTHER: ">Хуулах</button>
+  </div>
+</div>
+
+<div class="section">
+  <div class="group-label">📚 Дадлагын жишээ</div>
+
+  <div class="flow-section">
+    <div class="flow-title">Жорлон бүхээг борлуулсан</div>
+    <div class="flow-step">1. Үйлчлүүлэгч урьдчилгаа 500,000₮ илгээнэ → <code>ADV: жорлон бүхээг</code></div>
+    <div class="flow-step">2. Бараа авахдаа үлдэгдэл 850,000₮ илгээнэ → <code>REC: жорлон бүхээг</code></div>
+    <div class="flow-step">✅ Систем автоматаар захиалга бүрэн төлсөн гэж нэгтгэнэ</div>
+  </div>
+
+  <div class="flow-section">
+    <div class="flow-title">Бүрэн төлбөртэй борлуулалт</div>
+    <div class="flow-step">Үйлчлүүлэгч нэг дор бүх дүнгээ илгээвэл → <code>SALE: хашаа М-1</code></div>
+  </div>
+
+  <div class="flow-section">
+    <div class="flow-title">Хятад импорт төлбөр</div>
+    <div class="flow-step">Yongding төмөр төлбөр → <code>IMP: Yongding төмөр</code></div>
+    <div class="flow-step">Pingyun UPVC үлдэгдэл → <code>IMP: Pingyun үлдэгдэл</code></div>
+    <div class="flow-step">Эрээн → УБ тээвэр → <code>TRN: Эрээн УБ тээвэр</code></div>
+  </div>
+</div>
+
+<!-- Manual copy fallback (shown if clipboard fails completely) -->
+<div id="manualCopy" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;padding:24px">
+  <div style="background:#fff;border-radius:16px;padding:20px;max-width:340px;width:100%">
+    <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:#1f2937">Кодыг гарын авлагаар сонгож хуулна уу:</div>
+    <input type="text" readonly style="width:100%;padding:12px;font-family:'SF Mono',monospace;font-size:16px;border:2px solid #5b21b6;border-radius:8px;background:#faf5ff;color:#1f2937" onclick="this.select()">
+    <div style="font-size:11px;color:#6b7280;margin-top:8px;line-height:1.4">📋 Текст дээр <b>удаан дарж</b> → "Copy" сонгох</div>
+    <button onclick="document.getElementById('manualCopy').style.display='none'" style="width:100%;margin-top:12px;padding:11px;background:#5b21b6;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Хаах</button>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('token');
+if (!token) window.location.href = '/';
+
+// iOS Safari clipboard fallback (HTTP origins don't allow navigator.clipboard)
+function copyToClipboard(text) {
+  // Try modern API first (works on HTTPS or localhost)
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text).then(() => true).catch(() => fallback(text));
+  }
+  return Promise.resolve(fallback(text));
+}
+
+function fallback(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed';
+  ta.style.top = '50%';
+  ta.style.left = '50%';
+  ta.style.opacity = '0';
+  ta.style.fontSize = '16px'; // prevent iOS zoom
+  document.body.appendChild(ta);
+
+  // iOS-specific selection
+  const range = document.createRange();
+  range.selectNodeContents(ta);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  ta.setSelectionRange(0, text.length);
+
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (_) {}
+  document.body.removeChild(ta);
+  return ok;
+}
+
+document.querySelectorAll('.copy-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const text = btn.dataset.copy;
+    const ok = await copyToClipboard(text);
+    const orig = btn.textContent;
+    if (ok) {
+      btn.textContent = '✓ Хуулагдсан';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = orig;
+        btn.classList.remove('copied');
+      }, 1500);
+    } else {
+      // Last-resort: show prompt so user can manually copy
+      const m = document.getElementById('manualCopy');
+      m.querySelector('input').value = text;
+      m.style.display = 'flex';
+      m.querySelector('input').select();
+    }
+  });
+});
+</script>
+</body>
+</html>

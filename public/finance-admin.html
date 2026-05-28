@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+<title>Finance Module · Control Center</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --brand: #6d28d9; --brand-dark: #5b21b6;
+  --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+  --gray-300: #d1d5db; --gray-400: #9ca3af; --gray-600: #4b5563;
+  --gray-700: #374151; --gray-900: #111827;
+}
+body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; background: var(--gray-50); color: var(--gray-900); padding-bottom: 40px; -webkit-font-smoothing: antialiased; }
+
+/* ── Header ── */
+.id-bar {
+  background: linear-gradient(135deg, #5b21b6 0%, #6d28d9 100%);
+  color: #fff; padding: 18px 20px;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 4px 12px rgba(91,33,182,0.18);
+}
+.id-top { display: flex; align-items: center; gap: 12px; }
+.id-back { font-size: 22px; color: #fff; text-decoration: none; padding: 4px 8px; }
+.id-title { font-size: 16px; font-weight: 700; }
+.id-sub { font-size: 11px; opacity: 0.85; margin-top: 3px; }
+.id-tag {
+  display: inline-block; font-size: 9px; font-weight: 800;
+  padding: 3px 7px; border-radius: 5px; letter-spacing: 0.5px;
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.3);
+  margin-top: 6px;
+}
+
+/* ── Section nav (sticky) ── */
+.section-nav {
+  position: sticky; top: 0; z-index: 50;
+  background: #fff; border-bottom: 1px solid var(--gray-200);
+  display: flex; overflow-x: auto; padding: 0 12px;
+  scrollbar-width: none;
+}
+.section-nav::-webkit-scrollbar { display: none; }
+.section-nav a {
+  flex-shrink: 0; padding: 12px 14px;
+  font-size: 12px; font-weight: 600; color: var(--gray-600);
+  text-decoration: none; border-bottom: 3px solid transparent;
+  white-space: nowrap;
+}
+.section-nav a.active { color: var(--brand-dark); border-bottom-color: var(--brand-dark); }
+
+/* ── Sections ── */
+.section { padding: 18px 16px 0; scroll-margin-top: 60px; }
+.section-label {
+  font-size: 11px; font-weight: 700;
+  color: var(--gray-400); text-transform: uppercase;
+  letter-spacing: 1.3px; margin-bottom: 10px; padding: 0 4px;
+}
+.card {
+  background: #fff; border-radius: 14px;
+  padding: 16px 18px; margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  border: 1px solid var(--gray-200);
+}
+
+/* ── List rows ── */
+.list-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 0; border-bottom: 1px solid var(--gray-100);
+}
+.list-row:last-child { border-bottom: none; }
+.list-row .lr-main { flex: 1; min-width: 0; }
+.list-row .lr-name { font-size: 13px; font-weight: 700; color: var(--gray-900); }
+.list-row .lr-sub  { font-size: 11px; color: var(--gray-600); margin-top: 3px; }
+.list-row.inactive .lr-name { color: var(--gray-400); }
+
+.tag {
+  font-size: 10px; font-weight: 700;
+  padding: 2px 8px; border-radius: 6px;
+  display: inline-block; letter-spacing: 0.3px;
+}
+.tag.active   { background: #d1fae5; color: #065f46; }
+.tag.inactive { background: var(--gray-100); color: var(--gray-400); }
+.tag.code     { background: #ede9fe; color: #5b21b6; font-family: monospace; }
+.tag.income   { background: #d1fae5; color: #065f46; }
+.tag.expense  { background: #dbeafe; color: #1e40af; }
+.tag.special  { background: var(--gray-100); color: var(--gray-600); }
+
+.act-btn {
+  padding: 6px 11px; border-radius: 7px;
+  font-size: 11px; font-weight: 700; cursor: pointer;
+  border: 1.5px solid;
+}
+.act-btn.edit    { border-color: #1565c0; color: #1565c0; background: #e3f2fd; }
+.act-btn.disable { border-color: #c62828; color: #c62828; background: #fff; }
+.act-btn.enable  { border-color: #059669; color: #059669; background: #d1fae5; }
+
+/* ── Add form ── */
+.add-form {
+  background: var(--gray-50); border-radius: 10px;
+  padding: 14px; margin-top: 12px;
+  border: 1.5px solid var(--gray-200);
+}
+.field { margin-bottom: 10px; }
+.field:last-child { margin-bottom: 0; }
+.field label { display: block; font-size: 11px; font-weight: 700; color: var(--gray-600); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px; }
+.field input {
+  width: 100%; padding: 10px 12px;
+  border: 1.5px solid var(--gray-200); border-radius: 8px;
+  font-size: 14px; outline: none; background: #fff;
+  -webkit-appearance: none;
+}
+.field input:focus { border-color: var(--brand-dark); }
+.add-btn {
+  width: 100%; padding: 11px;
+  background: var(--brand-dark); color: #fff;
+  border: none; border-radius: 8px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  margin-top: 8px;
+}
+
+/* ── Workflow diagram ── */
+.workflow {
+  background: #fafafa; border-radius: 10px;
+  padding: 14px; font-family: "SF Mono", monospace;
+  font-size: 11px; line-height: 1.7;
+  white-space: pre; overflow-x: auto;
+  color: var(--gray-700);
+  border: 1px solid var(--gray-200);
+}
+
+/* ── Info note ── */
+.note {
+  background: #eff6ff; border-left: 4px solid #1d4ed8;
+  border-radius: 8px; padding: 11px 14px;
+  font-size: 11.5px; color: #1e40af;
+  margin-bottom: 12px; line-height: 1.5;
+}
+.note.warn { background: #fffbeb; border-left-color: #d97706; color: #92400e; }
+.note.success { background: #f0fdf4; border-left-color: #059669; color: #065f46; }
+
+/* ── Schema table ── */
+.schema-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+.schema-table th {
+  text-align: left; padding: 8px 10px;
+  background: var(--gray-100); color: var(--gray-700);
+  font-weight: 700; font-size: 10px; letter-spacing: 0.4px; text-transform: uppercase;
+}
+.schema-table td {
+  padding: 8px 10px; border-top: 1px solid var(--gray-100);
+  vertical-align: top;
+}
+.schema-table .field-name { font-family: monospace; font-weight: 700; color: var(--brand-dark); }
+.schema-table .field-type { font-family: monospace; color: var(--gray-600); font-size: 10.5px; }
+
+/* ── Integration map ── */
+.integration-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; background: var(--gray-50); border-radius: 8px;
+  margin-bottom: 8px; font-size: 12px;
+}
+.integration-row .source { font-weight: 700; color: var(--brand-dark); flex-shrink: 0; min-width: 70px; }
+.integration-row .arrow { color: var(--gray-400); }
+.integration-row .target { font-weight: 700; color: #059669; flex-shrink: 0; min-width: 70px; }
+.integration-row .auto { font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 4px; }
+.integration-row .auto.yes { background: #d1fae5; color: #065f46; }
+.integration-row .auto.manual { background: #fef3c7; color: #92400e; }
+.integration-row .desc { color: var(--gray-600); font-size: 11px; flex: 1; }
+
+/* ── Modal ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 100; display: none; align-items: center; justify-content: center; padding: 16px; }
+.modal-overlay.open { display: flex; }
+.modal-box { background: #fff; border-radius: 14px; padding: 20px; width: 100%; max-width: 420px; }
+.modal-box h3 { font-size: 14px; font-weight: 700; margin-bottom: 14px; }
+.modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+.modal-save { flex: 1; padding: 11px; background: var(--brand-dark); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.modal-cancel { padding: 11px 16px; background: var(--gray-100); color: var(--gray-600); border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+.empty { text-align: center; color: var(--gray-400); padding: 20px; font-size: 13px; }
+
+/* ── Reconciliation hero (prominent) ── */
+.recon-hero {
+  border-radius: 16px; padding: 22px 20px;
+  margin-bottom: 14px; text-align: center;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.10);
+}
+.recon-hero.ok   { background: linear-gradient(135deg, #047857 0%, #059669 100%); }
+.recon-hero.fail { background: linear-gradient(135deg, #991b1b 0%, #dc2626 100%); }
+.recon-hero-icon { font-size: 38px; line-height: 1; margin-bottom: 8px; }
+.recon-hero-title { font-size: 18px; font-weight: 800; letter-spacing: 0.3px; }
+.recon-hero-sub { font-size: 12px; opacity: 0.92; margin-top: 5px; }
+
+.recon-list {
+  background: #fff; border-radius: 12px;
+  border: 1px solid var(--gray-200); overflow: hidden;
+  margin-bottom: 12px;
+}
+.recon-row {
+  display: flex; gap: 12px; align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--gray-100);
+}
+.recon-row:last-child { border-bottom: none; }
+.recon-row.fail { background: #fef2f2; }
+.recon-icon { font-size: 22px; flex-shrink: 0; }
+.recon-info { flex: 1; min-width: 0; }
+.recon-name { font-size: 13px; font-weight: 700; color: var(--gray-900); }
+.recon-meta { font-size: 11px; color: var(--gray-600); margin-top: 3px; }
+
+.gaps-card {
+  background: #fef2f2; border-left: 4px solid #dc2626;
+  border-radius: 10px; padding: 12px 14px; margin-bottom: 12px;
+}
+.gaps-title { font-size: 12px; font-weight: 700; color: #991b1b; margin-bottom: 8px; }
+.gap-row { font-size: 11px; color: #7f1d1d; padding: 4px 0; line-height: 1.4; }
+
+.recon-help {
+  font-size: 11px; color: var(--gray-400);
+  padding: 10px 12px; background: var(--gray-50);
+  border-radius: 8px; line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+/* ── Developer mode (collapsed by default) ── */
+.dev-details {
+  background: #fff; border-radius: 12px;
+  border: 1px solid var(--gray-200);
+  overflow: hidden;
+}
+.dev-details[open] { border-color: var(--gray-300); }
+.dev-summary {
+  list-style: none;
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  user-select: none;
+  background: var(--gray-50);
+}
+.dev-summary::-webkit-details-marker { display: none; }
+.dev-summary-text { font-size: 13px; font-weight: 700; color: var(--gray-700); }
+.dev-summary-hint { font-size: 10.5px; color: var(--gray-400); flex: 1; }
+.dev-summary-icon { font-size: 14px; color: var(--gray-400); transition: transform 0.2s; }
+.dev-details[open] .dev-summary-icon { transform: rotate(180deg); }
+.dev-content { padding: 16px; background: #fafafa; }
+.dev-note {
+  background: #eff6ff; border-left: 3px solid #1d4ed8;
+  border-radius: 6px; padding: 10px 12px;
+  font-size: 11px; color: #1e40af;
+  margin-bottom: 16px;
+}
+.dev-section-label {
+  font-size: 11px; font-weight: 700;
+  color: var(--gray-400); text-transform: uppercase;
+  letter-spacing: 1px; margin: 16px 0 10px;
+  padding: 0 4px;
+}
+.dev-section-label:first-of-type { margin-top: 0; }
+</style>
+</head>
+<body>
+
+<div class="id-bar">
+  <div class="id-top">
+    <a class="id-back" href="/finance">‹</a>
+    <div style="flex:1">
+      <div class="id-title">💼 Санхүүгийн хяналт</div>
+      <div class="id-sub">Дансны бүрэн бүтэн байдал, тэнцэл</div>
+    </div>
+  </div>
+</div>
+
+<div class="section-nav" id="sectionNav">
+  <a href="#recon" class="active">Тэнцлийн хяналт</a>
+  <a href="#banks">Дансууд</a>
+  <a href="#codes">Memo код</a>
+  <a href="#devtools">Developer ▼</a>
+</div>
+
+<!-- Reconciliation (MOST IMPORTANT — top placement) -->
+<div class="section" id="recon">
+  <div class="section-label">✅ Тэнцлийн хяналт</div>
+  <div id="reconStatus"><div class="empty">Шалгаж байна...</div></div>
+</div>
+
+<!-- Bank Accounts -->
+<div class="section" id="banks">
+  <div class="section-label">🏦 Банкны дансууд</div>
+  <div class="note">Дансны нэр өөрчилбөл хуучин бүртгэлийн нэр хэвээр хадгалагдана.</div>
+  <div class="card" id="banksList"><div class="empty">Ачааллаж байна...</div></div>
+
+  <div class="card">
+    <div class="section-label" style="margin:0 0 10px">Шинэ данс нэмэх</div>
+    <div class="add-form">
+      <div class="field">
+        <label>Нэр</label>
+        <input type="text" id="newBankName" placeholder="Хаан банк — Бизнес (9988xxxxxx)">
+      </div>
+      <button class="add-btn" onclick="addBank()">+ Нэмэх</button>
+    </div>
+  </div>
+</div>
+
+<!-- Memo Codes -->
+<div class="section" id="codes">
+  <div class="section-label">📋 Memo код</div>
+  <div class="note">Формат: <code style="background:#fff;padding:2px 5px;border-radius:3px;font-family:monospace">КОД: тайлбар</code></div>
+  <div class="card" id="codesList"><div class="empty">Ачааллаж байна...</div></div>
+</div>
+
+<!-- DEVELOPER MODE — collapsed by default -->
+<div class="section" id="devtools">
+  <details class="dev-details">
+    <summary class="dev-summary">
+      <span class="dev-summary-text">🛠 Developer Tools</span>
+      <span class="dev-summary-hint">Schema, parser, workflow, integrations</span>
+      <span class="dev-summary-icon">▾</span>
+    </summary>
+
+    <div class="dev-content">
+      <div class="dev-note">⚙️ Энэ хэсэг нь хөгжүүлэгчид болон системийн архитектурыг ойлгох зориулалттай. Өдөр тутмын хэрэглээнд шаардлагагүй.</div>
+
+      <!-- PDF parser -->
+      <div class="dev-section-label">PDF унших дүрэм</div>
+      <div class="card">
+        <table class="schema-table">
+          <tr><th>Банк</th><th>Файлын формат</th><th>Танигч</th></tr>
+          <tr>
+            <td><b>Хаан банк</b></td>
+            <td><span class="field-type">Statement_MNT_*.pdf</span></td>
+            <td>Header: "Депозит дансны дэлгэрэнгүй хуулга"</td>
+          </tr>
+          <tr>
+            <td><b>TDB</b></td>
+            <td><span class="field-type">deposit-account-statement-*.pdf</span></td>
+            <td>Header: "Депозит дансны хуулга" · IBAN MN91...</td>
+          </tr>
+        </table>
+      </div>
+      <div class="note warn">⚠️ Шинэ банк нэмэхэд parser кодыг өргөтгөх шаардлагатай (lib/pdf_parser.js).</div>
+
+      <!-- Workflow -->
+      <div class="dev-section-label">Workflow flow</div>
+      <div class="card">
+        <div class="workflow">
+Хэрэглэгч → Bank-аас PDF татах
+            ↓
+        iCloud Inbox-д хийх
+            ↓
+   launchd auto-route → folder
+            ↓
+Admin → /finance-import нээх
+            ↓
+   Алхам 1: Банк сонгох
+            ↓
+   Алхам 2: PDF upload
+            ↓
+   Алхам 3: Preview & Review
+            ↓ (admin: код тогтоох)
+   Алхам 4: Confirm → DB-д бичигдэнэ
+            ↓
+   /finance dashboard auto-refresh
+            ↓
+   ⚠️ Needs Review (хэрэгтэй бол)
+            ↓
+   /review → код тогтоох
+            ↓
+   ✅ Бүгд бэлэн
+        </div>
+      </div>
+
+      <!-- Module Integrations -->
+      <div class="dev-section-label">Модуль хоорондын холбоо (төлөвлөгөө)</div>
+      <div class="card">
+        <div class="integration-row">
+          <span class="source">Sales</span><span class="arrow">→</span><span class="target">Finance</span>
+          <span class="desc">Sale хийгдмэгц income transaction үүснэ</span>
+          <span class="auto yes">AUTO</span>
+        </div>
+        <div class="integration-row">
+          <span class="source">Import</span><span class="arrow">→</span><span class="target">Finance</span>
+          <span class="desc">Import payment IMP-тэй холбогдоно</span>
+          <span class="auto yes">AUTO</span>
+        </div>
+        <div class="integration-row">
+          <span class="source">Finance</span><span class="arrow">→</span><span class="target">Import</span>
+          <span class="desc">Payment record shipment-тэй уядана</span>
+          <span class="auto yes">AUTO</span>
+        </div>
+        <div class="integration-row">
+          <span class="source">Loans</span><span class="arrow">→</span><span class="target">Finance</span>
+          <span class="desc">Interest payment confirmation</span>
+          <span class="auto manual">MANUAL</span>
+        </div>
+      </div>
+      <div class="note warn">⚠️ Эдгээр integration одоохондоо хэрэгжээгүй. Future Phase-д Sales/Import direct API ашиглана.</div>
+
+      <!-- Data Schema -->
+      <div class="dev-section-label">Өгөгдлийн бүтэц</div>
+      <div class="card">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px">📦 Гүйлгээ <code style="font-family:monospace;color:var(--brand-dark)">db.transactions[]</code></div>
+        <table class="schema-table">
+          <tr><th>Талбар</th><th>Төрөл</th><th>Тайлбар</th></tr>
+          <tr><td class="field-name">id</td><td class="field-type">string (md5)</td><td>Унигалт ID — dedup-д</td></tr>
+          <tr><td class="field-name">account</td><td class="field-type">string</td><td>IBAN дугаар</td></tr>
+          <tr><td class="field-name">account_label</td><td class="field-type">string</td><td>Дансны нэр (snapshot)</td></tr>
+          <tr><td class="field-name">date</td><td class="field-type">YYYY-MM-DD</td><td>Гүйлгээний огноо</td></tr>
+          <tr><td class="field-name">direction</td><td class="field-type">credit | debit</td><td>Орлого/Зарлага</td></tr>
+          <tr><td class="field-name">amount</td><td class="field-type">number</td><td>Дүн</td></tr>
+          <tr><td class="field-name">balance_after</td><td class="field-type">number</td><td>Гүйлгээний дараах үлдэгдэл</td></tr>
+          <tr><td class="field-name">code</td><td class="field-type">string | null</td><td>Memo код</td></tr>
+          <tr><td class="field-name">needs_review</td><td class="field-type">boolean</td><td>Кодгүй гүйлгээ</td></tr>
+          <tr><td class="field-name">description</td><td class="field-type">string</td><td>Гүйлгээний утга</td></tr>
+          <tr><td class="field-name">counterparty</td><td class="field-type">string</td><td>Харьцсан данс</td></tr>
+          <tr><td class="field-name">is_foreign</td><td class="field-type">boolean</td><td>Гадаад валют</td></tr>
+          <tr><td class="field-name">raw_memo</td><td class="field-type">string</td><td>PDF-ийн жинхэнэ memo</td></tr>
+          <tr><td class="field-name">imported_at, imported_by</td><td class="field-type">datetime, name</td><td>Audit trail</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px">🏦 Данс <code style="font-family:monospace;color:var(--brand-dark)">db.bank_accounts[]</code></div>
+        <table class="schema-table">
+          <tr><th>Талбар</th><th>Төрөл</th><th>Тайлбар</th></tr>
+          <tr><td class="field-name">id, name, active</td><td class="field-type">string, string, boolean</td><td>Үндсэн талбарууд</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px">💼 Зээл <code style="font-family:monospace;color:var(--brand-dark)">db.loans_received[]</code></div>
+        <table class="schema-table">
+          <tr><th>Талбар</th><th>Төрөл</th><th>Тайлбар</th></tr>
+          <tr><td class="field-name">lender, principal, interest_total</td><td class="field-type">string, number, number</td><td>Үндсэн нөхцөл</td></tr>
+          <tr><td class="field-name">interest_schedule</td><td class="field-type">array</td><td>{ date, amount, paid }</td></tr>
+          <tr><td class="field-name">term_years</td><td class="field-type">number</td><td>Хугацаа</td></tr>
+        </table>
+      </div>
+    </div>
+  </details>
+</div>
+
+<!-- Edit modal -->
+<div class="modal-overlay" id="editModal" onclick="if(event.target===this)closeEditModal()">
+  <div class="modal-box">
+    <h3>Засах</h3>
+    <div class="field">
+      <label>Нэр</label>
+      <input id="editBankName" type="text">
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeEditModal()">Болих</button>
+      <button class="modal-save" onclick="saveEdit()">Хадгалах</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/bottom-nav.js"></script>
+<script>
+const token = localStorage.getItem('token');
+const user  = JSON.parse(localStorage.getItem('user') || '{}');
+if (!token) window.location.href = '/';
+if (user.role !== 'admin') { alert('Зөвхөн админ-д зориулсан'); window.location.href = '/finance'; }
+
+async function api(path, opts = {}) {
+  const r = await fetch('/api' + path, {
+    ...opts,
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', ...(opts.headers||{}) }
+  });
+  if (r.status === 401) { localStorage.clear(); window.location.href = '/'; }
+  return r.json();
+}
+
+function fmt(n) { return Number(n||0).toLocaleString('mn-MN'); }
+function escHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ── Section nav scroll spy ──
+const navLinks = document.querySelectorAll('.section-nav a');
+function updateActiveNav() {
+  const sections = ['recon','banks','codes','devtools'];
+  let active = sections[0];
+  for (const id of sections) {
+    const el = document.getElementById(id);
+    if (el && el.getBoundingClientRect().top < 100) active = id;
+  }
+  navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + active));
+}
+window.addEventListener('scroll', updateActiveNav);
+
+// ── Banks ──
+let banks = [];
+async function loadBanks() {
+  banks = await api('/bank-accounts?all=true') || [];
+  const el = document.getElementById('banksList');
+  if (!banks.length) { el.innerHTML = '<div class="empty">Данс байхгүй</div>'; return; }
+  el.innerHTML = banks.map(b => `
+    <div class="list-row ${b.active === false ? 'inactive' : ''}">
+      <div class="lr-main">
+        <div class="lr-name">${escHtml(b.name)}</div>
+        <div class="lr-sub">ID: <code style="font-family:monospace">${escHtml(b.id)}</code></div>
+      </div>
+      <span class="tag ${b.active !== false ? 'active' : 'inactive'}">${b.active !== false ? 'Идэвхтэй' : 'Идэвхгүй'}</span>
+      <button class="act-btn edit" onclick="openEdit('${b.id}','${escHtml(b.name).replace(/'/g,"\\'")}')">Засах</button>
+      ${b.active !== false
+        ? `<button class="act-btn disable" onclick="toggleBank('${b.id}', false)">Хаах</button>`
+        : `<button class="act-btn enable"  onclick="toggleBank('${b.id}', true)">Нээх</button>`}
+    </div>`).join('');
+}
+async function addBank() {
+  const name = document.getElementById('newBankName').value.trim();
+  if (!name) { alert('Нэр оруулна уу'); return; }
+  await api('/bank-accounts', { method: 'POST', body: JSON.stringify({ name }) });
+  document.getElementById('newBankName').value = '';
+  loadBanks();
+}
+async function toggleBank(id, active) {
+  await api('/bank-accounts/' + id, { method: 'PUT', body: JSON.stringify({ active }) });
+  loadBanks();
+}
+
+let editBankId = null;
+function openEdit(id, name) {
+  editBankId = id;
+  document.getElementById('editBankName').value = name;
+  document.getElementById('editModal').classList.add('open');
+}
+function closeEditModal() {
+  document.getElementById('editModal').classList.remove('open');
+  editBankId = null;
+}
+async function saveEdit() {
+  if (!editBankId) return;
+  const name = document.getElementById('editBankName').value.trim();
+  if (!name) return;
+  await api('/bank-accounts/' + editBankId, { method: 'PUT', body: JSON.stringify({ name }) });
+  closeEditModal();
+  loadBanks();
+}
+
+// ── Codes ──
+const CODE_DESC = {
+  SALE: { label: 'Бүрэн төлсөн борлуулалт', type: 'income' },
+  REC:  { label: 'Авлагын үлдэгдэл', type: 'income' },
+  ADV:  { label: 'Урьдчилгаа', type: 'income' },
+  INV:  { label: 'Хөрөнгө оруулагчийн зээл', type: 'income' },
+  LOAN_IN:  { label: 'Бусдад өгсөн зээл буцаагдсан', type: 'income' },
+  IMP:  { label: 'Импортын төлбөр', type: 'expense' },
+  SAL:  { label: 'Цалин', type: 'expense' },
+  TRN:  { label: 'Тээвэр/логистик', type: 'expense' },
+  TRIP: { label: 'Томилолт', type: 'expense' },
+  EQP:  { label: 'Тоног төхөөрөмж', type: 'expense' },
+  TAX:  { label: 'Татвар/даатгал', type: 'expense' },
+  OFF:  { label: 'Оффисын зардал', type: 'expense' },
+  UTIL: { label: 'Тогтмол төлбөр', type: 'expense' },
+  LOAN_OUT: { label: 'Зээл олгох', type: 'expense' },
+  FEE:  { label: 'Банкны шимтгэл (auto)', type: 'expense' },
+  TRF:  { label: 'Данс хооронд', type: 'special' },
+  OTHER:{ label: 'Бусад', type: 'special' },
+};
+function loadCodes() {
+  const el = document.getElementById('codesList');
+  el.innerHTML = Object.entries(CODE_DESC).map(([code, info]) => `
+    <div class="list-row">
+      <span class="tag code">${code}</span>
+      <div class="lr-main">
+        <div class="lr-name" style="font-size:12.5px">${escHtml(info.label)}</div>
+      </div>
+      <span class="tag ${info.type}">${info.type === 'income' ? 'Орлого' : info.type === 'expense' ? 'Зарлага' : 'Тусгай'}</span>
+    </div>`).join('');
+}
+
+// ── Reconciliation (most important monitoring) ──
+async function loadReconciliation() {
+  const el = document.getElementById('reconStatus');
+  try {
+    const r = await api('/finance/reconcile');
+    const totalTx = r.accounts.reduce((s,a) => s + a.total, 0);
+    const accountsHtml = r.accounts.map(a => `
+      <div class="recon-row ${a.ok ? 'ok' : 'fail'}">
+        <div class="recon-icon">${a.ok ? '✅' : '🔴'}</div>
+        <div class="recon-info">
+          <div class="recon-name">${escHtml(a.label)}</div>
+          <div class="recon-meta">${a.total} гүйлгээ · Эцсийн үлдэгдэл ${fmt(a.latest_balance)}₮${a.ok ? '' : ' · <b>' + a.gaps.length + ' зөрүү</b>'}</div>
+        </div>
+      </div>`).join('');
+
+    if (r.all_ok) {
+      el.innerHTML = `
+        <div class="recon-hero ok">
+          <div class="recon-hero-icon">✅</div>
+          <div class="recon-hero-title">Бүгд зөв</div>
+          <div class="recon-hero-sub">${r.accounts.length} данс · ${totalTx} гүйлгээ математикийн хувьд тэнцэж байна</div>
+        </div>
+        <div class="recon-list">${accountsHtml}</div>
+        <div class="recon-help">
+          🔍 Тэнцэл зөрсөн тохиолдолд: parser алдаа, давхардсан/алгассан гүйлгээ, гар оруулгын алдааг шалгах хэрэгтэй
+        </div>`;
+    } else {
+      const failCount = r.accounts.filter(a => !a.ok).length;
+      const gapDetails = r.accounts.filter(a => !a.ok).flatMap(a =>
+        a.gaps.slice(0, 3).map(g => `<div class="gap-row"><b>${escHtml(a.label)}</b> · ${g.date} · ${escHtml((g.description||'').slice(0,40))} · зөрүү ${fmt(Math.abs(g.diff))}₮</div>`)
+      ).join('');
+      el.innerHTML = `
+        <div class="recon-hero fail">
+          <div class="recon-hero-icon">🔴</div>
+          <div class="recon-hero-title">Тэнцэл зөрсөн</div>
+          <div class="recon-hero-sub">${failCount} дансанд зөрүү илэрсэн · Заавал шалгана уу</div>
+        </div>
+        <div class="recon-list">${accountsHtml}</div>
+        <div class="gaps-card">
+          <div class="gaps-title">⚠️ Зөрүүтэй гүйлгээнүүд (эхний 3)</div>
+          ${gapDetails}
+        </div>
+        <div class="recon-help">
+          🔍 Магадгүй шалтгаан: parser алдаа · давхардсан гүйлгээ · алгассан мөр · гар оруулгын алдаа
+        </div>`;
+    }
+  } catch (e) {
+    el.innerHTML = '<div class="empty">Ачаалж чадсангүй</div>';
+  }
+}
+
+// ── Init ──
+loadBanks();
+loadCodes();
+loadReconciliation();
+
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) { loadBanks(); loadReconciliation(); }
+});
+</script>
+</body>
+</html>

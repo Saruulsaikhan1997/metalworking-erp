@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+<title>Санхүү — Метал ворkинг Центр</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --brand: #6d28d9; --brand-dark: #5b21b6;
+  --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+  --gray-400: #9ca3af; --gray-600: #4b5563; --gray-900: #111827;
+}
+body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; background: var(--gray-50); color: var(--gray-900); padding-bottom: 30px; -webkit-font-smoothing: antialiased; }
+
+.id-bar {
+  background: linear-gradient(135deg, #5b21b6 0%, #6d28d9 100%);
+  color: #fff; padding: 18px 20px;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 4px 12px rgba(91,33,182,0.18);
+}
+.id-top { display: flex; align-items: center; gap: 12px; }
+.id-back { font-size: 22px; color: #fff; text-decoration: none; padding: 4px 8px; }
+.id-title { font-size: 17px; font-weight: 700; }
+.id-sub { font-size: 11px; opacity: 0.85; margin-top: 3px; }
+
+.section { padding: 18px 16px 0; }
+.section-label { font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 1.3px; margin-bottom: 12px; padding: 0 4px; }
+
+/* ── HERO: Current balance (biggest element) ── */
+.balance-hero {
+  background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+  color: #fff;
+  border-radius: 18px;
+  padding: 28px 22px 24px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  margin-bottom: 14px;
+  cursor: pointer;
+  position: relative; overflow: hidden;
+}
+.balance-hero::before {
+  content: ''; position: absolute; top: -50px; right: -50px;
+  width: 180px; height: 180px; border-radius: 50%;
+  background: rgba(255,255,255,0.04);
+}
+.balance-hero:active { transform: scale(0.99); }
+.bh-lbl { font-size: 11px; opacity: 0.7; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 700; }
+.bh-val { font-size: 34px; font-weight: 900; margin-top: 8px; line-height: 1; letter-spacing: -0.5px; }
+.bh-sub { font-size: 12px; opacity: 0.7; margin-top: 8px; }
+.bh-tap-hint { font-size: 10px; opacity: 0.5; margin-top: 6px; }
+
+.bh-accounts {
+  display: none;
+  margin-top: 16px; padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,0.15);
+}
+.bh-accounts.shown { display: block; }
+.bh-acc-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 12.5px; }
+.bh-acc-name { opacity: 0.85; }
+.bh-acc-val { font-weight: 700; }
+
+/* ── Primary operational action ── */
+.import-action {
+  display: flex; align-items: center; gap: 14px;
+  background: linear-gradient(135deg, #5b21b6 0%, #6d28d9 100%);
+  color: #fff; border-radius: 14px;
+  padding: 16px 18px; margin-bottom: 14px;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(91,33,182,0.25);
+  cursor: pointer;
+}
+.import-action:active { transform: scale(0.98); }
+.import-action .ia-icon {
+  width: 46px; height: 46px; border-radius: 12px;
+  background: rgba(255,255,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; flex-shrink: 0;
+}
+.import-action .ia-text { flex: 1; }
+.import-action .ia-title { font-size: 15px; font-weight: 800; letter-spacing: 0.2px; }
+.import-action .ia-sub { font-size: 11px; opacity: 0.88; margin-top: 3px; }
+.import-action .ia-arrow { font-size: 22px; opacity: 0.7; }
+
+/* ── Main buttons ── */
+.btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.fin-btn {
+  background: #fff; border-radius: 14px;
+  padding: 18px 16px; text-decoration: none;
+  color: inherit; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  border: 1px solid var(--gray-200);
+  display: flex; flex-direction: column; gap: 6px;
+  cursor: pointer; min-height: 96px;
+  border-left: 4px solid var(--brand);
+}
+.fin-btn:active { transform: scale(0.97); }
+.fin-btn.income   { border-left-color: #059669; }
+.fin-btn.expense  { border-left-color: #1565c0; }
+.fin-btn.loan     { border-left-color: #d97706; }
+.fin-btn.sales    { border-left-color: #6d28d9; }
+
+.fin-icon { font-size: 24px; line-height: 1; }
+.fin-title { font-size: 13.5px; font-weight: 700; color: var(--gray-900); }
+.fin-sub { font-size: 11px; color: var(--gray-600); }
+.fin-amt { font-size: 14px; font-weight: 800; margin-top: 4px; }
+.fin-amt.income  { color: #059669; }
+.fin-amt.expense { color: #1565c0; }
+.fin-amt.loan    { color: #d97706; }
+.fin-amt.sales   { color: #6d28d9; }
+
+/* ── Investor section ── */
+.invest-card {
+  background: #fff; border-radius: 14px; padding: 14px 18px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05); border: 1px solid var(--gray-200);
+  border-left: 4px solid var(--brand);
+  margin-bottom: 10px;
+}
+.invest-name { font-size: 13px; font-weight: 700; color: var(--gray-900); }
+.invest-info { font-size: 11.5px; color: var(--gray-600); margin-top: 4px; line-height: 1.6; }
+.invest-info b { color: var(--gray-900); }
+
+/* ── Warnings ── */
+.warning {
+  background: #fffbeb; border-left: 4px solid #f59e0b;
+  border-radius: 10px; padding: 12px 14px;
+  font-size: 12px; color: #92400e; margin-bottom: 10px; font-weight: 600;
+}
+.warning a { color: #92400e; text-decoration: underline; }
+
+.settings-link {
+  display: block; text-align: center;
+  margin: 24px 16px 0; padding: 10px;
+  font-size: 11px; color: var(--gray-400); font-weight: 600;
+  background: #fff; border: 1px solid var(--gray-200); border-radius: 14px;
+  text-decoration: none;
+}
+</style>
+</head>
+<body>
+
+<div class="id-bar">
+  <div class="id-top">
+    <a class="id-back" href="/dashboard">‹</a>
+    <div style="flex:1">
+      <div class="id-title">💰 Санхүү</div>
+      <div class="id-sub">Үлдэгдэл, орлого, зарлага</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">💵 Одоогийн үлдэгдэл</div>
+  <div class="balance-hero" id="balanceHero" onclick="toggleAccounts()">
+    <div class="bh-lbl">Нийт бэлэн мөнгө</div>
+    <div class="bh-val" id="totalBalance">— ₮</div>
+    <div class="bh-sub">TDB + Касс</div>
+    <div class="bh-tap-hint" id="tapHint">Дарж дэлгэрэнгүй харах ›</div>
+
+    <div class="bh-accounts" id="bhAccounts">
+      <div class="bh-acc-row"><span class="bh-acc-name">TDB — Компани</span><span class="bh-acc-val" id="bTDB">— ₮</span></div>
+      <div class="bh-acc-row"><span class="bh-acc-name">Касс — Хаан банк</span><span class="bh-acc-val" id="bKass">— ₮</span></div>
+    </div>
+  </div>
+
+  <!-- Reconciliation badge -->
+  <div id="reconcileBox" style="display:none;margin-top:-6px;margin-bottom:14px;border-radius:10px;padding:10px 14px;font-size:11.5px;font-weight:600"></div>
+</div>
+
+<div id="warnings"></div>
+
+<div id="adminImportSection" class="section" style="display:none">
+  <div class="section-label">⚡ Үндсэн үйлдэл</div>
+  <a class="import-action" href="/finance-import">
+    <div class="ia-icon">📥</div>
+    <div class="ia-text">
+      <div class="ia-title">Хуулга оруулах</div>
+      <div class="ia-sub">Банкны PDF хуулгаас гүйлгээ нэмэх</div>
+    </div>
+    <div class="ia-arrow">›</div>
+  </a>
+  <a class="import-action" href="/codes" style="background:linear-gradient(135deg,#1b5e20 0%,#2e7d32 100%);box-shadow:0 4px 14px rgba(27,94,32,0.25);margin-top:8px">
+    <div class="ia-icon">📖</div>
+    <div class="ia-text">
+      <div class="ia-title">Memo код туслах</div>
+      <div class="ia-sub">Банкны гүйлгээ хийхэд код хуулж авах</div>
+    </div>
+    <div class="ia-arrow">›</div>
+  </a>
+  <a class="import-action" href="/finance-admin" style="background:linear-gradient(135deg,#4b5563 0%,#1f2937 100%);box-shadow:0 4px 14px rgba(31,41,55,0.25);margin-top:8px">
+    <div class="ia-icon">⚙️</div>
+    <div class="ia-text">
+      <div class="ia-title">Module Control Center</div>
+      <div class="ia-sub">Дансууд, кодууд, schema, integrations</div>
+    </div>
+    <div class="ia-arrow">›</div>
+  </a>
+</div>
+
+<div class="section">
+  <div class="section-label">📋 Үндсэн хэсгүүд</div>
+  <div class="btn-grid">
+    <a class="fin-btn income" href="/income">
+      <div class="fin-icon">🟢</div>
+      <div class="fin-title">Нийт орлого</div>
+      <div class="fin-amt income" id="totalIncome">— ₮</div>
+      <div class="fin-sub" id="totalIncomeSub">энэ сар</div>
+    </a>
+    <a class="fin-btn expense" href="/expense">
+      <div class="fin-icon">🔵</div>
+      <div class="fin-title">Нийт зарлага</div>
+      <div class="fin-amt expense" id="totalExpense">— ₮</div>
+      <div class="fin-sub" id="totalExpenseSub">энэ сар</div>
+    </a>
+    <a class="fin-btn loan" href="/loans">
+      <div class="fin-icon">🔁</div>
+      <div class="fin-title">Өр төлбөр</div>
+      <div class="fin-amt loan" id="totalLoan">— ₮</div>
+      <div class="fin-sub" id="totalLoanSub">идэвхтэй</div>
+    </a>
+    <a class="fin-btn sales" href="/sales-entry">
+      <div class="fin-icon">📊</div>
+      <div class="fin-title">Борлуулалт</div>
+      <div class="fin-amt sales" id="totalSales">— ₮</div>
+      <div class="fin-sub" id="totalSalesSub">энэ сар</div>
+    </a>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">💼 Хөрөнгө оруулагч</div>
+  <div id="investorList"></div>
+</div>
+
+<div id="adminSection" style="display:none">
+  <a class="settings-link" href="/finance-detail">📋 Дэлгэрэнгүй гүйлгээ, тайлан</a>
+  <a class="settings-link" href="/settings" style="margin-top:10px">⚙️ Санхүүгийн тохиргоо</a>
+</div>
+
+<script src="/js/bottom-nav.js"></script>
+<script>
+const token = localStorage.getItem('token');
+const user  = JSON.parse(localStorage.getItem('user') || '{}');
+if (!token) window.location.href = '/';
+
+if (['admin','shareholder','accountant'].includes(user.role)) document.getElementById('adminSection').style.display = '';
+if (user.role === 'admin') document.getElementById('adminImportSection').style.display = '';
+
+async function api(path) {
+  const r = await fetch('/api' + path, { headers: { 'Authorization': 'Bearer ' + token }});
+  if (r.status === 401) { localStorage.clear(); window.location.href = '/'; }
+  return r.json();
+}
+
+function fmt(n) { return Number(n||0).toLocaleString('mn-MN'); }
+function thisMonth() { return new Date().toISOString().slice(0,7); }
+
+function toggleAccounts() {
+  const el = document.getElementById('bhAccounts');
+  const hint = document.getElementById('tapHint');
+  el.classList.toggle('shown');
+  hint.textContent = el.classList.contains('shown') ? '↑ Хаах' : 'Дарж дэлгэрэнгүй харах ›';
+}
+
+function isExpense(code) { return ['IMP','SAL','TRN','TRIP','EQP','TAX','OFF','UTIL','FEE','OTHER'].includes(code); }
+function isIncome(code)  { return ['SALE','REC','ADV','INV','LOAN_IN'].includes(code); }
+
+async function load() {
+  const sum = await api('/finance/summary');
+  const txs = await api('/finance/transactions') || [];
+  const loans = await api('/finance/loans-received') || [];
+  const recon = await api('/finance/reconcile').catch(() => null);
+
+  // Reconciliation badge
+  if (recon && recon.accounts) {
+    const box = document.getElementById('reconcileBox');
+    if (recon.all_ok) {
+      box.style.background = '#d1fae5';
+      box.style.color = '#065f46';
+      box.style.border = '1px solid #6ee7b7';
+      box.innerHTML = `✅ <b>Тэнцэл шалгасан</b> · Бүх ${recon.accounts.length} дансны математик зөв (${recon.accounts.reduce((s,a)=>s+a.total,0)} гүйлгээ)`;
+      box.style.display = 'block';
+    } else {
+      const totalGaps = recon.accounts.reduce((s,a) => s + a.gaps.length, 0);
+      const gapDetails = recon.accounts.filter(a => !a.ok).map(a =>
+        `${a.label}: ${a.gaps.length} зөрүү`
+      ).join(' · ');
+      box.style.background = '#fee2e2';
+      box.style.color = '#991b1b';
+      box.style.border = '1px solid #fca5a5';
+      box.innerHTML = `🔴 <b>Тэнцэл зөрсөн</b> · ${totalGaps} зөрүү илэрсэн<br><span style="font-weight:400;font-size:10.5px;opacity:0.9">${gapDetails}</span>`;
+      box.style.display = 'block';
+    }
+  }
+
+  // Balances
+  let tdb = 0, kass = 0;
+  if (sum.balances) {
+    for (const [k, v] of Object.entries(sum.balances)) {
+      if (v.label && v.label.includes('TDB')) tdb = v.balance;
+      else if (v.label && v.label.includes('Хаан')) kass = v.balance;
+    }
+  }
+  const total = tdb + kass;
+  document.getElementById('totalBalance').textContent = fmt(total) + ' ₮';
+  document.getElementById('bTDB').textContent  = fmt(tdb)  + ' ₮';
+  document.getElementById('bKass').textContent = fmt(kass) + ' ₮';
+
+  // Monthly aggregates (exclude TRF, exclude INV from income)
+  const mon = thisMonth();
+  const monthTx = txs.filter(t => (t.date||'').slice(0,7) === mon && t.code !== 'TRF');
+  const income  = monthTx.filter(t => isIncome(t.code));
+  const expense = monthTx.filter(t => isExpense(t.code));
+  const sales   = monthTx.filter(t => ['SALE','REC','ADV'].includes(t.code));
+  const loanTx  = monthTx.filter(t => ['LOAN_IN','LOAN_OUT'].includes(t.code));
+
+  document.getElementById('totalIncome').textContent  = fmt(income.reduce((s,t)=>s+t.amount,0)) + ' ₮';
+  document.getElementById('totalIncomeSub').textContent = income.length + ' гүйлгээ · ' + mon;
+  document.getElementById('totalExpense').textContent = fmt(expense.reduce((s,t)=>s+t.amount,0)) + ' ₮';
+  document.getElementById('totalExpenseSub').textContent = expense.length + ' гүйлгээ · ' + mon;
+  document.getElementById('totalSales').textContent  = fmt(sales.reduce((s,t)=>s+t.amount,0)) + ' ₮';
+  document.getElementById('totalSalesSub').textContent = sales.length + ' гүйлгээ · ' + mon;
+
+  // Active loans: outstanding from loans_received + LOAN_OUT not yet returned
+  let activeLoanAmt = 0;
+  for (const l of loans) {
+    const interestPaid = (l.interest_schedule || []).filter(s => s.paid).reduce((s,x) => s+x.amount, 0);
+    activeLoanAmt += (l.principal || 0) + (l.interest_total || 0) - interestPaid;
+  }
+  // LOAN_OUT outstanding (need to subtract LOAN_IN)
+  const loanOutSum = txs.filter(t => t.code === 'LOAN_OUT').reduce((s,t)=>s+t.amount,0);
+  const loanInSum  = txs.filter(t => t.code === 'LOAN_IN').reduce((s,t)=>s+t.amount,0);
+  const loanOutActive = Math.max(0, loanOutSum - loanInSum);
+
+  document.getElementById('totalLoan').textContent  = fmt(activeLoanAmt + loanOutActive) + ' ₮';
+  document.getElementById('totalLoanSub').textContent = `Авсан ${fmt(activeLoanAmt)} + Өгсөн ${fmt(loanOutActive)}`;
+
+  // Investors
+  const invEl = document.getElementById('investorList');
+  if (!loans.length) {
+    invEl.innerHTML = '<div style="font-size:12px;color:#aaa;padding:14px;background:#fff;border-radius:12px;border:1px solid #e5e7eb;text-align:center">Хөрөнгө оруулагч бүртгэгдээгүй</div>';
+  } else {
+    invEl.innerHTML = loans.map(l => {
+      const interestPaid = (l.interest_schedule || []).filter(s => s.paid).reduce((s,x) => s+x.amount, 0);
+      const next = (l.interest_schedule || []).filter(s => !s.paid).sort((a,b) => a.date.localeCompare(b.date))[0];
+      return `<div class="invest-card">
+        <div class="invest-name">${l.lender}</div>
+        <div class="invest-info">
+          Үндсэн дүн: <b>${fmt(l.principal)}₮</b> · Хүү: <b>${fmt(l.interest_total)}₮</b><br>
+          Төлсөн хүү: ${fmt(interestPaid)}₮ · Үлдсэн: <b style="color:#c62828">${fmt(l.interest_total - interestPaid)}₮</b>
+          ${next ? `<br>📅 Дараагийн: <b>${next.date}</b> · ${fmt(next.amount)}₮` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // NOTE: Per-account sum-vs-balance check was REMOVED.
+  // It incorrectly assumed initial balance = 0, but real bank accounts have non-zero starting balances
+  // (e.g. Касс had 11,564.82₮ before our records started). This caused false-positive warnings.
+  // The authoritative reconciliation is the math chain check from /api/finance/reconcile
+  // which verifies prev.balance_after ± amount = current.balance_after for each consecutive pair.
+
+  // Warnings
+  let warningHtml = '';
+  if (sum.needs_review > 0) {
+    warningHtml += `<div class="warning">⚠️ <b>${sum.needs_review}</b> гүйлгээ код тогтоох шаардлагатай. <a href="/review">Шалгах →</a></div>`;
+  }
+  // Loan due warnings
+  for (const l of loans) {
+    const next = (l.interest_schedule || []).filter(s => !s.paid).sort((a,b) => a.date.localeCompare(b.date))[0];
+    if (next) {
+      const days = Math.ceil((new Date(next.date) - new Date()) / 86400000);
+      if (days <= 30 && days >= 0) {
+        warningHtml += `<div class="warning">📅 <b>${l.lender}</b> хүүгийн төлбөр ${days} хоногийн дотор: <b>${fmt(next.amount)}₮</b> (${next.date})</div>`;
+      }
+    }
+  }
+  if (warningHtml) {
+    document.getElementById('warnings').innerHTML = `<div class="section">${warningHtml}</div>`;
+  }
+}
+
+load();
+
+// ── Auto-refresh on page show (handles iOS Safari bfcache & back-navigation) ──
+window.addEventListener('pageshow', (e) => {
+  // Re-fetch even if restored from bfcache
+  if (e.persisted || document.visibilityState === 'visible') {
+    load();
+  }
+});
+
+// Also refresh when tab becomes visible again
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') load();
+});
+</script>
+</body>
+</html>

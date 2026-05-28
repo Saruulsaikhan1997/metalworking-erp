@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Environment (secrets)
+.env
+
+# Data (persistent state — NOT in git)
+data.json
+backups/
+
+# Uploaded files
+public/uploads/news/*
+!public/uploads/news/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*

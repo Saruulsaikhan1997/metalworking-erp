@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+<title>Импорт — Метал ворkинг Центр</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --brand: #1565c0; --brand-dark: #0d47a1;
+  --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+  --gray-400: #9ca3af; --gray-600: #4b5563; --gray-900: #111827;
+}
+body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; background: var(--gray-50); color: var(--gray-900); padding-bottom: 30px; -webkit-font-smoothing: antialiased; }
+
+.id-bar {
+  background: linear-gradient(135deg, #0d47a1 0%, #1565c0 100%);
+  color: #fff; padding: 18px 20px;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 4px 12px rgba(13,71,161,0.18);
+}
+.id-top { display: flex; align-items: center; gap: 12px; }
+.id-back { font-size: 22px; color: #fff; text-decoration: none; padding: 4px 8px; }
+.id-title { font-size: 17px; font-weight: 700; flex: 1; }
+.id-sub { font-size: 11px; opacity: 0.85; margin-top: 3px; }
+
+.section { padding: 18px 16px 0; }
+.section-label { font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 1.3px; margin-bottom: 12px; padding: 0 4px; }
+
+.plan-card {
+  background: #fff; border-radius: 16px; padding: 18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--gray-200);
+  margin-bottom: 12px;
+}
+.plan-title { font-size: 13px; font-weight: 700; color: var(--gray-900); margin-bottom: 4px; }
+.plan-sub { font-size: 11px; color: var(--gray-600); }
+
+.shipment-card {
+  background: #fff; border-radius: 14px;
+  padding: 16px 18px; margin-bottom: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05); border: 1px solid var(--gray-200);
+  border-left: 4px solid var(--brand);
+}
+.sc-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+.sc-supplier { font-size: 14px; font-weight: 700; color: var(--gray-900); }
+.sc-product { font-size: 11.5px; color: var(--gray-600); margin-top: 3px; line-height: 1.4; }
+.sc-amount { font-size: 13px; font-weight: 700; color: var(--brand-dark); white-space: nowrap; }
+
+/* status pipeline */
+.pipeline { display: flex; gap: 4px; margin: 10px 0 8px; }
+.pipe-step { flex: 1; height: 4px; background: var(--gray-200); border-radius: 2px; }
+.pipe-step.done { background: var(--brand); }
+.pipe-step.current { background: #f59e0b; animation: pulse 1.5s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+.sc-status {
+  display: inline-block; font-size: 10.5px; font-weight: 700;
+  padding: 3px 9px; border-radius: 10px;
+  background: #fef3c7; color: #92400e;
+  margin-top: 2px;
+}
+.sc-status.transit { background: #dbeafe; color: #1e40af; }
+.sc-status.customs { background: #fed7aa; color: #9a3412; }
+.sc-status.arrived { background: #d1fae5; color: #065f46; }
+.sc-status.pending { background: #fee2e2; color: #991b1b; }
+
+.sc-meta {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  font-size: 10.5px; color: var(--gray-400);
+  margin-top: 8px; padding-top: 8px;
+  border-top: 1px solid var(--gray-100);
+}
+
+.payment-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--gray-600); padding: 3px 0; }
+.payment-row.paid { color: #059669; }
+.payment-row.pending { color: #c62828; font-weight: 600; }
+
+.settings-link {
+  display: block; text-align: center;
+  margin: 24px 16px 0; padding: 10px;
+  font-size: 11px; color: var(--gray-400); font-weight: 600;
+  background: #fff; border: 1px solid var(--gray-200); border-radius: 14px;
+  text-decoration: none;
+}
+
+.empty { text-align: center; color: var(--gray-400); padding: 30px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="id-bar">
+  <div class="id-top">
+    <a class="id-back" href="/dashboard">‹</a>
+    <div style="flex:1">
+      <div class="id-title">🚢 Импорт</div>
+      <div class="id-sub">Худалдан авалт, тээвэр, гаалийн төлөв</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">📅 Сарын төлөвлөгөө</div>
+  <div class="plan-card">
+    <div class="plan-title">2026 оны 5 сар</div>
+    <div class="plan-sub">5 идэвхтэй ачилт · 4 нийлүүлэгч · нийт ~$15K + ¥150K</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">📦 Идэвхтэй ачилтууд</div>
+  <div id="shipmentList"></div>
+</div>
+
+<!-- Module admin link removed — /import-admin will be created in Phase 3. -->
+<!-- Until then, no settings link to prevent cross-module leakage. -->
+<div id="adminSection" style="display:none"></div>
+
+<script src="/js/bottom-nav.js"></script>
+<script>
+const token = localStorage.getItem('token');
+const user  = JSON.parse(localStorage.getItem('user') || '{}');
+if (!token) window.location.href = '/';
+
+if (user.role === 'admin') document.getElementById('adminSection').style.display = '';
+
+async function api(path) {
+  const r = await fetch('/api' + path, { headers: { 'Authorization': 'Bearer ' + token }});
+  if (r.status === 401) { localStorage.clear(); window.location.href = '/'; }
+  return r.json();
+}
+
+function statusLabel(s) {
+  return { transit: 'Замд яваа', customs: 'Гаальд', partial: '50% төлсөн', pending: 'Хүлээгдэж буй', arrived: 'УБ ирсэн', paid: 'Бүрэн төлсөн' }[s] || s;
+}
+function statusClass(s) {
+  return { transit: 'transit', customs: 'customs', partial: 'pending', pending: 'pending', arrived: 'arrived', paid: 'arrived' }[s] || '';
+}
+function pipelineSteps(status) {
+  // 5 stages: supplier-prep, china-cargo, customs, road-to-ub, arrived
+  const stages = ['pending','partial','transit','customs','arrived'];
+  const idx = stages.indexOf(status);
+  return [0,1,2,3,4].map(i => {
+    if (i < idx) return 'done';
+    if (i === idx) return 'current';
+    return '';
+  });
+}
+
+async function load() {
+  const imports = await api('/imports') || [];
+  const el = document.getElementById('shipmentList');
+  if (!imports.length) { el.innerHTML = '<div class="empty">Идэвхтэй ачилт байхгүй</div>'; return; }
+
+  el.innerHTML = imports.map(imp => {
+    const steps = pipelineSteps(imp.status);
+    return `<div class="shipment-card">
+      <div class="sc-top">
+        <div style="flex:1;min-width:0">
+          <div class="sc-supplier">${imp.supplier}</div>
+          <div class="sc-product">${imp.product}</div>
+        </div>
+        <div class="sc-amount">${imp.total}</div>
+      </div>
+      <div class="pipeline">
+        ${steps.map(s => `<div class="pipe-step ${s}"></div>`).join('')}
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+        <span class="sc-status ${statusClass(imp.status)}">${statusLabel(imp.status)}</span>
+        <span style="font-size:11px;color:#888">ETA ${imp.eta}</span>
+      </div>
+      <div style="margin-top:8px;font-size:11px">
+        <div class="payment-row paid">Төлсөн: ${imp.paid}</div>
+        ${imp.remaining && imp.remaining !== '$0' && imp.remaining !== '¥0' ? `<div class="payment-row pending">Үлдэгдэл: ${imp.remaining}</div>` : ''}
+      </div>
+      ${imp.note ? `<div class="sc-meta"><span>📝 ${imp.note}</span></div>` : ''}
+    </div>`;
+  }).join('');
+}
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+<title>Нийт борлуулалт — Метал ворkинг Центр</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --brand: #059669; --brand-dark: #047857;
+  --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+  --gray-400: #9ca3af; --gray-600: #4b5563; --gray-900: #111827;
+}
+body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; background: var(--gray-50); color: var(--gray-900); padding-bottom: 30px; -webkit-font-smoothing: antialiased; }
+
+.id-bar {
+  background: linear-gradient(135deg, #047857 0%, #059669 100%);
+  color: #fff; padding: 18px 20px;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 4px 12px rgba(4,120,87,0.18);
+}
+.id-top { display: flex; align-items: center; gap: 12px; }
+.id-back { font-size: 22px; color: #fff; text-decoration: none; padding: 4px 8px; }
+.id-title { font-size: 17px; font-weight: 700; }
+.id-sub { font-size: 11px; opacity: 0.85; margin-top: 3px; }
+
+.section { padding: 18px 16px 0; }
+.section-label { font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 1.3px; margin-bottom: 12px; padding: 0 4px; }
+
+/* ── Motivation hero stats ── */
+.hero-stat {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  color: #fff;
+  border-radius: 18px;
+  padding: 24px 22px;
+  box-shadow: 0 6px 20px rgba(16,185,129,0.20);
+  margin-bottom: 12px;
+  position: relative; overflow: hidden;
+}
+.hero-stat::after {
+  content: ''; position: absolute; top: -40px; right: -40px;
+  width: 140px; height: 140px; border-radius: 50%;
+  background: rgba(255,255,255,0.10);
+}
+.hero-lbl { font-size: 11px; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+.hero-val { font-size: 30px; font-weight: 900; margin-top: 8px; line-height: 1; }
+.hero-sub { font-size: 12px; opacity: 0.9; margin-top: 8px; }
+
+.kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.kpi-card {
+  background: #fff; border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05); border: 1px solid var(--gray-200);
+}
+.kpi-card .kpi-lbl { font-size: 10.5px; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+.kpi-card .kpi-val { font-size: 19px; font-weight: 800; color: var(--brand-dark); margin-top: 5px; line-height: 1.1; }
+.kpi-card .kpi-sub { font-size: 11px; color: var(--gray-400); margin-top: 4px; }
+
+/* ── View switcher ── */
+.tabs-row {
+  display: flex; gap: 6px; overflow-x: auto;
+  padding: 4px 0 12px; scrollbar-width: none;
+}
+.tabs-row::-webkit-scrollbar { display: none; }
+.tab-pill {
+  flex-shrink: 0; padding: 9px 16px;
+  border: 1.5px solid var(--gray-200); border-radius: 22px;
+  background: #fff; font-size: 12px; font-weight: 600;
+  color: var(--gray-600); cursor: pointer; white-space: nowrap;
+}
+.tab-pill.active { background: var(--brand-dark); border-color: var(--brand-dark); color: #fff; }
+
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ── Product breakdown bars ── */
+.prod-card {
+  background: #fff; border-radius: 14px;
+  padding: 14px 16px; margin-bottom: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05); border: 1px solid var(--gray-200);
+}
+.prod-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.prod-name { font-size: 13px; font-weight: 700; color: var(--gray-900); }
+.prod-qty { font-size: 14px; font-weight: 800; color: var(--brand-dark); }
+.prod-bar { height: 6px; background: var(--gray-100); border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+.prod-bar-fill { height: 100%; background: linear-gradient(90deg, #10b981 0%, #059669 100%); border-radius: 3px; }
+.prod-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--gray-400); }
+
+.sale-row {
+  background: #fff; border-radius: 12px;
+  padding: 12px 16px; margin-bottom: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05); border: 1px solid var(--gray-200);
+  border-left: 4px solid var(--brand);
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+}
+.sale-row.advance { border-left-color: #f59e0b; }
+.sale-info { flex: 1; min-width: 0; }
+.sale-product { font-size: 13.5px; font-weight: 700; color: var(--gray-900); }
+.sale-meta { font-size: 11px; color: var(--gray-400); margin-top: 3px; }
+.sale-tag {
+  display: inline-block; font-size: 9.5px; font-weight: 700;
+  padding: 2px 6px; border-radius: 4px;
+  background: #d1fae5; color: #065f46; margin-left: 5px;
+}
+.sale-tag.adv { background: #fed7aa; color: #9a3412; }
+.sale-amt { font-size: 14px; font-weight: 800; color: var(--brand-dark); white-space: nowrap; }
+
+.empty { text-align: center; color: var(--gray-400); padding: 40px 20px; font-size: 13px; }
+
+.admin-entry-link {
+  display: block; text-align: center;
+  margin: 24px 16px 0; padding: 12px;
+  font-size: 12px; color: var(--brand-dark); font-weight: 700;
+  background: #d1fae5; border: 1px solid #6ee7b7; border-radius: 14px;
+  text-decoration: none;
+}
+.settings-link {
+  display: block; text-align: center;
+  margin: 14px 16px 0; padding: 10px;
+  font-size: 11px; color: var(--gray-400); font-weight: 600;
+  background: #fff; border: 1px solid var(--gray-200); border-radius: 14px;
+  text-decoration: none;
+}
+</style>
+</head>
+<body>
+
+<div class="id-bar">
+  <div class="id-top">
+    <a class="id-back" href="/dashboard">‹</a>
+    <div style="flex:1">
+      <div class="id-title">📊 Нийт борлуулалт</div>
+      <div class="id-sub">Компанийн гаралт, амжилт</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">🏆 Энэ сарын амжилт</div>
+  <div class="hero-stat">
+    <div class="hero-lbl">Энэ сар бүрэн борлуулсан</div>
+    <div class="hero-val" id="monthTotal">0 ширхэг</div>
+    <div class="hero-sub" id="monthSub">Бүтээгдэхүүн</div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-lbl">Өнөөдөр</div>
+      <div class="kpi-val" id="todayQty">0</div>
+      <div class="kpi-sub">ширхэг</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-lbl">7 хоног</div>
+      <div class="kpi-val" id="weekQty">0</div>
+      <div class="kpi-sub">ширхэг</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="tabs-row">
+    <button class="tab-pill active" id="t-prod" onclick="showTab('prod')">Бүтээгдэхүүнээр</button>
+    <button class="tab-pill" id="t-recent" onclick="showTab('recent')">Сүүлийн</button>
+    <button class="tab-pill" id="t-pending" onclick="showTab('pending')">Урьдчилгаатай</button>
+  </div>
+
+  <div id="panel-prod" class="panel active">
+    <div id="prodList"></div>
+  </div>
+
+  <div id="panel-recent" class="panel">
+    <div id="recentList"></div>
+  </div>
+
+  <div id="panel-pending" class="panel">
+    <div id="pendingList"></div>
+  </div>
+</div>
+
+<!-- /sales-admin will be created in Phase 4. Keep sales-entry link (operational, not settings). -->
+<div id="adminSection" style="display:none">
+  <a class="admin-entry-link" href="/sales-entry">📝 Борлуулалт бүртгэх (нягтлан)</a>
+</div>
+
+<script src="/js/bottom-nav.js"></script>
+<script>
+const token = localStorage.getItem('token');
+const user  = JSON.parse(localStorage.getItem('user') || '{}');
+if (!token) window.location.href = '/';
+
+if (['admin','sales','accountant'].includes(user.role)) document.getElementById('adminSection').style.display = '';
+
+async function api(path) {
+  const r = await fetch('/api' + path, { headers: { 'Authorization': 'Bearer ' + token }});
+  if (r.status === 401) { localStorage.clear(); window.location.href = '/'; }
+  return r.json();
+}
+
+function fmt(n) { return Number(n||0).toLocaleString('mn-MN'); }
+function today() { return new Date().toISOString().slice(0,10); }
+function thisMonth() { return new Date().toISOString().slice(0,7); }
+
+let allSales = [];
+let products = [];
+
+function prodName(id) {
+  const p = products.find(p => p.id === id);
+  return p ? p.name : (id || '—');
+}
+
+function showTab(name) {
+  document.querySelectorAll('.panel').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-pill').forEach(el => el.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  const tab = document.getElementById('t-' + name);
+  if (tab) tab.classList.add('active');
+  if (name === 'recent')  renderRecent();
+  if (name === 'pending') renderPending();
+}
+
+function isCompleted(s) {
+  return s.status === 'completed' || s.payment_status === 'paid';
+}
+
+async function load() {
+  products = await api('/products') || [];
+  allSales = await api('/sales') || [];
+
+  const completed = allSales.filter(isCompleted);
+  const todayCmp  = completed.filter(s => s.date === today());
+  const mon = thisMonth();
+  const monthCmp  = completed.filter(s => (s.date||'').slice(0,7) === mon);
+
+  // 7-day window
+  const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - 6);
+  const weekStr = weekStart.toISOString().slice(0,10);
+  const weekCmp = completed.filter(s => s.date >= weekStr);
+
+  const monthQty = monthCmp.reduce((s,o) => s + (o.quantity || o.qty || 0), 0);
+  document.getElementById('monthTotal').textContent = monthQty + ' ширхэг';
+  document.getElementById('monthSub').textContent = monthCmp.length + ' захиалга · ' + fmt(monthCmp.reduce((s,o)=>s+(o.total_amount||0),0)) + ' ₮';
+  document.getElementById('todayQty').textContent = todayCmp.reduce((s,o)=>s+(o.quantity||o.qty||0),0);
+  document.getElementById('weekQty').textContent  = weekCmp.reduce((s,o)=>s+(o.quantity||o.qty||0),0);
+
+  renderProducts(monthCmp);
+}
+
+function renderProducts(completed) {
+  const byProd = {};
+  for (const o of completed) {
+    const p = o.product || 'other';
+    if (!byProd[p]) byProd[p] = { qty: 0, count: 0, total: 0 };
+    byProd[p].qty   += (o.quantity || o.qty || 0);
+    byProd[p].count += 1;
+    byProd[p].total += (o.total_amount || 0);
+  }
+  const entries = Object.entries(byProd).sort((a,b) => b[1].qty - a[1].qty);
+  const el = document.getElementById('prodList');
+  if (!entries.length) {
+    el.innerHTML = '<div class="empty">Энэ сард бүрэн борлуулагдсан бүтээгдэхүүн байхгүй<br><small style="display:block;margin-top:6px">Үйлдвэрлэл эхэлмэгц энд харагдана</small></div>';
+    return;
+  }
+  const max = Math.max(...entries.map(e => e[1].qty), 1);
+  el.innerHTML = entries.map(([id, v]) => `<div class="prod-card">
+    <div class="prod-top">
+      <div class="prod-name">${prodName(id)}</div>
+      <div class="prod-qty">${v.qty} ш</div>
+    </div>
+    <div class="prod-bar"><div class="prod-bar-fill" style="width:${Math.round(v.qty/max*100)}%"></div></div>
+    <div class="prod-meta">
+      <span>${v.count} захиалга</span>
+      <span>${fmt(v.total)} ₮</span>
+    </div>
+  </div>`).join('');
+}
+
+function renderRecent() {
+  const completed = allSales.filter(isCompleted).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  const el = document.getElementById('recentList');
+  if (!completed.length) { el.innerHTML = '<div class="empty">Бүртгэл байхгүй</div>'; return; }
+  el.innerHTML = completed.slice(0,30).map(o => `<div class="sale-row">
+    <div class="sale-info">
+      <div class="sale-product">${prodName(o.product)} <span class="sale-tag">✓</span></div>
+      <div class="sale-meta">${o.date} · ${(o.quantity||o.qty||0)} ш · ${o.customer_name || '—'}</div>
+    </div>
+    <div class="sale-amt">${fmt(o.total_amount || 0)} ₮</div>
+  </div>`).join('');
+}
+
+function renderPending() {
+  const pending = allSales.filter(s => !isCompleted(s) && (s.remaining_amount || 0) > 0)
+                          .sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  const el = document.getElementById('pendingList');
+  if (!pending.length) {
+    el.innerHTML = '<div class="empty">Урьдчилгаатай захиалга байхгүй</div>';
+    return;
+  }
+  el.innerHTML = pending.map(o => `<div class="sale-row advance">
+    <div class="sale-info">
+      <div class="sale-product">${prodName(o.product)} <span class="sale-tag adv">ADV</span></div>
+      <div class="sale-meta">${o.date} · ${(o.quantity||o.qty||0)} ш · ${o.customer_name || '—'} · Үлд: ${fmt(o.remaining_amount)}₮</div>
+    </div>
+    <div class="sale-amt">${fmt(o.total_amount || 0)} ₮</div>
+  </div>`).join('');
+}
+
+load();
+</script>
+</body>
+</html>
