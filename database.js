@@ -8,13 +8,16 @@ const BACKUP_DIR  = process.env.BACKUP_DIR ? path.resolve(process.env.BACKUP_DIR
 // ── Ensure backup directory exists ──
 if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR);
 
+// Default seed passwords — only used when data.json doesn't exist (first install).
+// CHANGE these passwords immediately after first login in production.
+const SEED_PW = process.env.SEED_ADMIN_PW || 'changeme123';
 const DEFAULT = {
   users: [
-    { id: 1, name: 'Сүхээ Саруулсайхан', username: 'admin',     password: bcrypt.hashSync('admin1234', 10), role: 'admin' },
-    { id: 2, name: 'Чинзориг',            username: 'chinzorig', password: bcrypt.hashSync('chin1234',  10), role: 'shareholder' },
-    { id: 3, name: 'Чинбат',              username: 'chinbat',   password: bcrypt.hashSync('chinb1234', 10), role: 'shareholder' },
-    { id: 4, name: 'Склад менежер',       username: 'warehouse', password: bcrypt.hashSync('ware1234',  10), role: 'warehouse' },
-    { id: 5, name: 'Борлуулагч',          username: 'sales',     password: bcrypt.hashSync('sale1234',  10), role: 'sales' },
+    { id: 1, name: 'Сүхээ Саруулсайхан', username: 'admin',     password: bcrypt.hashSync(SEED_PW, 10), role: 'admin' },
+    { id: 2, name: 'Чинзориг',            username: 'chinzorig', password: bcrypt.hashSync(SEED_PW, 10), role: 'shareholder' },
+    { id: 3, name: 'Чинбат',              username: 'chinbat',   password: bcrypt.hashSync(SEED_PW, 10), role: 'shareholder' },
+    { id: 4, name: 'Склад менежер',       username: 'warehouse', password: bcrypt.hashSync(SEED_PW, 10), role: 'warehouse' },
+    { id: 5, name: 'Борлуулагч',          username: 'sales',     password: bcrypt.hashSync(SEED_PW, 10), role: 'sales' },
   ],
   finance: {
     tdb_balance:  116252300,
