@@ -460,12 +460,13 @@ function codeColor(code) {
   if (!code) return 'red';
   return codes[code]?.color || 'red';
 }
-function isRevenue(code) { return ['SALE','REC'].includes(code); }
-function isCapital(code) { return code === 'INV'; }
-function isLoanIn(code) { return code === 'LOAN_IN'; }
-function isExpense(code) { return ['IMP','SAL','TRN','TRIP','EQP','TAX','OFF','UTIL','FEE','LOAN_OUT','OTHER'].includes(code); }
-function isAdv(code)     { return code === 'ADV'; }
-function isTrf(code)     { return code === 'TRF'; }
+// Helpers from finance-constants.js: isRevenueCode, isCapitalCode, isLoanInCode, isExpenseCode, isAdvCode, isTrfCode
+function isRevenue(code) { return isRevenueCode(code); }
+function isCapital(code) { return isCapitalCode(code); }
+function isLoanIn(code)  { return isLoanInCode(code); }
+function isExpense(code) { return isExpenseCode(code); }
+function isAdv(code)     { return isAdvCode(code); }
+function isTrf(code)     { return isTrfCode(code); }
 
 // ── Dashboard ─────────────────────────────────────────────
 function renderDash() {
@@ -498,7 +499,7 @@ function renderDash() {
 
   // Today Sales (SALE + REC + ADV today)
   const todayTx = transactions.filter(t => t.date === today);
-  const todaySales = todayTx.filter(t => ['SALE','REC','ADV'].includes(t.code));
+  const todaySales = todayTx.filter(t => SALES_CODES.includes(t.code));
   const todaySalesAmt = todaySales.reduce((s,t) => s + t.amount, 0);
   document.getElementById('pTodaySales').textContent = fmt(todaySalesAmt) + ' ₮';
   document.getElementById('pTodaySalesSub').textContent = todaySales.length + ' гүйлгээ · ' + today;
@@ -604,9 +605,9 @@ function clearAllFilters() {
 
 function applyQuickFilter(list, qf) {
   if (qf === 'all') return list;
-  if (qf === 'income')   return list.filter(t => ['SALE','REC','INV','LOAN_IN'].includes(t.code));
+  if (qf === 'income')   return list.filter(t => INCOME_CODES.includes(t.code));
   if (qf === 'expense')  return list.filter(t => isExpense(t.code));
-  if (qf === 'sales')    return list.filter(t => ['SALE','REC','ADV'].includes(t.code));
+  if (qf === 'sales')    return list.filter(t => SALES_CODES.includes(t.code));
   if (qf === 'loan_in')  return list.filter(t => t.code === 'LOAN_IN');
   if (qf === 'loan_out') return list.filter(t => t.code === 'LOAN_OUT');
   if (qf === 'review')   return list.filter(t => t.needs_review);
@@ -782,7 +783,7 @@ function renderTxRow(t) {
 
 function renderTxReviewCard(t) {
   const sign = (t.direction === 'credit') ? '+' : '−';
-  const sortedCodes = ['SALE','REC','ADV','INV','LOAN_IN','LOAN_OUT','IMP','SAL','TRN','TRIP','EQP','TAX','OFF','UTIL','FEE','TRF','OTHER'];
+  const sortedCodes = SORTED_CODES; // from finance-constants.js
   const buttons = sortedCodes.filter(c => codes[c]).map(c => {
     const col = codes[c].color;
     return `<button class="code-btn ${col}" onclick="setCode('${t.id}','${c}')">${c}</button>`;
@@ -828,25 +829,7 @@ async function setCode(id, code) {
 
 // ── Codes reference ────────────────────────────────────────
 function renderCodes() {
-  const examples = {
-    SALE:     'SALE: жорлон бүхээг',
-    REC:      'REC: хашаа М-1 үлдэгдэл',
-    ADV:      'ADV: хашаа М-2 урьдчилгаа',
-    INV:      'INV: Батцацралмаа',
-    LOAN_IN:  'LOAN_IN: Энхбилэг буцаалт',
-    LOAN_OUT: 'LOAN_OUT: Аюурзана зээл',
-    IMP:      'IMP: Yongding төмөр',
-    SAL:      'SAL: захирлын цалин',
-    TRN:      'TRN: Эрээн УБ тээвэр',
-    TRIP:     'TRIP: Хятад томилолт',
-    EQP:      'EQP: CNC засвар',
-    TAX:      'TAX: НДШ',
-    OFF:      'OFF: принтер цаас',
-    UTIL:     'UTIL: цахилгаан',
-    TRF:      'TRF: Касс руу',
-    FEE:      'FEE (автомат)',
-    OTHER:    'OTHER: бусад',
-  };
+  const examples = CODE_EXAMPLES; // from finance-constants.js
   const el = document.getElementById('codeList');
   el.innerHTML = Object.entries(codes).map(([c, info]) => {
     const col = info.color;
@@ -909,6 +892,7 @@ async function autoImport() {
 // ── Init ───────────────────────────────────────────────────
 loadAll().then(() => renderDash());
 </script>
+<script src="/js/finance-constants.js"></script>
 <script src="/js/bottom-nav.js"></script>
 </body>
 </html>

@@ -161,6 +161,7 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
   <div id="content"><div class="loading">Ачааллаж байна...</div></div>
 </div>
 
+<script src="/js/finance-constants.js"></script>
 <script src="/js/bottom-nav.js"></script>
 <script>
 const token = localStorage.getItem('token');
@@ -179,12 +180,7 @@ async function api(path, opts = {}) {
 
 function fmt(n) { return Number(n||0).toLocaleString('mn-MN'); }
 
-// Code groups (operational, NO parser internals)
-const CODE_GROUPS = [
-  { label: '🟢 Орлого', codes: ['SALE','REC','ADV','INV','LOAN_IN'], cls: 'income' },
-  { label: '🔵 Зарлага', codes: ['IMP','SAL','TRN','TRIP','EQP','TAX','OFF','UTIL','LOAN_OUT','FEE'], cls: 'expense' },
-  { label: '⚪ Тусгай',  codes: ['TRF','OTHER'], cls: 'gray' },
-];
+// CODE_GROUPS loaded from /js/finance-constants.js
 
 let pendingTxs = [];
 let savedCount = 0;

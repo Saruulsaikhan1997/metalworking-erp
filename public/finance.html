@@ -237,6 +237,7 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 </div>
 
 <script src="/js/bottom-nav.js"></script>
+<script src="/js/finance-constants.js"></script>
 <script>
 const token = localStorage.getItem('token');
 const user  = JSON.parse(localStorage.getItem('user') || '{}');
@@ -261,8 +262,8 @@ function toggleAccounts() {
   hint.textContent = el.classList.contains('shown') ? '↑ Хаах' : 'Дарж дэлгэрэнгүй харах ›';
 }
 
-function isExpense(code) { return ['IMP','SAL','TRN','TRIP','EQP','TAX','OFF','UTIL','FEE','OTHER'].includes(code); }
-function isIncome(code)  { return ['SALE','REC','ADV','INV','LOAN_IN'].includes(code); }
+function isExpense(code) { return isExpenseCode(code); } // from finance-constants.js
+function isIncome(code)  { return isIncomeCode(code); }
 
 async function load() {
   const sum = await api('/finance/summary');
@@ -310,7 +311,7 @@ async function load() {
   const monthTx = txs.filter(t => (t.date||'').slice(0,7) === mon && t.code !== 'TRF');
   const income  = monthTx.filter(t => isIncome(t.code));
   const expense = monthTx.filter(t => isExpense(t.code));
-  const sales   = monthTx.filter(t => ['SALE','REC','ADV'].includes(t.code));
+  const sales   = monthTx.filter(t => SALES_CODES.includes(t.code));
   const loanTx  = monthTx.filter(t => ['LOAN_IN','LOAN_OUT'].includes(t.code));
 
   document.getElementById('totalIncome').textContent  = fmt(income.reduce((s,t)=>s+t.amount,0)) + ' ₮';

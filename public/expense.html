@@ -118,6 +118,7 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 </div>
 
 <script src="/js/bottom-nav.js"></script>
+<script src="/js/finance-constants.js"></script>
 <script>
 const token = localStorage.getItem('token');
 const user  = JSON.parse(localStorage.getItem('user') || '{}');
@@ -130,20 +131,7 @@ async function api(path) {
 }
 function fmt(n) { return Number(n||0).toLocaleString('mn-MN'); }
 
-const EXPENSE_CODES = ['IMP','SAL','TRN','TRIP','EQP','TAX','OFF','UTIL','FEE','LOAN_OUT','OTHER'];
-const CAT_LABELS = {
-  IMP:      '🚢 Импорт',
-  SAL:      '👷 Цалин',
-  TRN:      '🚚 Тээвэр',
-  TRIP:     '✈️ Томилолт',
-  EQP:      '🔧 Тоног төхөөрөмж',
-  TAX:      '🏛 Татвар',
-  OFF:      '🗂 Оффис',
-  UTIL:     '💡 Тогтмол',
-  FEE:      '🏦 Шимтгэл',
-  LOAN_OUT: '📤 Зээл өгсөн',
-  OTHER:    '📦 Бусад',
-};
+// EXPENSE_CODES and CAT_LABELS from finance-constants.js
 
 const CATEGORIES = [
   { key: 'all', label: 'Бүгд', codes: EXPENSE_CODES },

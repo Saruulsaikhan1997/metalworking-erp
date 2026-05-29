@@ -808,6 +808,19 @@ router.put('/finance/transactions/:id', adminOnly, (req, res) => {
   res.json({ ok: true, code: tx.code, needs_review: tx.needs_review });
 });
 
+// Archive a transaction (for phantom/duplicate entries)
+router.put('/finance/transactions/:id/archive', adminOnly, (req, res) => {
+  const db = load();
+  const tx = (db.transactions || []).find(t => t.id === req.params.id);
+  if (!tx) return res.status(404).json({ error: 'Олдсонгүй' });
+  tx.archived = true;
+  tx.archived_at = new Date().toISOString();
+  tx.archived_by = req.user.name;
+  tx.archive_reason = req.body.reason || '';
+  save(db);
+  res.json({ ok: true, id: tx.id, archived: true });
+});
+
 // Get memo codes spec
 router.get('/finance/codes', (req, res) => {
   res.json(MEMO_CODES);

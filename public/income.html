@@ -116,6 +116,7 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 </div>
 
 <script src="/js/bottom-nav.js"></script>
+<script src="/js/finance-constants.js"></script>
 <script>
 const token = localStorage.getItem('token');
 const user  = JSON.parse(localStorage.getItem('user') || '{}');
@@ -130,11 +131,11 @@ function fmt(n) { return Number(n||0).toLocaleString('mn-MN'); }
 
 // Categories of income
 const CATEGORIES = [
-  { key: 'all',     label: 'Бүгд',              codes: ['SALE','REC','ADV','INV','LOAN_IN'] },
-  { key: 'sales',   label: '🛒 Борлуулалт',     codes: ['SALE','REC'] },
-  { key: 'advance', label: '🟡 Урьдчилгаа',     codes: ['ADV'] },
-  { key: 'funding', label: '💼 Хөрөнгө оруулалт', codes: ['INV'] },
-  { key: 'loan',    label: '🔁 Зээл буцаалт',   codes: ['LOAN_IN'] },
+  { key: 'all',     label: 'Бүгд',              codes: INCOME_CODES },
+  { key: 'sales',   label: '\u{1F6D2} Борлуулалт',     codes: ['SALE','REC'] },
+  { key: 'advance', label: '\u{1F7E1} Урьдчилгаа',     codes: ['ADV'] },
+  { key: 'funding', label: '\u{1F4BC} Хөрөнгө оруулалт', codes: ['INV'] },
+  { key: 'loan',    label: '\u{1F501} Зээл буцаалт',   codes: ['LOAN_IN'] },
 ];
 
 let allTx = [];
