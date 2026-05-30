@@ -542,26 +542,32 @@ async function confirmImport() {
   const btn = document.getElementById('confirmBtn');
   btn.disabled = true; btn.textContent = '⏳ Хадгалж байна...';
 
-  const r = await api('/finance/import/confirm', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      transactions: parsedData.transactions,
-      filename: parsedData.filename,
-    }),
-  });
+  try {
+    const r = await api('/finance/import/confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        transactions: parsedData.transactions,
+        filename: parsedData.filename,
+      }),
+    });
 
-  btn.disabled = false; btn.textContent = '✓ Баталгаажуулж хадгалах';
+    btn.disabled = false; btn.textContent = '✓ Баталгаажуулж хадгалах';
 
-  if (r.ok) {
-    document.getElementById('doneStats').innerHTML = `
-      ✨ <b>${r.added}</b> шинэ гүйлгээ нэмэгдсэн<br>
-      🔁 <b>${r.skipped}</b> давхардсан алгассан<br>
-      ✕ <b>${r.rejected}</b> татгалзсан
-    `;
-    goStep(4);
-  } else {
-    alert('Алдаа: ' + (r.error || 'Тодорхойгүй'));
+    if (r.ok) {
+      document.getElementById('doneStats').innerHTML = `
+        ✨ <b>${r.added}</b> шинэ гүйлгээ нэмэгдсэн<br>
+        🔁 <b>${r.skipped}</b> давхардсан алгассан<br>
+        ✕ <b>${r.rejected}</b> татгалзсан
+      `;
+      goStep(4);
+    } else {
+      alert('Алдаа: ' + (r.error || 'Тодорхойгүй'));
+    }
+  } catch (e) {
+    btn.disabled = false; btn.textContent = '✓ Баталгаажуулж хадгалах';
+    alert('Сервертэй холбогдож чадсангүй: ' + e.message);
+    console.error('Import confirm error:', e);
   }
 }
 

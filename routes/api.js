@@ -539,7 +539,7 @@ router.get('/finance/transactions', (req, res) => {
 router.get('/finance/summary', (req, res) => {
   if (!['admin', 'shareholder'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
   const db = load();
-  const txs = db.transactions || [];
+  const txs = (db.transactions || []).filter(t => !t.archived);
 
   const compare = (a, b) => {
     if (a.date !== b.date) return a.date.localeCompare(b.date);
