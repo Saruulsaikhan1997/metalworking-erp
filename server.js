@@ -46,6 +46,44 @@ app.get('/review',         (req, res) => res.sendFile(path.join(__dirname, 'publ
 app.get('/finance-admin',   (req, res) => res.sendFile(path.join(__dirname, 'public', 'finance-admin.html')));
 app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'inventory-admin.html')));
 
+// ── One-time migration: convert 12-hour AM/PM times to 24-hour format ──
+(function migrateTimeTo24h() {
+  const { load, save } = require('./database');
+  const db = load();
+  const txs = db.transactions || [];
+  let changed = 0;
+  for (const t of txs) {
+    if (!t.time) continue;
+    const m = t.time.match(/^(\d{2}):(\d{2}):(\d{2})\s+(AM|PM)$/);
+    if (!m) continue;
+    let hour = parseInt(m[1], 10);
+    if (m[4] === 'AM' && hour === 12) hour = 0;
+    if (m[4] === 'PM' && hour !== 12) hour += 12;
+    t.time = String(hour).padStart(2, '0') + ':' + m[2] + ':' + m[3];
+    changed++;
+  }
+  // Fix known data issues
+  for (const t of txs) {
+    // Plastic Center 69M: wrong direction (credit→debit)
+    if (t.id === '7fd71e81536ff61d' && t.direction === 'credit') {
+      t.direction = 'debit';
+      changed++;
+    }
+    // Plastic Center 69M phantom entry: archive it
+    if (t.id === 'c505f6c2aaf151a4' && !t.archived) {
+      t.archived = true;
+      t.archived_at = new Date().toISOString();
+      t.archived_by = 'system-migration';
+      t.archive_reason = 'Phantom entry from PDF parser (header text mixed into description)';
+      changed++;
+    }
+  }
+  if (changed > 0) {
+    save(db);
+    console.log(`Migration: fixed ${changed} transaction issues (time format + data corrections)`);
+  }
+})();
+
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 app.listen(PORT, HOST, () => {
