@@ -77,6 +77,11 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
       t.archive_reason = 'Phantom entry from PDF parser (header text mixed into description)';
       changed++;
     }
+    // Plastic Center 7.32M loan: wrong direction (credit→debit)
+    if (t.id === 'c3d904c0a0c4c9e0' && t.direction === 'credit') {
+      t.direction = 'debit';
+      changed++;
+    }
   }
   if (changed > 0) {
     save(db);
