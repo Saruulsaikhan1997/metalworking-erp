@@ -32,14 +32,16 @@ const FINANCE_CODES = {
 
 // Grouped for review screens
 const CODE_GROUPS = [
-  { label: '\u{1F7E2} Орлого',  codes: ['SALE','REC','ADV','INV','LOAN_IN'], cls: 'income' },
-  { label: '\u{1F535} Зарлага', codes: ['IMP','SAL','TRN','TRIP','EQP','TAX','OFF','UTIL','MAT','MAR','SUB','LOAN_OUT','FEE'], cls: 'expense' },
+  { label: '\u{1F7E2} Орлого',  codes: ['SALE','REC','ADV','INV'], cls: 'income' },
+  { label: '\u{1F535} Зарлага', codes: ['IMP','SAL','TRN','TRIP','EQP','TAX','OFF','UTIL','MAT','MAR','SUB','FEE'], cls: 'expense' },
+  { label: '\u{1F504} Зээл',   codes: ['LOAN_IN','LOAN_OUT'], cls: 'loan' },
   { label: '⚪ Тусгай',     codes: ['TRF','OTHER'], cls: 'gray' },
 ];
 
 // Derived arrays
-const INCOME_CODES  = ['SALE','REC','ADV','INV','LOAN_IN'];
-const EXPENSE_CODES = ['IMP','SAL','TRN','TRIP','EQP','TAX','OFF','UTIL','MAT','MAR','SUB','FEE','LOAN_OUT','OTHER'];
+const INCOME_CODES  = ['SALE','REC','ADV','INV'];
+const EXPENSE_CODES = ['IMP','SAL','TRN','TRIP','EQP','TAX','OFF','UTIL','MAT','MAR','SUB','FEE','OTHER'];
+const LOAN_CODES    = ['LOAN_IN','LOAN_OUT'];
 const SALES_CODES   = ['SALE','REC','ADV'];
 const ALL_CODES     = Object.keys(FINANCE_CODES);
 
