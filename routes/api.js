@@ -15,6 +15,10 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
 });
 
+// PDF archive directory (persistent disk on Render, local in dev)
+const PDF_ARCHIVE_DIR = path.join(process.env.UPLOAD_DIR || path.join(__dirname, '..', 'public', 'uploads'), 'statements');
+if (!fs.existsSync(PDF_ARCHIVE_DIR)) fs.mkdirSync(PDF_ARCHIVE_DIR, { recursive: true });
+
 // Multer setup for image uploads (disk, 8MB max, jpg/png/heic/webp)
 // UPLOAD_DIR: persistent disk on Render, local folder in dev
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '..', 'public', 'uploads');
@@ -590,6 +594,12 @@ router.post('/finance/import/preview', adminOnly, upload.single('file'), async (
   if (!req.file) return res.status(400).json({ error: 'Файл хавсаргана уу' });
 
   try {
+    // Save PDF to archive
+    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const safeName = (req.file.originalname || 'statement.pdf').replace(/[^a-zA-Z0-9._-]/g, '_');
+    const archivePath = path.join(PDF_ARCHIVE_DIR, `${ts}_${safeName}`);
+    fs.writeFileSync(archivePath, req.file.buffer);
+
     const parsed = await parsePDF(req.file.buffer);
     const db = load();
     const existing = new Set((db.transactions || []).map(t => t.id));
@@ -628,6 +638,23 @@ router.post('/finance/import/preview', adminOnly, upload.single('file'), async (
   } catch (e) {
     console.error('PDF preview error:', e);
     res.status(500).json({ error: e.message });
+  }
+});
+
+// ── List saved PDF statements ──
+router.get('/finance/statements', adminOnly, (req, res) => {
+  try {
+    const files = fs.readdirSync(PDF_ARCHIVE_DIR)
+      .filter(f => f.endsWith('.pdf'))
+      .sort().reverse()
+      .map(f => ({
+        filename: f,
+        size: fs.statSync(path.join(PDF_ARCHIVE_DIR, f)).size,
+        date: f.slice(0, 10),
+      }));
+    res.json(files);
+  } catch (e) {
+    res.json([]);
   }
 });
 
