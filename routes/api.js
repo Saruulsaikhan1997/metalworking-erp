@@ -533,7 +533,7 @@ router.delete('/sales/:id', adminOnly, (req, res) => {
 router.get('/finance/transactions', (req, res) => {
   if (!['admin', 'shareholder'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
   const db = load();
-  res.json(db.transactions || []);
+  res.json((db.transactions || []).filter(t => !t.archived));
 });
 
 router.get('/finance/summary', (req, res) => {
