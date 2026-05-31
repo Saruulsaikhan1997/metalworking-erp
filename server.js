@@ -46,12 +46,15 @@ app.get('/review',         (req, res) => res.sendFile(path.join(__dirname, 'publ
 app.get('/finance-admin',   (req, res) => res.sendFile(path.join(__dirname, 'public', 'finance-admin.html')));
 app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'inventory-admin.html')));
 
-// ── One-time migration: convert 12-hour AM/PM times to 24-hour format ──
-(function migrateTimeTo24h() {
+// ── Startup migration: fix data issues ──
+(function runMigrations() {
   const { load, save } = require('./database');
+  const crypto = require('crypto');
   const db = load();
   const txs = db.transactions || [];
   let changed = 0;
+
+  // 1. Convert 12-hour AM/PM times to 24-hour
   for (const t of txs) {
     if (!t.time) continue;
     const m = t.time.match(/^(\d{2}):(\d{2}):(\d{2})\s+(AM|PM)$/);
@@ -62,30 +65,45 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
     t.time = String(hour).padStart(2, '0') + ':' + m[2] + ':' + m[3];
     changed++;
   }
-  // Fix known data issues
+
+  // 2. Fix known direction issues
   for (const t of txs) {
-    // Plastic Center 69M: wrong direction (credit→debit)
-    if (t.id === '7fd71e81536ff61d' && t.direction === 'credit') {
-      t.direction = 'debit';
-      changed++;
-    }
-    // Plastic Center 69M phantom entry: archive it
+    if (t.id === '7fd71e81536ff61d' && t.direction === 'credit') { t.direction = 'debit'; changed++; }
     if (t.id === 'c505f6c2aaf151a4' && !t.archived) {
-      t.archived = true;
-      t.archived_at = new Date().toISOString();
-      t.archived_by = 'system-migration';
-      t.archive_reason = 'Phantom entry from PDF parser (header text mixed into description)';
-      changed++;
+      t.archived = true; t.archived_at = new Date().toISOString();
+      t.archived_by = 'system-migration'; t.archive_reason = 'Phantom entry'; changed++;
     }
-    // Plastic Center 7.32M loan: wrong direction (credit→debit)
-    if (t.id === 'c3d904c0a0c4c9e0' && t.direction === 'credit') {
-      t.direction = 'debit';
+    if (t.id === 'c3d904c0a0c4c9e0' && t.direction === 'credit') { t.direction = 'debit'; changed++; }
+  }
+
+  // 3. Rehash txIds and remove duplicates caused by time format change
+  function computeId(t) {
+    const key = `${t.account}_${t.date}_${t.time}_${t.direction}_${t.amount}_${t.balance_after}`;
+    return crypto.createHash('md5').update(key).digest('hex').slice(0, 16);
+  }
+  // Rehash all non-archived transactions
+  for (const t of txs) {
+    if (t.archived) continue;
+    const newId = computeId(t);
+    if (newId !== t.id) { t.id = newId; changed++; }
+  }
+  // Now find and archive duplicates (same id = same data)
+  const seen = new Set();
+  for (const t of txs) {
+    if (t.archived) continue;
+    if (seen.has(t.id)) {
+      t.archived = true; t.archived_at = new Date().toISOString();
+      t.archived_by = 'system-dedup'; t.archive_reason = 'Duplicate after txId rehash';
       changed++;
+    } else {
+      seen.add(t.id);
     }
   }
+
   if (changed > 0) {
     save(db);
-    console.log(`Migration: fixed ${changed} transaction issues (time format + data corrections)`);
+    const active = txs.filter(t => !t.archived).length;
+    console.log(`Migration: ${changed} fixes applied. ${active} active transactions.`);
   }
 })();
 
