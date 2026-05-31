@@ -206,12 +206,6 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
       <div class="fin-amt" style="color:#b45309" id="totalLoanOut">— ₮</div>
       <div class="fin-sub" id="totalLoanOutSub">авлага</div>
     </a>
-    <a class="fin-btn loan-in" href="/investment" style="border-left:3px solid #7c3aed">
-      <div class="fin-icon">💼</div>
-      <div class="fin-title">Хөрөнгө оруулалт</div>
-      <div class="fin-amt" style="color:#6d28d9" id="totalLoanIn">— ₮</div>
-      <div class="fin-sub" id="totalLoanInSub">оруулагч</div>
-    </a>
     <a class="fin-btn sales" href="/sales-entry">
       <div class="fin-icon">📊</div>
       <div class="fin-title">Борлуулалт</div>
@@ -258,7 +252,6 @@ function isIncome(code)  { return isIncomeCode(code); }
 async function load() {
   const sum = await api('/finance/summary');
   const txs = await api('/finance/transactions') || [];
-  const loans = await api('/finance/loans-received') || [];
   const recon = await api('/finance/reconcile').catch(() => null);
 
   // Reconciliation badge
@@ -323,17 +316,6 @@ async function load() {
   document.getElementById('totalLoanOut').textContent = fmt(loanOutActive) + ' ₮';
   document.getElementById('totalLoanOutSub').textContent = `${fmt(loanOutSum)} олгосон · ${fmt(loanInSum)} буцсан`;
 
-  // Хөрөнгө оруулалт
-  let investPrincipal = 0;
-  let investProfit = 0;
-  let investPaid = 0;
-  for (const l of loans) {
-    investPrincipal += (l.principal || 0);
-    investProfit += (l.interest_total || 0);
-    investPaid += (l.interest_schedule || []).filter(s => s.paid).reduce((s,x) => s+x.amount, 0);
-  }
-  document.getElementById('totalLoanIn').textContent = fmt(investPrincipal) + ' ₮';
-  document.getElementById('totalLoanInSub').textContent = `${loans.length} оруулагч · ашиг ${fmt(investProfit)}₮`;
 
   // NOTE: Per-account sum-vs-balance check was REMOVED.
   // It incorrectly assumed initial balance = 0, but real bank accounts have non-zero starting balances
@@ -345,16 +327,6 @@ async function load() {
   let warningHtml = '';
   if (sum.needs_review > 0) {
     warningHtml += `<div class="warning">⚠️ <b>${sum.needs_review}</b> гүйлгээ код тогтоох шаардлагатай. <a href="/review">Шалгах →</a></div>`;
-  }
-  // Loan due warnings
-  for (const l of loans) {
-    const next = (l.interest_schedule || []).filter(s => !s.paid).sort((a,b) => a.date.localeCompare(b.date))[0];
-    if (next) {
-      const days = Math.ceil((new Date(next.date) - new Date()) / 86400000);
-      if (days <= 30 && days >= 0) {
-        warningHtml += `<div class="warning">📅 <b>${l.lender}</b> ашгийн төлбөр ${days} хоногийн дотор: <b>${fmt(next.amount)}₮</b> (${next.date})</div>`;
-      }
-    }
   }
   if (warningHtml) {
     document.getElementById('warnings').innerHTML = `<div class="section">${warningHtml}</div>`;
