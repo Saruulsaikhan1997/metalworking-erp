@@ -97,7 +97,7 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 .fin-btn.income   { border-left-color: #059669; }
 .fin-btn.expense  { border-left-color: #1565c0; }
 .fin-btn.loan     { border-left-color: #d97706; }
-.fin-btn.sales    { border-left-color: #6d28d9; }
+.fin-btn.sales    { border-left-color: #6d28d9; grid-column: span 2; }
 
 .fin-icon { font-size: 24px; line-height: 1; }
 .fin-title { font-size: 13.5px; font-weight: 700; color: var(--gray-900); }
@@ -207,15 +207,21 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
     </a>
     <a class="fin-btn expense" href="/expense">
       <div class="fin-icon">🔵</div>
-      <div class="fin-title">Нийт зарлага</div>
+      <div class="fin-title">Нийт гарсан</div>
       <div class="fin-amt expense" id="totalExpense">— ₮</div>
       <div class="fin-sub" id="totalExpenseSub">энэ сар</div>
     </a>
-    <a class="fin-btn loan" href="/loans">
-      <div class="fin-icon">🔁</div>
-      <div class="fin-title">Өр төлбөр</div>
-      <div class="fin-amt loan" id="totalLoan">— ₮</div>
-      <div class="fin-sub" id="totalLoanSub">идэвхтэй</div>
+    <a class="fin-btn loan-out" href="/loans" style="border-left:3px solid #f59e0b">
+      <div class="fin-icon">📤</div>
+      <div class="fin-title">Олгосон зээл</div>
+      <div class="fin-amt" style="color:#b45309" id="totalLoanOut">— ₮</div>
+      <div class="fin-sub" id="totalLoanOutSub">авлага</div>
+    </a>
+    <a class="fin-btn loan-in" href="/loans" style="border-left:3px solid #dc2626">
+      <div class="fin-icon">📥</div>
+      <div class="fin-title">Авсан зээл</div>
+      <div class="fin-amt" style="color:#dc2626" id="totalLoanIn">— ₮</div>
+      <div class="fin-sub" id="totalLoanInSub">өглөг</div>
     </a>
     <a class="fin-btn sales" href="/sales-entry">
       <div class="fin-icon">📊</div>
@@ -314,26 +320,33 @@ async function load() {
   const sales   = monthTx.filter(t => SALES_CODES.includes(t.code));
   const loanTx  = monthTx.filter(t => ['LOAN_IN','LOAN_OUT'].includes(t.code));
 
-  document.getElementById('totalIncome').textContent  = fmt(income.reduce((s,t)=>s+t.amount,0)) + ' ₮';
+  const incomeSum  = income.reduce((s,t)=>s+t.amount,0);
+  const expenseSum = expense.reduce((s,t)=>s+t.amount,0);
+  const loanOutMonth = monthTx.filter(t => t.code === 'LOAN_OUT').reduce((s,t)=>s+t.amount,0);
+  const totalOut = expenseSum + loanOutMonth;
+
+  document.getElementById('totalIncome').textContent  = fmt(incomeSum) + ' ₮';
   document.getElementById('totalIncomeSub').textContent = income.length + ' гүйлгээ · ' + mon;
-  document.getElementById('totalExpense').textContent = fmt(expense.reduce((s,t)=>s+t.amount,0)) + ' ₮';
-  document.getElementById('totalExpenseSub').textContent = expense.length + ' гүйлгээ · ' + mon;
+  document.getElementById('totalExpense').textContent = fmt(totalOut) + ' ₮';
+  document.getElementById('totalExpenseSub').textContent = `Зарлага ${fmt(expenseSum)} + Зээл ${fmt(loanOutMonth)}`;
   document.getElementById('totalSales').textContent  = fmt(sales.reduce((s,t)=>s+t.amount,0)) + ' ₮';
   document.getElementById('totalSalesSub').textContent = sales.length + ' гүйлгээ · ' + mon;
 
-  // Active loans: outstanding from loans_received + LOAN_OUT not yet returned
+  // Олгосон зээл (авлага — буцаж ирэх)
+  const loanOutSum = txs.filter(t => t.code === 'LOAN_OUT').reduce((s,t)=>s+t.amount,0);
+  const loanInSum  = txs.filter(t => t.code === 'LOAN_IN').reduce((s,t)=>s+t.amount,0);
+  const loanOutActive = Math.max(0, loanOutSum - loanInSum);
+  document.getElementById('totalLoanOut').textContent = fmt(loanOutActive) + ' ₮';
+  document.getElementById('totalLoanOutSub').textContent = `${fmt(loanOutSum)} олгосон · ${fmt(loanInSum)} буцсан`;
+
+  // Авсан зээл (өглөг — бид буцаана)
   let activeLoanAmt = 0;
   for (const l of loans) {
     const interestPaid = (l.interest_schedule || []).filter(s => s.paid).reduce((s,x) => s+x.amount, 0);
     activeLoanAmt += (l.principal || 0) + (l.interest_total || 0) - interestPaid;
   }
-  // LOAN_OUT outstanding (need to subtract LOAN_IN)
-  const loanOutSum = txs.filter(t => t.code === 'LOAN_OUT').reduce((s,t)=>s+t.amount,0);
-  const loanInSum  = txs.filter(t => t.code === 'LOAN_IN').reduce((s,t)=>s+t.amount,0);
-  const loanOutActive = Math.max(0, loanOutSum - loanInSum);
-
-  document.getElementById('totalLoan').textContent  = fmt(activeLoanAmt + loanOutActive) + ' ₮';
-  document.getElementById('totalLoanSub').textContent = `Авсан ${fmt(activeLoanAmt)} + Өгсөн ${fmt(loanOutActive)}`;
+  document.getElementById('totalLoanIn').textContent = fmt(activeLoanAmt) + ' ₮';
+  document.getElementById('totalLoanInSub').textContent = `${loans.length} зээлдэгч · буцаах өглөг`;
 
   // Investors
   const invEl = document.getElementById('investorList');
