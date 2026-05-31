@@ -168,7 +168,30 @@ function setDate(key) {
   render();
 }
 
+// Build set of returned LOAN_OUT tx ids by matching counterparty with LOAN_IN
+function buildReturnedSet(txs) {
+  const key = cp => (cp || '').slice(-10);
+  // Sum LOAN_IN per counterparty
+  const pool = {};
+  txs.filter(t => t.code === 'LOAN_IN').forEach(t => {
+    const k = key(t.counterparty);
+    if (k) pool[k] = (pool[k] || 0) + t.amount;
+  });
+  // Walk LOAN_OUT oldest-first, deduct from pool
+  const returned = new Set();
+  const outs = txs.filter(t => t.code === 'LOAN_OUT').sort((a,b) => a.date.localeCompare(b.date) || (a.time||'').localeCompare(b.time||''));
+  for (const t of outs) {
+    const k = key(t.counterparty);
+    if (k && (pool[k] || 0) >= t.amount) {
+      pool[k] -= t.amount;
+      returned.add(t.id);
+    }
+  }
+  return returned;
+}
+
 function render() {
+  const returnedLoans = buildReturnedSet(allTx);
   const dateFiltered = allTx.filter(isInDate);
   const expenseTx = dateFiltered.filter(t => ALL_OUT_CODES.includes(t.code));
 
@@ -224,10 +247,14 @@ function render() {
   el.innerHTML = filtered.map(t => {
     const acctShort = (t.account_label || '').replace(' (Касс)','').replace(' (Компани)','');
     const isLoan = t.code === 'LOAN_OUT';
-    return `<div class="tx-card" ${isLoan ? 'style="border-left-color:#f59e0b"' : ''}>
+    const isReturned = isLoan && returnedLoans.has(t.id);
+    const borderColor = isReturned ? '#059669' : isLoan ? '#f59e0b' : '';
+    const codeStyle = isReturned ? 'background:#d1fae5;color:#065f46' : isLoan ? 'background:#fef3c7;color:#92400e' : '';
+    const codeLabel = t.needs_review ? '⚠️ REVIEW' : isReturned ? '✅ БУЦСАН' : (t.code || '—');
+    return `<div class="tx-card" ${borderColor ? `style="border-left-color:${borderColor}"` : ''}>
       <div class="tx-top">
-        <span class="tx-code ${t.needs_review ? 'review' : ''}" ${isLoan ? 'style="background:#fef3c7;color:#92400e"' : ''}>${t.needs_review ? '⚠️ REVIEW' : (t.code || '—')}</span>
-        <div class="tx-amt">−${fmt(t.amount)} ₮</div>
+        <span class="tx-code ${t.needs_review ? 'review' : ''}" ${codeStyle ? `style="${codeStyle}"` : ''}>${codeLabel}</span>
+        <div class="tx-amt" ${isReturned ? 'style="color:#059669;text-decoration:line-through"' : ''}>−${fmt(t.amount)} ₮</div>
       </div>
       <div class="tx-desc">${t.description || '—'}</div>
       <div class="tx-meta">
