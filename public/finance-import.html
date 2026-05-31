@@ -232,6 +232,13 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 .status-box.success { background: #d1fae5; color: #065f46; }
 .status-box.error { background: #fee2e2; color: #991b1b; }
 .status-box.loading { background: #fffbeb; color: #92400e; }
+
+.stmt-row { display:flex; align-items:center; gap:10px; padding:10px 12px; background:#fff; border-radius:10px; margin-bottom:6px; border:1px solid var(--gray-200); }
+.stmt-icon { font-size:18px; }
+.stmt-info { flex:1; }
+.stmt-bank { font-size:12px; font-weight:700; color:var(--gray-900); }
+.stmt-date { font-size:10.5px; color:var(--gray-400); margin-top:2px; }
+.stmt-empty { text-align:center; color:var(--gray-400); padding:16px; font-size:12px; }
 </style>
 </head>
 <body>
@@ -297,6 +304,8 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
         </div>
       </div>
     </div>
+    <div class="section-label" style="margin-top:18px">Сүүлийн хуулгууд</div>
+    <div id="stmtHistory" style="font-size:12px;color:var(--gray-400)">Ачаалж байна...</div>
   </div>
 </div>
 
@@ -593,6 +602,30 @@ if (zone) {
     }
   });
 }
+
+// Load statement history
+async function loadHistory() {
+  const el = document.getElementById('stmtHistory');
+  try {
+    const files = await api('/finance/statements');
+    if (!files.length) { el.innerHTML = '<div class="stmt-empty">Хуулга оруулаагүй байна</div>'; return; }
+    el.innerHTML = files.slice(0, 10).map(f => {
+      const bank = f.filename.includes('TDB') || f.filename.includes('tdb') || f.filename.includes('803060') ? 'TDB (Компани)' :
+                   f.filename.includes('Khan') || f.filename.includes('khan') || f.filename.includes('5304') ? 'Хаан банк (Касс)' : '—';
+      const dt = f.filename.slice(0, 10).replace(/-/g, '.') + ' ' + f.filename.slice(11, 16).replace(/-/g, ':');
+      const icon = bank.includes('TDB') ? '🏦' : bank.includes('Хаан') ? '💵' : '📄';
+      const kb = Math.round(f.size / 1024);
+      return `<div class="stmt-row">
+        <div class="stmt-icon">${icon}</div>
+        <div class="stmt-info">
+          <div class="stmt-bank">${bank}</div>
+          <div class="stmt-date">📅 ${dt} · ${kb}KB</div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (e) { el.innerHTML = '<div class="stmt-empty">Ачаалж чадсангүй</div>'; }
+}
+loadHistory();
 </script>
 </body>
 </html>
