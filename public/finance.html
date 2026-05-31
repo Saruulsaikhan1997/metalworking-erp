@@ -108,17 +108,6 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 .fin-amt.loan    { color: #d97706; }
 .fin-amt.sales   { color: #6d28d9; }
 
-/* ── Investor section ── */
-.invest-card {
-  background: #fff; border-radius: 14px; padding: 14px 18px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05); border: 1px solid var(--gray-200);
-  border-left: 4px solid var(--brand);
-  margin-bottom: 10px;
-}
-.invest-name { font-size: 13px; font-weight: 700; color: var(--gray-900); }
-.invest-info { font-size: 11.5px; color: var(--gray-600); margin-top: 4px; line-height: 1.6; }
-.invest-info b { color: var(--gray-900); }
-
 /* ── Warnings ── */
 .warning {
   background: #fffbeb; border-left: 4px solid #f59e0b;
@@ -217,10 +206,10 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
       <div class="fin-amt" style="color:#b45309" id="totalLoanOut">— ₮</div>
       <div class="fin-sub" id="totalLoanOutSub">авлага</div>
     </a>
-    <a class="fin-btn loan-in" href="/loans" style="border-left:3px solid #dc2626">
-      <div class="fin-icon">📥</div>
+    <a class="fin-btn loan-in" href="/investment" style="border-left:3px solid #7c3aed">
+      <div class="fin-icon">💼</div>
       <div class="fin-title">Хөрөнгө оруулалт</div>
-      <div class="fin-amt" style="color:#dc2626" id="totalLoanIn">— ₮</div>
+      <div class="fin-amt" style="color:#6d28d9" id="totalLoanIn">— ₮</div>
       <div class="fin-sub" id="totalLoanInSub">оруулагч</div>
     </a>
     <a class="fin-btn sales" href="/sales-entry">
@@ -230,11 +219,6 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
       <div class="fin-sub" id="totalSalesSub">энэ сар</div>
     </a>
   </div>
-</div>
-
-<div class="section">
-  <div class="section-label">💼 Хөрөнгө оруулагч</div>
-  <div id="investorList"></div>
 </div>
 
 <div id="adminSection" style="display:none">
@@ -350,25 +334,6 @@ async function load() {
   }
   document.getElementById('totalLoanIn').textContent = fmt(investPrincipal) + ' ₮';
   document.getElementById('totalLoanInSub').textContent = `${loans.length} оруулагч · ашиг ${fmt(investProfit)}₮`;
-
-  // Investors
-  const invEl = document.getElementById('investorList');
-  if (!loans.length) {
-    invEl.innerHTML = '<div style="font-size:12px;color:#aaa;padding:14px;background:#fff;border-radius:12px;border:1px solid #e5e7eb;text-align:center">Хөрөнгө оруулагч бүртгэгдээгүй</div>';
-  } else {
-    invEl.innerHTML = loans.map(l => {
-      const profitPaid = (l.interest_schedule || []).filter(s => s.paid).reduce((s,x) => s+x.amount, 0);
-      const next = (l.interest_schedule || []).filter(s => !s.paid).sort((a,b) => a.date.localeCompare(b.date))[0];
-      return `<div class="invest-card">
-        <div class="invest-name">${l.lender}</div>
-        <div class="invest-info">
-          Хөрөнгө оруулалт: <b>${fmt(l.principal)}₮</b> · Тохирсон ашиг: <b>${fmt(l.interest_total)}₮</b><br>
-          Төлсөн ашиг: ${fmt(profitPaid)}₮ · Үлдсэн: <b style="color:#c62828">${fmt(l.interest_total - profitPaid)}₮</b>
-          ${next ? `<br>📅 Дараагийн: <b>${next.date}</b> · ${fmt(next.amount)}₮` : ''}
-        </div>
-      </div>`;
-    }).join('');
-  }
 
   // NOTE: Per-account sum-vs-balance check was REMOVED.
   // It incorrectly assumed initial balance = 0, but real bank accounts have non-zero starting balances

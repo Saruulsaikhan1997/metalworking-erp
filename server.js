@@ -44,6 +44,7 @@ app.get('/finance-import', (req, res) => res.sendFile(path.join(__dirname, 'publ
 app.get('/codes',          (req, res) => res.sendFile(path.join(__dirname, 'public', 'codes.html')));
 app.get('/review',         (req, res) => res.sendFile(path.join(__dirname, 'public', 'review.html')));
 app.get('/finance-admin',   (req, res) => res.sendFile(path.join(__dirname, 'public', 'finance-admin.html')));
+app.get('/investment',      (req, res) => res.sendFile(path.join(__dirname, 'public', 'investment.html')));
 app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'inventory-admin.html')));
 
 // ── Startup migration: fix data issues ──

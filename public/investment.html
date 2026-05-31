@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+<title>Хөрөнгө оруулалт — Метал ворkинг Центр</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --brand: #7c3aed; --brand-dark: #6d28d9;
+  --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+  --gray-400: #9ca3af; --gray-600: #4b5563; --gray-900: #111827;
+}
+body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; background: var(--gray-50); color: var(--gray-900); padding-bottom: 30px; -webkit-font-smoothing: antialiased; }
+
+.id-bar {
+  background: linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%);
+  color: #fff; padding: 18px 20px;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 4px 12px rgba(109,40,217,0.18);
+}
+.id-top { display: flex; align-items: center; gap: 12px; }
+.id-back { font-size: 22px; color: #fff; text-decoration: none; padding: 4px 8px; }
+.id-title { font-size: 17px; font-weight: 700; }
+.id-sub { font-size: 11px; opacity: 0.85; margin-top: 3px; }
+
+.section { padding: 18px 16px 0; }
+.section-label { font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 1.3px; margin-bottom: 12px; padding: 0 4px; }
+
+/* ── Overview cards ── */
+.overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.ov-card {
+  background: #fff; border-radius: 14px; padding: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--gray-200);
+}
+.ov-card.full { grid-column: span 2; }
+.ov-lbl { font-size: 10.5px; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700; }
+.ov-val { font-size: 18px; font-weight: 900; margin-top: 6px; color: var(--gray-900); }
+.ov-val.green { color: #059669; }
+.ov-val.red { color: #dc2626; }
+.ov-val.amber { color: #b45309; }
+.ov-sub { font-size: 11px; color: var(--gray-600); margin-top: 4px; }
+
+/* ── Next payment alert ── */
+.next-payment {
+  background: linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%);
+  border: 1px solid #f59e0b; border-left: 4px solid #f59e0b;
+  border-radius: 14px; padding: 16px 18px; margin-bottom: 14px;
+}
+.np-label { font-size: 10.5px; color: #92400e; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; }
+.np-amount { font-size: 22px; font-weight: 900; color: #92400e; margin-top: 6px; }
+.np-date { font-size: 12px; color: #92400e; margin-top: 4px; font-weight: 600; }
+.np-overdue { background: linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%); border-color: #dc2626; }
+.np-overdue .np-label, .np-overdue .np-amount, .np-overdue .np-date { color: #991b1b; }
+
+/* ── Investor card ── */
+.investor-card {
+  background: #fff; border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06); border: 1px solid var(--gray-200);
+  overflow: hidden; margin-bottom: 14px;
+}
+.inv-header {
+  background: linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%);
+  color: #fff; padding: 18px 20px;
+}
+.inv-name { font-size: 16px; font-weight: 800; }
+.inv-badge { display: inline-block; margin-top: 6px; padding: 3px 10px; border-radius: 8px; background: rgba(255,255,255,0.2); font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
+.inv-body { padding: 18px 20px; }
+
+.inv-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.inv-stat { }
+.inv-stat-lbl { font-size: 10.5px; color: var(--gray-400); font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; }
+.inv-stat-val { font-size: 15px; font-weight: 800; color: var(--gray-900); margin-top: 3px; }
+.inv-stat-val.green { color: #059669; }
+.inv-stat-val.red { color: #dc2626; }
+
+/* ── Funding source ── */
+.funding-box {
+  background: var(--gray-50); border: 1px solid var(--gray-200);
+  border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;
+}
+.funding-title { font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; }
+.funding-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 12.5px; }
+.funding-lbl { color: var(--gray-600); }
+.funding-val { font-weight: 700; color: var(--gray-900); }
+
+/* ── Obligations ── */
+.obligations-box {
+  background: #fef2f2; border: 1px solid #fecaca;
+  border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;
+}
+.obligations-title { font-size: 11px; font-weight: 700; color: #991b1b; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+.obligations-item { font-size: 12px; color: #7f1d1d; padding: 4px 0; line-height: 1.5; }
+.obligations-item::before { content: '•'; margin-right: 8px; font-weight: 700; }
+
+/* ── Schedule ── */
+.schedule { margin-top: 4px; }
+.schedule-title { font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; }
+.sch-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; margin-bottom: 6px;
+  background: #fff; border: 1px solid var(--gray-200);
+  border-radius: 12px; border-left: 4px solid var(--gray-200);
+}
+.sch-row.paid { border-left-color: #059669; background: #f0fdf4; }
+.sch-row.upcoming { border-left-color: #f59e0b; background: #fffbeb; }
+.sch-row.overdue { border-left-color: #dc2626; background: #fef2f2; }
+.sch-info { flex: 1; }
+.sch-date { font-size: 13px; font-weight: 700; color: var(--gray-900); }
+.sch-note { font-size: 11px; color: var(--gray-600); margin-top: 2px; }
+.sch-badge { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 6px; font-size: 9px; font-weight: 700; }
+.sch-badge.paid { background: #d1fae5; color: #065f46; }
+.sch-badge.upcoming { background: #fef3c7; color: #92400e; }
+.sch-badge.overdue { background: #fee2e2; color: #991b1b; }
+.sch-amt { font-size: 14px; font-weight: 800; white-space: nowrap; }
+.sch-amt.paid { color: #059669; text-decoration: line-through; opacity: 0.7; }
+
+/* ── Risk note ── */
+.risk-box {
+  background: #eff6ff; border: 1px solid #bfdbfe;
+  border-radius: 12px; padding: 14px 16px; margin-top: 16px;
+}
+.risk-title { font-size: 11px; font-weight: 700; color: #1e40af; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+.risk-item { font-size: 12px; color: #1e3a5f; padding: 3px 0; line-height: 1.5; }
+.risk-item::before { content: '⚠️'; margin-right: 6px; }
+
+.empty { text-align: center; color: var(--gray-400); padding: 40px 20px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="id-bar">
+  <div class="id-top">
+    <a class="id-back" href="/dashboard">‹</a>
+    <div style="flex:1">
+      <div class="id-title">💼 Хөрөнгө оруулалт</div>
+      <div class="id-sub">Капиталын бүтэц · Хөрөнгө оруулагчид</div>
+    </div>
+  </div>
+</div>
+
+<!-- Overview -->
+<div class="section">
+  <div class="section-label">📊 Тойм</div>
+  <div class="overview-grid">
+    <div class="ov-card">
+      <div class="ov-lbl">Нийт оруулалт</div>
+      <div class="ov-val" id="ovPrincipal">— ₮</div>
+    </div>
+    <div class="ov-card">
+      <div class="ov-lbl">Тохирсон ашиг</div>
+      <div class="ov-val amber" id="ovProfit">— ₮</div>
+    </div>
+    <div class="ov-card">
+      <div class="ov-lbl">Төлсөн ашиг</div>
+      <div class="ov-val green" id="ovPaid">— ₮</div>
+    </div>
+    <div class="ov-card">
+      <div class="ov-lbl">Үлдсэн ашиг</div>
+      <div class="ov-val red" id="ovRemaining">— ₮</div>
+    </div>
+  </div>
+
+  <!-- Next payment -->
+  <div id="nextPayment" style="display:none"></div>
+</div>
+
+<!-- Investors -->
+<div class="section">
+  <div class="section-label">👤 Хөрөнгө оруулагчид</div>
+  <div id="investorList"></div>
+</div>
+
+<script src="/js/bottom-nav.js"></script>
+<script>
+const token = localStorage.getItem('token');
+const user  = JSON.parse(localStorage.getItem('user') || '{}');
+if (!token) window.location.href = '/';
+if (!['admin','shareholder'].includes(user.role)) {
+  document.body.innerHTML = '<div class="empty" style="margin-top:100px">Хандах эрхгүй</div>';
+}
+
+async function api(path) {
+  const r = await fetch('/api' + path, { headers: { 'Authorization': 'Bearer ' + token }});
+  if (r.status === 401) { localStorage.clear(); window.location.href = '/'; }
+  return r.json();
+}
+function fmt(n) { return Number(n||0).toLocaleString('mn-MN'); }
+function daysUntil(d) { return Math.ceil((new Date(d) - new Date()) / 86400000); }
+
+async function load() {
+  const data = await api('/finance/loans-received');
+  const investors = data || [];
+
+  if (!investors.length) {
+    document.getElementById('investorList').innerHTML = '<div class="empty">Хөрөнгө оруулагч бүртгэгдээгүй</div>';
+    return;
+  }
+
+  // Overview totals
+  let totalPrincipal = 0, totalProfit = 0, totalPaid = 0;
+  let nextPayment = null;
+
+  for (const inv of investors) {
+    totalPrincipal += inv.principal || 0;
+    totalProfit += inv.interest_total || 0;
+    const sched = inv.interest_schedule || [];
+    totalPaid += sched.filter(s => s.paid).reduce((s,x) => s + x.amount, 0);
+    // Find next unpaid
+    for (const s of sched) {
+      if (!s.paid && (!nextPayment || s.date < nextPayment.date)) {
+        nextPayment = { ...s, lender: inv.lender };
+      }
+    }
+  }
+
+  document.getElementById('ovPrincipal').textContent = fmt(totalPrincipal) + ' ₮';
+  document.getElementById('ovProfit').textContent = fmt(totalProfit) + ' ₮';
+  document.getElementById('ovPaid').textContent = fmt(totalPaid) + ' ₮';
+  document.getElementById('ovRemaining').textContent = fmt(totalProfit - totalPaid) + ' ₮';
+
+  // Next payment alert
+  if (nextPayment) {
+    const days = daysUntil(nextPayment.date);
+    const overdue = days < 0;
+    const npEl = document.getElementById('nextPayment');
+    npEl.style.display = 'block';
+    npEl.innerHTML = `
+      <div class="next-payment ${overdue ? 'np-overdue' : ''}">
+        <div class="np-label">${overdue ? '⚠️ Хоцорсон төлбөр' : '📅 Дараагийн төлбөр'}</div>
+        <div class="np-amount">${fmt(nextPayment.amount)} ₮</div>
+        <div class="np-date">${nextPayment.lender} · ${nextPayment.date} ${overdue ? '(' + Math.abs(days) + ' хоног хоцорсон)' : '(' + days + ' хоног үлдсэн)'}</div>
+      </div>`;
+  }
+
+  // Render each investor
+  document.getElementById('investorList').innerHTML = investors.map(inv => {
+    const sched = inv.interest_schedule || [];
+    const paidAmt = sched.filter(s => s.paid).reduce((s,x) => s + x.amount, 0);
+    const remainingProfit = (inv.interest_total || 0) - paidAmt;
+    const advancePaid = inv.interest_paid || paidAmt;
+    const actualReceived = inv.principal_received || inv.principal;
+
+    return `
+    <div class="investor-card">
+      <div class="inv-header">
+        <div class="inv-name">${inv.lender}</div>
+        <span class="inv-badge">${inv.active ? 'ИДЭВХТЭЙ' : 'ХААГДСАН'}</span>
+      </div>
+      <div class="inv-body">
+
+        <!-- Key stats -->
+        <div class="inv-stat-grid">
+          <div class="inv-stat">
+            <div class="inv-stat-lbl">Хөрөнгө оруулалт</div>
+            <div class="inv-stat-val">${fmt(inv.principal)}₮</div>
+          </div>
+          <div class="inv-stat">
+            <div class="inv-stat-lbl">Бодит орсон дүн</div>
+            <div class="inv-stat-val">${fmt(actualReceived)}₮</div>
+          </div>
+          <div class="inv-stat">
+            <div class="inv-stat-lbl">Тохирсон ашиг</div>
+            <div class="inv-stat-val amber">${fmt(inv.interest_total)}₮</div>
+          </div>
+          <div class="inv-stat">
+            <div class="inv-stat-lbl">Үлдсэн ашиг</div>
+            <div class="inv-stat-val red">${fmt(remainingProfit)}₮</div>
+          </div>
+          <div class="inv-stat">
+            <div class="inv-stat-lbl">Хугацаа</div>
+            <div class="inv-stat-val">${inv.term_years} жил</div>
+          </div>
+          <div class="inv-stat">
+            <div class="inv-stat-lbl">Дуусах огноо</div>
+            <div class="inv-stat-val">${inv.term_end || '—'}</div>
+          </div>
+        </div>
+
+        <!-- Funding source -->
+        <div class="funding-box">
+          <div class="funding-title">Санхүүжилтийн эх үүсвэр</div>
+          <div class="funding-row"><span class="funding-lbl">Санхүүжилтийн байгууллага</span><span class="funding-val">${inv.funding_source || 'НЭТ Капитал ББСБ'}</span></div>
+          <div class="funding-row"><span class="funding-lbl">Анхны дүн</span><span class="funding-val">${fmt(inv.principal)}₮</span></div>
+          <div class="funding-row"><span class="funding-lbl">ББСБ шимтгэл (1%)</span><span class="funding-val">−${fmt(inv.principal - (inv.principal_received || inv.principal) - (inv.interest_paid || 0))}₮</span></div>
+          <div class="funding-row"><span class="funding-lbl">Урьдчилгаа ашиг</span><span class="funding-val">−${fmt(inv.interest_paid || paidAmt)}₮</span></div>
+          <div class="funding-row" style="border-top:1px solid var(--gray-200);padding-top:8px;margin-top:4px"><span class="funding-lbl" style="font-weight:700;color:var(--gray-900)">Металворкингт орсон</span><span class="funding-val" style="color:#059669">${fmt(actualReceived)}₮</span></div>
+        </div>
+
+        <!-- Obligations -->
+        <div class="obligations-box">
+          <div class="obligations-title">Металворкингийн үүрэг</div>
+          <div class="obligations-item">${fmt(inv.principal)}₮ үндсэн дүнг бүрэн буцаана</div>
+          <div class="obligations-item">Санхүүжилтийн байгууллагын бүх эргэн төлөлтийг хариуцна</div>
+          <div class="obligations-item">Санхүүжилтийн байгууллагын бүх хүүг хариуцна</div>
+          <div class="obligations-item">${fmt(inv.interest_total)}₮ тохирсон ашиг олгоно (${fmt(paidAmt)}₮ төлсөн)</div>
+        </div>
+
+        <!-- Schedule -->
+        <div class="schedule">
+          <div class="schedule-title">Ашгийн төлбөрийн график</div>
+          ${sched.map(s => {
+            const days = daysUntil(s.date);
+            const cls = s.paid ? 'paid' : days < 0 ? 'overdue' : days <= 30 ? 'upcoming' : '';
+            const badge = s.paid ? '<span class="sch-badge paid">✓ ТӨЛСӨН</span>'
+              : days < 0 ? '<span class="sch-badge overdue">' + Math.abs(days) + ' хоног хоцорсон</span>'
+              : days <= 30 ? '<span class="sch-badge upcoming">' + days + ' хоногт</span>' : '';
+            return `<div class="sch-row ${cls}">
+              <div class="sch-info">
+                <div class="sch-date">${s.date} ${badge}</div>
+                <div class="sch-note">${s.note || ''}</div>
+              </div>
+              <div class="sch-amt ${s.paid ? 'paid' : ''}">${fmt(s.amount)}₮</div>
+            </div>`;
+          }).join('')}
+        </div>
+
+        <!-- Risk -->
+        <div class="risk-box">
+          <div class="risk-title">Оруулагчийн эрсдэл</div>
+          <div class="risk-item">Өөрийн орон сууцыг барьцаалсан</div>
+          <div class="risk-item">Санхүүжилтийн байгууллагын гэрээний үндсэн зээлдэгч</div>
+          <div class="risk-item">Металворкингийн өмнөөс эрсдэл үүрч байгаа</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+load();
+</script>
+</body>
+</html>
