@@ -8,7 +8,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 // Prevent stale HTML cache on mobile browsers (Safari aggressive caching)
 app.use((req, res, next) => {
-  if (req.url.endsWith('.html') || req.url === '/' || !req.url.includes('.')) {
+  if (req.url.endsWith('.html') || req.url.endsWith('.js') || req.url === '/' || !req.url.includes('.')) {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
