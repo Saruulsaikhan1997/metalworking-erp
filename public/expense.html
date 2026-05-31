@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
-<title>Нийт зарлага — Метал ворkинг Центр</title>
+<title>Нийт гарсан — Метал ворkинг Центр</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -87,8 +87,8 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
   <div class="id-top">
     <a class="id-back" href="/finance">‹</a>
     <div style="flex:1">
-      <div class="id-title">🔵 Нийт зарлага</div>
-      <div class="id-sub">Импорт, цалин, тээвэр, бусад</div>
+      <div class="id-title">🔵 Нийт гарсан</div>
+      <div class="id-sub">Зарлага + олгосон зээл</div>
     </div>
   </div>
   <div class="id-hero">
@@ -131,10 +131,13 @@ async function api(path) {
 }
 function fmt(n) { return Number(n||0).toLocaleString('mn-MN'); }
 
-// EXPENSE_CODES and CAT_LABELS from finance-constants.js
+// EXPENSE_CODES, LOAN_CODES and CAT_LABELS from finance-constants.js
+const ALL_OUT_CODES = [...EXPENSE_CODES, 'LOAN_OUT'];
 
 const CATEGORIES = [
-  { key: 'all', label: 'Бүгд', codes: EXPENSE_CODES },
+  { key: 'all', label: 'Бүгд', codes: ALL_OUT_CODES },
+  { key: 'expenses', label: '💸 Зарлага', codes: EXPENSE_CODES },
+  { key: 'LOAN_OUT', label: '📤 Олгосон зээл', codes: ['LOAN_OUT'] },
   ...EXPENSE_CODES.map(c => ({ key: c, label: CAT_LABELS[c], codes: [c] })),
 ];
 
@@ -167,7 +170,7 @@ function setDate(key) {
 
 function render() {
   const dateFiltered = allTx.filter(isInDate);
-  const expenseTx = dateFiltered.filter(t => EXPENSE_CODES.includes(t.code));
+  const expenseTx = dateFiltered.filter(t => ALL_OUT_CODES.includes(t.code));
 
   // Counts per category (only show categories with >0 in current date range)
   const counts = {};
@@ -187,7 +190,11 @@ function render() {
 
   const total = filtered.reduce((s,t) => s + (t.amount || 0), 0);
   document.getElementById('filterTotal').textContent = fmt(total) + ' ₮';
-  document.getElementById('filterTotalSub').textContent = filtered.length + ' гүйлгээ';
+  const expOnly = filtered.filter(t => EXPENSE_CODES.includes(t.code)).reduce((s,t)=>s+t.amount,0);
+  const loanOnly = filtered.filter(t => t.code === 'LOAN_OUT').reduce((s,t)=>s+t.amount,0);
+  const parts = [filtered.length + ' гүйлгээ'];
+  if (loanOnly > 0 && expOnly > 0) parts.push(`Зарлага ${fmt(expOnly)} + Зээл ${fmt(loanOnly)}`);
+  document.getElementById('filterTotalSub').textContent = parts.join(' · ');
 
   // Breakdown chart
   const byCode = {};
@@ -216,9 +223,10 @@ function render() {
   if (!filtered.length) { el.innerHTML = '<div class="empty">Гүйлгээ байхгүй</div>'; return; }
   el.innerHTML = filtered.map(t => {
     const acctShort = (t.account_label || '').replace(' (Касс)','').replace(' (Компани)','');
-    return `<div class="tx-card">
+    const isLoan = t.code === 'LOAN_OUT';
+    return `<div class="tx-card" ${isLoan ? 'style="border-left-color:#f59e0b"' : ''}>
       <div class="tx-top">
-        <span class="tx-code ${t.needs_review ? 'review' : ''}">${t.needs_review ? '⚠️ REVIEW' : (t.code || '—')}</span>
+        <span class="tx-code ${t.needs_review ? 'review' : ''}" ${isLoan ? 'style="background:#fef3c7;color:#92400e"' : ''}>${t.needs_review ? '⚠️ REVIEW' : (t.code || '—')}</span>
         <div class="tx-amt">−${fmt(t.amount)} ₮</div>
       </div>
       <div class="tx-desc">${t.description || '—'}</div>
