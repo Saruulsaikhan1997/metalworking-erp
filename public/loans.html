@@ -137,15 +137,15 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
   <div class="id-top">
     <a class="id-back" href="/finance">‹</a>
     <div style="flex:1">
-      <div class="id-title">🔁 Өр төлбөр</div>
-      <div class="id-sub">Авсан зээл, өгсөн зээл</div>
+      <div class="id-title">🔁 Хөрөнгө оруулалт · Зээл</div>
+      <div class="id-sub">Хөрөнгө оруулалт, олгосон зээл</div>
     </div>
   </div>
   <div class="summary-grid">
     <div class="sum-card">
-      <div class="sum-lbl">📥 Бид авсан</div>
+      <div class="sum-lbl">📥 Хөрөнгө оруулалт</div>
       <div class="sum-val" id="sumRecv">— ₮</div>
-      <div class="sum-sub" id="sumRecvSub">үлдсэн төлөх</div>
+      <div class="sum-sub" id="sumRecvSub">оруулагч</div>
     </div>
     <div class="sum-card">
       <div class="sum-lbl">📤 Бид өгсөн</div>
@@ -159,7 +159,7 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 
 <div class="section">
   <div class="tabs-row">
-    <button class="tab-pill active" id="t-recv" onclick="showTab('recv')">📥 Бид авсан</button>
+    <button class="tab-pill active" id="t-recv" onclick="showTab('recv')">📥 Хөрөнгө оруулалт</button>
     <button class="tab-pill" id="t-lent" onclick="showTab('lent')">📤 Бид өгсөн</button>
     <button class="tab-pill" id="t-history" onclick="showTab('history')">📋 Гүйлгээний түүх</button>
   </div>
@@ -230,7 +230,7 @@ async function unmarkPaid(loanId, scheduleIdx) {
 function renderRecv() {
   const el = document.getElementById('recvList');
   if (!loansReceived.length) {
-    el.innerHTML = '<div class="empty">Авсан зээл бүртгэгдээгүй</div>';
+    el.innerHTML = '<div class="empty">Хөрөнгө оруулалт бүртгэгдээгүй</div>';
     return;
   }
   el.innerHTML = loansReceived.map(l => {
@@ -245,24 +245,24 @@ function renderRecv() {
           <div class="loan-name">${l.lender}</div>
           <div class="loan-meta">Огноо: ${l.principal_received_date} · Хугацаа: ${l.term_years} жил${l.term_end ? ' (' + l.term_end + ')' : ''}</div>
         </div>
-        <span class="loan-status ${remainingInterest === 0 ? 'done' : 'active'}">${remainingInterest === 0 ? '✓ Хүү төлсөн' : 'ИДЭВХТЭЙ'}</span>
+        <span class="loan-status ${remainingInterest === 0 ? 'done' : 'active'}">${remainingInterest === 0 ? '✓ Ашиг төлсөн' : 'ИДЭВХТЭЙ'}</span>
       </div>
 
       <div class="loan-stats">
         <div class="ls-item">
-          <div class="ls-lbl">Үндсэн дүн</div>
+          <div class="ls-lbl">Хөрөнгө оруулалт</div>
           <div class="ls-val">${fmt(l.principal)}₮</div>
         </div>
         <div class="ls-item">
-          <div class="ls-lbl">Нийт хүү</div>
+          <div class="ls-lbl">Тохирсон ашиг</div>
           <div class="ls-val">${fmt(l.interest_total)}₮</div>
         </div>
         <div class="ls-item">
-          <div class="ls-lbl">Төлсөн хүү</div>
+          <div class="ls-lbl">Төлсөн ашиг</div>
           <div class="ls-val green">${fmt(paidAmt)}₮</div>
         </div>
         <div class="ls-item">
-          <div class="ls-lbl">Үлдсэн хүү</div>
+          <div class="ls-lbl">Үлдсэн ашиг</div>
           <div class="ls-val red">${fmt(remainingInterest)}₮</div>
         </div>
       </div>
@@ -270,7 +270,7 @@ function renderRecv() {
       ${l.note ? `<div style="font-size:11px;color:#666;margin-bottom:10px;padding:8px 10px;background:#fffbeb;border-radius:8px;border-left:3px solid #f59e0b">💡 ${l.note}</div>` : ''}
 
       <div class="schedule">
-        <div class="schedule-lbl">Хүүгийн төлбөрийн график</div>
+        <div class="schedule-lbl">Ашгийн төлбөрийн график</div>
         ${sched.map((s, i) => {
           const days = daysUntil(s.date);
           const overdue = !s.paid && days < 0;
@@ -407,9 +407,9 @@ function renderAlerts() {
       if (sched[i].paid) continue;
       const days = daysUntil(sched[i].date);
       if (days < 0) {
-        html += `<div class="alert">⚠️ <b>${l.lender}</b> хүүгийн төлбөр <b>${Math.abs(days)} хоног</b> хоцорсон: ${fmt(sched[i].amount)}₮ (${sched[i].date})</div>`;
+        html += `<div class="alert">⚠️ <b>${l.lender}</b> ашгийн төлбөр <b>${Math.abs(days)} хоног</b> хоцорсон: ${fmt(sched[i].amount)}₮ (${sched[i].date})</div>`;
       } else if (days <= 14) {
-        html += `<div class="alert warning">📅 <b>${l.lender}</b> хүүгийн төлбөр ${days} хоногт: ${fmt(sched[i].amount)}₮ (${sched[i].date})</div>`;
+        html += `<div class="alert warning">📅 <b>${l.lender}</b> ашгийн төлбөр ${days} хоногт: ${fmt(sched[i].amount)}₮ (${sched[i].date})</div>`;
       }
     }
   }
@@ -418,13 +418,17 @@ function renderAlerts() {
 
 function renderSummary() {
   // Received: outstanding total
-  let recvTotal = 0;
+  // Хөрөнгө оруулалт: зөвхөн principal харуулна
+  let investTotal = 0;
+  let profitTotal = 0;
+  let profitPaid = 0;
   for (const l of loansReceived) {
-    const paid = (l.interest_schedule || []).filter(s => s.paid).reduce((s,x) => s+x.amount, 0);
-    recvTotal += (l.principal || 0) + (l.interest_total || 0) - paid;
+    investTotal += (l.principal || 0);
+    profitTotal += (l.interest_total || 0);
+    profitPaid += (l.interest_schedule || []).filter(s => s.paid).reduce((s,x) => s+x.amount, 0);
   }
-  document.getElementById('sumRecv').textContent = fmt(recvTotal) + ' ₮';
-  document.getElementById('sumRecvSub').textContent = loansReceived.length + ' зээлдэгч';
+  document.getElementById('sumRecv').textContent = fmt(investTotal) + ' ₮';
+  document.getElementById('sumRecvSub').textContent = loansReceived.length + ' оруулагч · ашиг ' + fmt(profitTotal - profitPaid) + '₮ үлдсэн';
 
   // Lent: outstanding
   const loanOutSum = allTx.filter(t => t.code === 'LOAN_OUT').reduce((s,t)=>s+t.amount,0);

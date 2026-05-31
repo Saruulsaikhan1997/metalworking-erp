@@ -219,9 +219,9 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
     </a>
     <a class="fin-btn loan-in" href="/loans" style="border-left:3px solid #dc2626">
       <div class="fin-icon">📥</div>
-      <div class="fin-title">Авсан зээл</div>
+      <div class="fin-title">Хөрөнгө оруулалт</div>
       <div class="fin-amt" style="color:#dc2626" id="totalLoanIn">— ₮</div>
-      <div class="fin-sub" id="totalLoanInSub">өглөг</div>
+      <div class="fin-sub" id="totalLoanInSub">оруулагч</div>
     </a>
     <a class="fin-btn sales" href="/sales-entry">
       <div class="fin-icon">📊</div>
@@ -339,14 +339,17 @@ async function load() {
   document.getElementById('totalLoanOut').textContent = fmt(loanOutActive) + ' ₮';
   document.getElementById('totalLoanOutSub').textContent = `${fmt(loanOutSum)} олгосон · ${fmt(loanInSum)} буцсан`;
 
-  // Авсан зээл (өглөг — бид буцаана)
-  let activeLoanAmt = 0;
+  // Хөрөнгө оруулалт
+  let investPrincipal = 0;
+  let investProfit = 0;
+  let investPaid = 0;
   for (const l of loans) {
-    const interestPaid = (l.interest_schedule || []).filter(s => s.paid).reduce((s,x) => s+x.amount, 0);
-    activeLoanAmt += (l.principal || 0) + (l.interest_total || 0) - interestPaid;
+    investPrincipal += (l.principal || 0);
+    investProfit += (l.interest_total || 0);
+    investPaid += (l.interest_schedule || []).filter(s => s.paid).reduce((s,x) => s+x.amount, 0);
   }
-  document.getElementById('totalLoanIn').textContent = fmt(activeLoanAmt) + ' ₮';
-  document.getElementById('totalLoanInSub').textContent = `${loans.length} зээлдэгч · буцаах өглөг`;
+  document.getElementById('totalLoanIn').textContent = fmt(investPrincipal) + ' ₮';
+  document.getElementById('totalLoanInSub').textContent = `${loans.length} оруулагч · ашиг ${fmt(investProfit)}₮`;
 
   // Investors
   const invEl = document.getElementById('investorList');
@@ -354,13 +357,13 @@ async function load() {
     invEl.innerHTML = '<div style="font-size:12px;color:#aaa;padding:14px;background:#fff;border-radius:12px;border:1px solid #e5e7eb;text-align:center">Хөрөнгө оруулагч бүртгэгдээгүй</div>';
   } else {
     invEl.innerHTML = loans.map(l => {
-      const interestPaid = (l.interest_schedule || []).filter(s => s.paid).reduce((s,x) => s+x.amount, 0);
+      const profitPaid = (l.interest_schedule || []).filter(s => s.paid).reduce((s,x) => s+x.amount, 0);
       const next = (l.interest_schedule || []).filter(s => !s.paid).sort((a,b) => a.date.localeCompare(b.date))[0];
       return `<div class="invest-card">
         <div class="invest-name">${l.lender}</div>
         <div class="invest-info">
-          Үндсэн дүн: <b>${fmt(l.principal)}₮</b> · Хүү: <b>${fmt(l.interest_total)}₮</b><br>
-          Төлсөн хүү: ${fmt(interestPaid)}₮ · Үлдсэн: <b style="color:#c62828">${fmt(l.interest_total - interestPaid)}₮</b>
+          Хөрөнгө оруулалт: <b>${fmt(l.principal)}₮</b> · Тохирсон ашиг: <b>${fmt(l.interest_total)}₮</b><br>
+          Төлсөн ашиг: ${fmt(profitPaid)}₮ · Үлдсэн: <b style="color:#c62828">${fmt(l.interest_total - profitPaid)}₮</b>
           ${next ? `<br>📅 Дараагийн: <b>${next.date}</b> · ${fmt(next.amount)}₮` : ''}
         </div>
       </div>`;
@@ -384,7 +387,7 @@ async function load() {
     if (next) {
       const days = Math.ceil((new Date(next.date) - new Date()) / 86400000);
       if (days <= 30 && days >= 0) {
-        warningHtml += `<div class="warning">📅 <b>${l.lender}</b> хүүгийн төлбөр ${days} хоногийн дотор: <b>${fmt(next.amount)}₮</b> (${next.date})</div>`;
+        warningHtml += `<div class="warning">📅 <b>${l.lender}</b> ашгийн төлбөр ${days} хоногийн дотор: <b>${fmt(next.amount)}₮</b> (${next.date})</div>`;
       }
     }
   }
