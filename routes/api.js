@@ -164,6 +164,14 @@ router.post('/imports', adminOnly, (req, res) => {
   save(db); res.json({ id });
 });
 
+// Bulk replace all imports (admin only)
+router.put('/imports', adminOnly, (req, res) => {
+  if (!Array.isArray(req.body)) return res.status(400).json({ error: 'Array expected' });
+  const db = load();
+  db.imports = req.body;
+  save(db); res.json({ ok: true, count: req.body.length });
+});
+
 // ── ALERTS ──
 router.put('/alerts/:id/resolve', adminOnly, (req, res) => {
   const db = load();
@@ -1044,6 +1052,13 @@ router.delete('/news/:id', adminOnly, (req, res) => {
   n.archived_by = req.user.name;
   save(db);
   res.json({ ok: true });
+});
+
+// ── Admin: Export full database (for local sync) ──
+router.get('/admin/export', adminOnly, (req, res) => {
+  const db = load();
+  res.setHeader('Content-Disposition', 'attachment; filename="data.json"');
+  res.json(db);
 });
 
 module.exports = router;
