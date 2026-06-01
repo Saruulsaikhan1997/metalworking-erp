@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
-<title>Нийт гарсан — Метал ворkинг Центр</title>
+<title>Нийт зарлага — Метал ворkинг Центр</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -87,7 +87,7 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
   <div class="id-top">
     <a class="id-back" href="/finance">‹</a>
     <div style="flex:1">
-      <div class="id-title">🔵 Нийт гарсан</div>
+      <div class="id-title">🔵 Нийт зарлага</div>
       <div class="id-sub">Зарлага + олгосон зээл</div>
     </div>
   </div>
@@ -103,8 +103,8 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
   <div class="date-filter">
     <button class="date-btn" data-d="today" onclick="setDate('today')">Өнөөдөр</button>
     <button class="date-btn" data-d="week"  onclick="setDate('week')">7 хоног</button>
-    <button class="date-btn active" data-d="month" onclick="setDate('month')">Энэ сар</button>
-    <button class="date-btn" data-d="all"   onclick="setDate('all')">Бүгд</button>
+    <button class="date-btn" data-d="month" onclick="setDate('month')">Энэ сар</button>
+    <button class="date-btn active" data-d="all"   onclick="setDate('all')">Бүгд</button>
   </div>
 
   <div class="section-label">Ангилал</div>
@@ -143,7 +143,7 @@ const CATEGORIES = [
 
 let allTx = [];
 let activeCat = 'all';
-let activeDate = 'month';
+let activeDate = 'all';
 
 function thisMonth() { return new Date().toISOString().slice(0,7); }
 function today()     { return new Date().toISOString().slice(0,10); }
