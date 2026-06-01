@@ -25,64 +25,110 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 .id-title { font-size: 17px; font-weight: 700; flex: 1; }
 .id-sub { font-size: 11px; opacity: 0.85; margin-top: 3px; }
 
+/* Summary stats */
+.stats-row {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  padding: 14px 16px 0;
+}
+.stat-box {
+  background: #fff; border-radius: 12px; padding: 12px 10px; text-align: center;
+  border: 1px solid var(--gray-200);
+}
+.stat-val { font-size: 20px; font-weight: 900; color: var(--brand-dark); }
+.stat-lbl { font-size: 10px; color: var(--gray-400); font-weight: 600; margin-top: 2px; text-transform: uppercase; }
+
 .section { padding: 18px 16px 0; }
 .section-label { font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 1.3px; margin-bottom: 12px; padding: 0 4px; }
 
-.plan-card {
-  background: #fff; border-radius: 16px; padding: 18px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--gray-200);
-  margin-bottom: 12px;
+/* Filter chips */
+.chips { display: flex; gap: 6px; overflow-x: auto; padding: 0 0 12px; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex-shrink: 0; padding: 7px 13px;
+  border: 1.5px solid var(--gray-200); border-radius: 20px;
+  background: #fff; font-size: 11.5px; font-weight: 600;
+  color: var(--gray-600); cursor: pointer; white-space: nowrap;
 }
-.plan-title { font-size: 13px; font-weight: 700; color: var(--gray-900); margin-bottom: 4px; }
-.plan-sub { font-size: 11px; color: var(--gray-600); }
+.chip.active { background: var(--brand-dark); border-color: var(--brand-dark); color: #fff; }
+.chip-count { display: inline-block; margin-left: 4px; padding: 1px 5px; background: rgba(0,0,0,0.08); border-radius: 8px; font-size: 9px; }
+.chip.active .chip-count { background: rgba(255,255,255,0.2); }
 
 .shipment-card {
   background: #fff; border-radius: 14px;
   padding: 16px 18px; margin-bottom: 10px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.05); border: 1px solid var(--gray-200);
   border-left: 4px solid var(--brand);
+  cursor: pointer;
 }
-.sc-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+.shipment-card.st-delivered { border-left-color: #059669; }
+.shipment-card.st-transit { border-left-color: #2563eb; }
+.shipment-card.st-manufacturing { border-left-color: #f59e0b; }
+.shipment-card.st-pending { border-left-color: #dc2626; }
+
+.sc-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
 .sc-supplier { font-size: 14px; font-weight: 700; color: var(--gray-900); }
 .sc-product { font-size: 11.5px; color: var(--gray-600); margin-top: 3px; line-height: 1.4; }
 .sc-amount { font-size: 13px; font-weight: 700; color: var(--brand-dark); white-space: nowrap; }
 
-/* status pipeline */
-.pipeline { display: flex; gap: 4px; margin: 10px 0 8px; }
-.pipe-step { flex: 1; height: 4px; background: var(--gray-200); border-radius: 2px; }
-.pipe-step.done { background: var(--brand); }
-.pipe-step.current { background: #f59e0b; animation: pulse 1.5s ease-in-out infinite; }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-
+/* Status badges */
 .sc-status {
   display: inline-block; font-size: 10.5px; font-weight: 700;
   padding: 3px 9px; border-radius: 10px;
-  background: #fef3c7; color: #92400e;
   margin-top: 2px;
 }
 .sc-status.transit { background: #dbeafe; color: #1e40af; }
-.sc-status.customs { background: #fed7aa; color: #9a3412; }
-.sc-status.arrived { background: #d1fae5; color: #065f46; }
+.sc-status.manufacturing { background: #fef3c7; color: #92400e; }
+.sc-status.delivered { background: #d1fae5; color: #065f46; }
 .sc-status.pending { background: #fee2e2; color: #991b1b; }
+.sc-status.customs { background: #fed7aa; color: #9a3412; }
+
+.inv-status {
+  display: inline-block; font-size: 10px; font-weight: 700;
+  padding: 2px 8px; border-radius: 8px;
+  background: #fef3c7; color: #92400e;
+  margin-left: 6px;
+}
+
+/* Pipeline */
+.pipeline { display: flex; gap: 4px; margin: 10px 0 8px; }
+.pipe-step { flex: 1; height: 4px; background: var(--gray-200); border-radius: 2px; }
+.pipe-step.done { background: #059669; }
+.pipe-step.current { background: #f59e0b; animation: pulse 1.5s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+.pipe-labels { display: flex; justify-content: space-between; font-size: 8.5px; color: var(--gray-400); margin-bottom: 6px; }
+
+.payment-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--gray-600); padding: 3px 0; }
+.payment-row.paid { color: #059669; }
+.payment-row.pend { color: #c62828; font-weight: 600; }
 
 .sc-meta {
-  display: flex; gap: 12px; flex-wrap: wrap;
+  display: flex; gap: 10px; flex-wrap: wrap;
   font-size: 10.5px; color: var(--gray-400);
   margin-top: 8px; padding-top: 8px;
   border-top: 1px solid var(--gray-100);
 }
 
-.payment-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--gray-600); padding: 3px 0; }
-.payment-row.paid { color: #059669; }
-.payment-row.pending { color: #c62828; font-weight: 600; }
-
-.settings-link {
-  display: block; text-align: center;
-  margin: 24px 16px 0; padding: 10px;
-  font-size: 11px; color: var(--gray-400); font-weight: 600;
-  background: #fff; border: 1px solid var(--gray-200); border-radius: 14px;
-  text-decoration: none;
+.next-milestone {
+  margin-top: 8px; padding: 8px 10px;
+  background: #eff6ff; border-radius: 8px;
+  font-size: 11px; color: #1e40af; font-weight: 600;
 }
+
+/* Activity log (collapsible) */
+.log-toggle {
+  font-size: 10.5px; color: var(--brand); font-weight: 600;
+  cursor: pointer; margin-top: 8px; padding-top: 6px;
+  border-top: 1px solid var(--gray-100);
+}
+.activity-log { display: none; margin-top: 8px; }
+.activity-log.shown { display: block; }
+.log-item {
+  display: flex; gap: 8px; font-size: 10.5px;
+  padding: 4px 0; color: var(--gray-600);
+}
+.log-date { font-weight: 700; color: var(--gray-400); flex-shrink: 0; width: 58px; }
+.log-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--brand); margin-top: 5px; flex-shrink: 0; }
 
 .empty { text-align: center; color: var(--gray-400); padding: 30px; font-size: 13px; }
 </style>
@@ -94,27 +140,17 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
     <a class="id-back" href="/dashboard">‹</a>
     <div style="flex:1">
       <div class="id-title">🚢 Импорт</div>
-      <div class="id-sub">Худалдан авалт, тээвэр, гаалийн төлөв</div>
+      <div class="id-sub">Худалдан авалт, тээвэр, агуулахын төлөв</div>
     </div>
   </div>
 </div>
 
-<div class="section">
-  <div class="section-label">📅 Сарын төлөвлөгөө</div>
-  <div class="plan-card">
-    <div class="plan-title">2026 оны 5 сар</div>
-    <div class="plan-sub">5 идэвхтэй ачилт · 4 нийлүүлэгч · нийт ~$15K + ¥150K</div>
-  </div>
-</div>
+<div class="stats-row" id="statsRow"></div>
 
 <div class="section">
-  <div class="section-label">📦 Идэвхтэй ачилтууд</div>
+  <div class="chips" id="filterChips"></div>
   <div id="shipmentList"></div>
 </div>
-
-<!-- Module admin link removed — /import-admin will be created in Phase 3. -->
-<!-- Until then, no settings link to prevent cross-module leakage. -->
-<div id="adminSection" style="display:none"></div>
 
 <script src="/js/bottom-nav.js"></script>
 <script>
@@ -122,39 +158,102 @@ const token = localStorage.getItem('token');
 const user  = JSON.parse(localStorage.getItem('user') || '{}');
 if (!token) window.location.href = '/';
 
-if (user.role === 'admin') document.getElementById('adminSection').style.display = '';
-
 async function api(path) {
   const r = await fetch('/api' + path, { headers: { 'Authorization': 'Bearer ' + token }});
   if (r.status === 401) { localStorage.clear(); window.location.href = '/'; }
   return r.json();
 }
 
-function statusLabel(s) {
-  return { transit: 'Замд яваа', customs: 'Гаальд', partial: '50% төлсөн', pending: 'Хүлээгдэж буй', arrived: 'УБ ирсэн', paid: 'Бүрэн төлсөн' }[s] || s;
-}
-function statusClass(s) {
-  return { transit: 'transit', customs: 'customs', partial: 'pending', pending: 'pending', arrived: 'arrived', paid: 'arrived' }[s] || '';
-}
-function pipelineSteps(status) {
-  // 5 stages: supplier-prep, china-cargo, customs, road-to-ub, arrived
-  const stages = ['pending','partial','transit','customs','arrived'];
-  const idx = stages.indexOf(status);
-  return [0,1,2,3,4].map(i => {
+const STATUS_MAP = {
+  delivered:     { label: '✅ Хүргэгдсэн', cls: 'delivered', order: 4 },
+  transit:       { label: '🚚 Замд яваа', cls: 'transit', order: 3 },
+  customs:       { label: '🏛 Гаальд', cls: 'customs', order: 2 },
+  manufacturing: { label: '🏭 Үйлдвэрлэлд', cls: 'manufacturing', order: 1 },
+  pending:       { label: '⏳ Хүлээгдэж буй', cls: 'pending', order: 0 },
+};
+
+const INV_STATUS_MAP = {
+  awaiting_registration: '📋 Агуулах бүртгэл хүлээгдэж байна',
+  registered: '✅ Бүртгэгдсэн',
+};
+
+// Pipeline: manufacturing → transit → customs → delivered
+const STAGES = ['manufacturing','transit','customs','delivered'];
+function pipeSteps(status) {
+  const idx = STAGES.indexOf(status);
+  return STAGES.map((_, i) => {
+    if (idx < 0) return '';
     if (i < idx) return 'done';
-    if (i === idx) return 'current';
+    if (i === idx) return status === 'delivered' ? 'done' : 'current';
     return '';
   });
 }
 
-async function load() {
-  const imports = await api('/imports') || [];
-  const el = document.getElementById('shipmentList');
-  if (!imports.length) { el.innerHTML = '<div class="empty">Идэвхтэй ачилт байхгүй</div>'; return; }
+let allImports = [];
+let activeFilter = 'all';
 
-  el.innerHTML = imports.map(imp => {
-    const steps = pipelineSteps(imp.status);
-    return `<div class="shipment-card">
+function setFilter(key) {
+  activeFilter = key;
+  document.querySelectorAll('.chip').forEach(el => el.classList.toggle('active', el.dataset.f === key));
+  renderList();
+}
+
+function renderStats(imports) {
+  const transit = imports.filter(i => i.status === 'transit').length;
+  const mfg = imports.filter(i => i.status === 'manufacturing').length;
+  const delivered = imports.filter(i => i.status === 'delivered').length;
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-box"><div class="stat-val" style="color:#2563eb">${transit}</div><div class="stat-lbl">Замд</div></div>
+    <div class="stat-box"><div class="stat-val" style="color:#d97706">${mfg}</div><div class="stat-lbl">Үйлдвэрт</div></div>
+    <div class="stat-box"><div class="stat-val" style="color:#059669">${delivered}</div><div class="stat-lbl">Ирсэн</div></div>
+  `;
+}
+
+function renderChips(imports) {
+  const counts = { all: imports.length };
+  for (const [k] of Object.entries(STATUS_MAP)) counts[k] = imports.filter(i => i.status === k).length;
+  const chips = [
+    { key: 'all', label: 'Бүгд' },
+    { key: 'transit', label: '🚚 Замд' },
+    { key: 'manufacturing', label: '🏭 Үйлдвэрт' },
+    { key: 'delivered', label: '✅ Ирсэн' },
+  ].filter(c => counts[c.key] > 0 || c.key === 'all');
+
+  document.getElementById('filterChips').innerHTML = chips.map(c =>
+    `<button class="chip ${c.key === activeFilter ? 'active' : ''}" data-f="${c.key}" onclick="setFilter('${c.key}')">
+      ${c.label} <span class="chip-count">${counts[c.key]}</span>
+    </button>`
+  ).join('');
+}
+
+function renderList() {
+  let items = allImports;
+  if (activeFilter !== 'all') items = items.filter(i => i.status === activeFilter);
+
+  // Sort: transit first, then manufacturing, then delivered
+  items.sort((a, b) => {
+    const oa = (STATUS_MAP[a.status]||{}).order || 0;
+    const ob = (STATUS_MAP[b.status]||{}).order || 0;
+    if (oa !== ob) return oa - ob; // lower order = more urgent = first? Actually transit first
+    return 0;
+  });
+  // Reverse so highest order (most progressed but active) is at top — actually let's put transit first
+  items.sort((a, b) => {
+    const priority = { transit: 0, manufacturing: 1, customs: 2, pending: 3, delivered: 4 };
+    return (priority[a.status] ?? 5) - (priority[b.status] ?? 5);
+  });
+
+  const el = document.getElementById('shipmentList');
+  if (!items.length) { el.innerHTML = '<div class="empty">Тохирох ачилт байхгүй</div>'; return; }
+
+  el.innerHTML = items.map(imp => {
+    const st = STATUS_MAP[imp.status] || STATUS_MAP.pending;
+    const steps = pipeSteps(imp.status);
+    const hasRemaining = imp.remaining && imp.remaining !== '$0' && imp.remaining !== '¥0' && imp.remaining !== '0' && imp.remaining !== '—';
+    const invSt = imp.inventory_status ? INV_STATUS_MAP[imp.inventory_status] || imp.inventory_status : '';
+    const logs = imp.activity_log || [];
+
+    return `<div class="shipment-card st-${st.cls}">
       <div class="sc-top">
         <div style="flex:1;min-width:0">
           <div class="sc-supplier">${imp.supplier}</div>
@@ -162,20 +261,63 @@ async function load() {
         </div>
         <div class="sc-amount">${imp.total}</div>
       </div>
+
       <div class="pipeline">
         ${steps.map(s => `<div class="pipe-step ${s}"></div>`).join('')}
       </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
-        <span class="sc-status ${statusClass(imp.status)}">${statusLabel(imp.status)}</span>
-        <span style="font-size:11px;color:#888">ETA ${imp.eta}</span>
+      <div class="pipe-labels">
+        <span>Үйлдвэр</span><span>Тээвэр</span><span>Гааль</span><span>Ирсэн</span>
       </div>
+
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px">
+        <span class="sc-status ${st.cls}">${st.label}</span>
+        ${invSt ? `<span class="inv-status">${invSt}</span>` : ''}
+      </div>
+
       <div style="margin-top:8px;font-size:11px">
-        <div class="payment-row paid">Төлсөн: ${imp.paid}</div>
-        ${imp.remaining && imp.remaining !== '$0' && imp.remaining !== '¥0' ? `<div class="payment-row pending">Үлдэгдэл: ${imp.remaining}</div>` : ''}
+        <div class="payment-row paid">✅ Төлсөн: ${imp.paid}</div>
+        ${hasRemaining ? `<div class="payment-row pend">⏳ Үлдэгдэл: ${imp.remaining}</div>` : ''}
+        ${imp.payment_status === 'awaiting_proforma' ? `<div class="payment-row pend">📄 Proforma хүлээгдэж байна</div>` : ''}
       </div>
-      ${imp.note ? `<div class="sc-meta"><span>📝 ${imp.note}</span></div>` : ''}
+
+      ${imp.next_milestone ? `<div class="next-milestone">🎯 ${imp.next_milestone}</div>` : ''}
+
+      <div class="sc-meta">
+        <span>📅 ETA: ${imp.eta}</span>
+        ${imp.eta_mongolia ? `<span>🇲🇳 Монголд: ~${imp.eta_mongolia}</span>` : ''}
+      </div>
+
+      ${imp.note ? `<div style="margin-top:6px;font-size:10.5px;color:var(--gray-600);line-height:1.5">📝 ${imp.note}</div>` : ''}
+
+      ${logs.length ? `
+        <div class="log-toggle" onclick="toggleLog(this)">📋 Түүх (${logs.length}) ›</div>
+        <div class="activity-log">
+          ${logs.slice().reverse().map(l => `
+            <div class="log-item">
+              <span class="log-date">${l.date.slice(5)}</span>
+              <span class="log-dot"></span>
+              <span>${l.event}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
     </div>`;
   }).join('');
+}
+
+function toggleLog(el) {
+  const log = el.nextElementSibling;
+  log.classList.toggle('shown');
+  el.textContent = log.classList.contains('shown')
+    ? '📋 Түүх ↑ Хаах'
+    : `📋 Түүх (${log.children.length}) ›`;
+}
+
+async function load() {
+  allImports = await api('/imports') || [];
+  renderStats(allImports);
+  renderChips(allImports);
+  renderList();
 }
 load();
 </script>

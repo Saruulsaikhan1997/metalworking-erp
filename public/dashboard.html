@@ -229,7 +229,7 @@ body {
       <div class="op-icon">🚢</div>
       <div class="op-text">
         <div class="op-title">Импорт</div>
-        <div class="op-sub">Худалдан авалт, тээвэр, гаалийн төлөв</div>
+        <div class="op-sub" id="importSub">Худалдан авалт, тээвэр, агуулах</div>
       </div>
       <div class="op-arrow">›</div>
     </a>
@@ -362,9 +362,27 @@ async function loadNews() {
 }
 loadNews();
 
+async function loadImportSummary() {
+  try {
+    const r = await fetch('/api/imports', { headers: { 'Authorization': 'Bearer ' + token } });
+    if (!r.ok) return;
+    const imports = await r.json();
+    const transit = imports.filter(i => i.status === 'transit').length;
+    const mfg = imports.filter(i => i.status === 'manufacturing').length;
+    const delivered = imports.filter(i => i.status === 'delivered').length;
+    const parts = [];
+    if (transit) parts.push(`🚚 ${transit} замд`);
+    if (mfg) parts.push(`🏭 ${mfg} үйлдвэрт`);
+    if (delivered) parts.push(`✅ ${delivered} ирсэн`);
+    const sub = document.getElementById('importSub');
+    if (sub && parts.length) sub.textContent = parts.join(' · ');
+  } catch(_) {}
+}
+loadImportSummary();
+
 // Refresh news on page show (back-nav from /news)
 window.addEventListener('pageshow', (e) => {
-  if (e.persisted || document.visibilityState === 'visible') loadNews();
+  if (e.persisted || document.visibilityState === 'visible') { loadNews(); loadImportSummary(); }
 });
 
 if (user.role === 'admin') {
