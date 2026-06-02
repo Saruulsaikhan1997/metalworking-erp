@@ -748,6 +748,44 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
       console.log(`Migration: PNEUM reclassified → 3 VACUUM-TOILET model lots (${newLots.map(l => l.id).join(', ')})`);
     }
   }
+
+  // ── Remove legacy PNEUM/Пневматик naming from all user-facing fields ──
+  // Approved family: VACUUM TOILET. Approved models: Vacuum Toilet Household /
+  // Public / VIP. Internal record IDs (ship_007, lot ids, inventory ids,
+  // bank-tx links) are preserved; only display names + the human-readable
+  // shipment code are normalized. Idempotent, guarded.
+  if (db.import_product_codes && !db.import_vacuum_toilet_naming_v2) {
+    const NAME = {
+      'VACUUM-TOILET-HOUSEHOLD': 'Vacuum Toilet Household',
+      'VACUUM-TOILET-PUBLIC': 'Vacuum Toilet Public',
+      'VACUUM-TOILET-VIP': 'Vacuum Toilet VIP'
+    };
+    // product code display names + drop the now-unused legacy PNEUM code
+    for (const pc of db.import_product_codes) if (NAME[pc.code]) pc.name = NAME[pc.code];
+    db.import_product_codes = db.import_product_codes.filter(p => p.code !== 'PNEUM');
+    // inventory item names
+    for (const it of (db.inventory || [])) if (NAME[it.code]) it.name = NAME[it.code];
+    // lot product names
+    for (const l of (db.import_lots || [])) if (l.product && NAME[l.product_code]) l.product.name = NAME[l.product_code];
+    // project + supplier name (shown as supplier_name on shipment list/detail)
+    for (const pr of (db.import_projects || [])) {
+      if (/пневмат/i.test(pr.name || '')) pr.name = 'Vacuum Toilet нийлүүлэгч';
+      if (pr.supplier && /пневмат/i.test(pr.supplier.name || '')) pr.supplier.name = 'Vacuum Toilet нийлүүлэгч';
+      if ((pr.code || '') === 'PROJ-PNEUM') pr.code = 'PROJ-VACUUM';
+    }
+    // rename the human-readable shipment code + propagate to denormalized refs
+    const vship = (db.import_shipments || []).find(s => s.code === 'PNEUM-2026-001');
+    if (vship) {
+      const newCode = 'VACUUM-TOILET-2026-001';
+      vship.code = newCode;
+      if (/пневмат/i.test(vship.description || '')) vship.description = 'Vacuum Toilet (Household / Public / VIP)';
+      for (const l of (db.import_lots || [])) if (l.shipment_id === vship.id) l.shipment_code = newCode;
+      for (const c of (db.import_cost_ledger || [])) if (c.shipment_id === vship.id) c.shipment_code = newCode;
+    }
+    db.import_vacuum_toilet_naming_v2 = true;
+    save(db);
+    console.log('Migration: vacuum-toilet naming normalized + shipment code renamed');
+  }
 })();
 
 const PORT = process.env.PORT || 3000;
