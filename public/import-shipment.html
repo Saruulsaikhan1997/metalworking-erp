@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+<title>Ачилт — Импорт</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --brand:#1565c0;--brand-dark:#0d47a1;
+  --g50:#f9fafb;--g100:#f3f4f6;--g200:#e5e7eb;--g300:#d1d5db;
+  --g400:#9ca3af;--g600:#4b5563;--g900:#111827;
+  --green:#059669;--green-bg:#d1fae5;--green-fg:#065f46;
+  --amber:#d97706;--amber-bg:#fef3c7;--amber-fg:#92400e;
+  --blue:#2563eb;--blue-bg:#dbeafe;--blue-fg:#1e40af;
+  --red:#dc2626;--red-bg:#fee2e2;--red-fg:#991b1b;
+  --purple:#7c3aed;--purple-bg:#ede9fe;--purple-fg:#5b21b6;
+}
+body{font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;background:var(--g50);color:var(--g900);padding-bottom:40px;-webkit-font-smoothing:antialiased}
+
+.hdr{background:linear-gradient(135deg,#0d47a1,#1565c0);color:#fff;padding:16px 20px 14px;border-radius:0 0 20px 20px;box-shadow:0 4px 12px rgba(13,71,161,.18)}
+.hdr-row{display:flex;align-items:center;gap:10px}
+.hdr-back{font-size:22px;color:#fff;text-decoration:none;padding:4px 8px}
+.hdr-title{font-size:16px;font-weight:700;flex:1}
+.hdr-code{font-size:11px;font-family:monospace;opacity:.85;margin-top:2px}
+.hdr-sub{font-size:11px;opacity:.8;margin-top:3px}
+
+.hdr-pipe{display:flex;gap:3px;margin-top:10px}
+.hp{flex:1;height:4px;background:rgba(255,255,255,.2);border-radius:2px}
+.hp.done{background:rgba(255,255,255,.8)}.hp.now{background:#fbbf24;animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.hdr-pipe-lbl{display:flex;justify-content:space-between;font-size:7.5px;opacity:.6;margin-top:3px}
+
+/* Status change buttons in header */
+.hdr-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.hdr-btn{padding:6px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.15);color:#fff;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit}
+.hdr-btn:active{background:rgba(255,255,255,.3)}
+
+.sec{padding:14px 16px 0}
+.sec-title{font-size:11px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+
+.health-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px}
+.health-card{background:#fff;border-radius:12px;padding:12px;border:1px solid var(--g200)}
+.hc-label{font-size:9px;font-weight:600;color:var(--g400);text-transform:uppercase;letter-spacing:.5px}
+.hc-val{font-size:18px;font-weight:900;margin-top:2px}
+.hc-sub{font-size:10px;color:var(--g400);margin-top:1px}
+
+.banner{padding:10px 14px;border-radius:10px;font-size:12px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.banner.pass{background:var(--green-bg);color:var(--green-fg)}
+.banner.warn{background:var(--amber-bg);color:var(--amber-fg)}
+.banner.fail{background:var(--red-bg);color:var(--red-fg)}
+.banner.info{background:var(--blue-bg);color:var(--blue-fg)}
+
+.warn-list{margin:0;padding:0;list-style:none}
+.warn-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0;font-size:11px;color:var(--g600);border-bottom:1px solid var(--g100)}
+
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px}
+.badge.transit{background:var(--blue-bg);color:var(--blue-fg)}
+.badge.preparing{background:var(--amber-bg);color:var(--amber-fg)}
+.badge.delivered{background:var(--green-bg);color:var(--green-fg)}
+.badge.sample{background:var(--purple-bg);color:var(--purple-fg)}
+.badge.paid{background:var(--green-bg);color:var(--green-fg)}
+.badge.unpaid{background:var(--red-bg);color:var(--red-fg)}
+.badge.shared{background:var(--blue-bg);color:var(--blue-fg)}
+.badge.direct{background:var(--g100);color:var(--g600)}
+
+/* Cards */
+.lot-card{background:#fff;border-radius:12px;padding:14px;margin-bottom:8px;border:1px solid var(--g200);border-left:4px solid var(--brand)}
+.lot-card.sample{border-left-color:var(--purple)}
+.lot-card.received{border-left-color:var(--green)}
+.lc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.lc-name{font-size:13px;font-weight:700}
+.lc-spec{font-size:10px;color:var(--g400);margin-top:2px}
+.lc-landed{font-size:14px;font-weight:900;color:var(--brand-dark);white-space:nowrap}
+.lc-per{font-size:10px;color:var(--g400);text-align:right}
+.lc-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.lc-box{background:var(--g50);padding:8px;border-radius:8px}
+.lc-box-lbl{font-size:8px;font-weight:600;color:var(--g400);text-transform:uppercase;letter-spacing:.3px}
+.lc-box-val{font-size:12px;font-weight:700;margin-top:2px}
+
+.cost-card{background:#fff;border-radius:12px;padding:14px;margin-bottom:8px;border:1px solid var(--g200)}
+.cc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:6px}
+.cc-type{font-size:12px;font-weight:700}
+.cc-amt{font-size:13px;font-weight:800;color:var(--brand-dark);white-space:nowrap}
+.cc-desc{font-size:11px;color:var(--g600);line-height:1.4}
+.cc-source{margin-top:8px;padding-top:8px;border-top:1px solid var(--g100)}
+.cc-row{display:flex;justify-content:space-between;font-size:10px;color:var(--g600);padding:2px 0}
+.cc-row .label{color:var(--g400)}
+
+.log-item{display:flex;gap:8px;font-size:10.5px;padding:5px 0;color:var(--g600)}
+.log-dt{font-weight:700;color:var(--g400);flex-shrink:0;width:44px}
+.log-dot{width:5px;height:5px;border-radius:50%;background:var(--brand);margin-top:5px;flex-shrink:0}
+
+.empty{text-align:center;color:var(--g400);padding:30px;font-size:13px}
+
+/* Inline forms */
+.inline-form{background:#fff;border:2px dashed var(--brand);border-radius:12px;padding:14px;margin-bottom:8px}
+.inline-form .sec-title{color:var(--brand);margin-bottom:8px}
+.ff{margin-bottom:10px}
+.ff:last-child{margin-bottom:0}
+.ff label{display:block;font-size:10px;font-weight:600;color:var(--g600);margin-bottom:4px}
+.ff input,.ff select,.ff textarea{
+  width:100%;padding:9px 10px;border:1.5px solid var(--g200);border-radius:8px;
+  font-size:13px;font-family:inherit;background:#fff
+}
+.ff input:focus,.ff select:focus{outline:none;border-color:var(--brand)}
+.ff textarea{resize:vertical;min-height:50px}
+.ff-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ff-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.ff .hint{font-size:9px;color:var(--g400);margin-top:2px}
+
+/* Action buttons */
+.act-btn{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:8px 14px;border:none;border-radius:8px;
+  font-size:11px;font-weight:700;cursor:pointer;font-family:inherit
+}
+.act-btn.primary{background:var(--brand);color:#fff}
+.act-btn.primary:active{background:var(--brand-dark)}
+.act-btn.success{background:var(--green);color:#fff}
+.act-btn.danger{background:var(--red-bg);color:var(--red-fg)}
+.act-btn.danger:active{background:var(--red);color:#fff}
+.act-btn.ghost{background:var(--g100);color:var(--g600)}
+.act-btn:disabled{opacity:.5;cursor:not-allowed}
+
+.add-btn{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  width:100%;padding:12px;border:2px dashed var(--g300);border-radius:12px;
+  background:transparent;color:var(--g400);font-size:12px;font-weight:600;
+  cursor:pointer;margin-bottom:8px;font-family:inherit
+}
+.add-btn:active{background:var(--g100);border-color:var(--brand);color:var(--brand)}
+
+/* Delete button on cards */
+.card-actions{display:flex;gap:4px;margin-top:8px;padding-top:8px;border-top:1px solid var(--g100)}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  padding:10px 20px;border-radius:10px;font-size:12px;font-weight:600;
+  z-index:999;opacity:0;transition:opacity .3s;pointer-events:none
+}
+.toast.show{opacity:1}
+.toast.ok{background:var(--green-fg);color:#fff}
+.toast.err{background:var(--red);color:#fff}
+</style>
+</head>
+<body>
+
+<div class="hdr" id="hdr"></div>
+<div id="content"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const token = localStorage.getItem('token');
+if (!token) window.location.href = '/';
+const code = window.location.pathname.split('/').pop();
+let D = null; // full shipment data
+let userRole = 'admin'; // will be set from token
+try { userRole = JSON.parse(atob(token.split('.')[1])).role; } catch(e){}
+const isAdmin = userRole === 'admin';
+
+async function api(path, opts = {}) {
+  const r = await fetch('/api/import' + path, {
+    ...opts,
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', ...(opts.headers||{}) }
+  });
+  if (r.status === 401) { localStorage.clear(); window.location.href = '/'; }
+  return r.json();
+}
+
+function toast(msg, ok=true) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + (ok ? 'ok' : 'err');
+  setTimeout(() => el.className = 'toast', 2500);
+}
+
+const STATUS = {
+  preparing:{label:'Бэлтгэгдэж байна',cls:'preparing',next:'in_transit_cn',nextLabel:'Ачилт эхлэх'},
+  in_transit_cn:{label:'Хятадаас замд',cls:'transit',next:'at_border',nextLabel:'Хилд ирлээ'},
+  at_border:{label:'Хилд',cls:'transit',next:'customs',nextLabel:'Гаальд шилжих'},
+  customs:{label:'Гаальд',cls:'transit',next:'in_transit_mn',nextLabel:'МН руу ачих'},
+  in_transit_mn:{label:'МН руу замд',cls:'transit',next:'delivered',nextLabel:'Хүргэгдсэн'},
+  delivered:{label:'Хүргэгдсэн',cls:'delivered',next:null,nextLabel:null}
+};
+const STAGES=['preparing','in_transit_cn','at_border','customs','in_transit_mn','delivered'];
+const COST_TYPES={
+  product:'Бүтээгдэхүүн',product_adjustment:'Бүт. тохируулга',
+  freight_cn_domestic:'Хятад дотоод тээвэр',freight_cn_to_border:'Хятад→Хил',
+  freight_border_to_ub:'Хил→УБ',freight_local:'Дотоод тээвэр',
+  customs_duty:'Гаалийн татвар',customs_vat:'НӨАТ',customs_broker:'Гаалийн зуучлагч',
+  bank_fee:'Банкны шимтгэл',fx_loss:'Валютын алдагдал',
+  agent_fee:'Зуучлагчийн хөлс',certification:'Баталгаажуулалт',
+  testing:'Шинжилгээ',prototype_mod:'Загвар засвар',other:'Бусад'
+};
+const PAY_METHODS={bank_transfer:'Банк шилжүүлэг',agent:'Агент/Кэш',cash:'Бэлэн мөнгө',wechat:'WeChat'};
+const ACCOUNTS={tdb:'ХХБ (TDB)',kass:'Касс (Хаан)'};
+const ALLOC_METHODS={by_weight:'Жингээр',by_value:'Үнээр',by_qty:'Тоогоор',equal:'Тэнцүү'};
+
+function fmt(n){ return n ? n.toLocaleString()+'₮' : '0₮'; }
+function fmtShort(n){ return n>=1e6 ? (n/1e6).toFixed(1).replace(/\.0$/,'')+'сая₮' : fmt(n); }
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function pipeSteps(status){
+  const idx=STAGES.indexOf(status);
+  return STAGES.map((_,i)=>{
+    if(idx<0)return '';
+    if(i<idx)return 'done';
+    if(i===idx)return status==='delivered'?'done':'now';
+    return '';
+  });
+}
+
+// ═══════════════════════════════════════
+//  HEADER
+// ═══════════════════════════════════════
+function renderHeader(s, p) {
+  const st = STATUS[s.status]||{label:s.status,cls:'transit'};
+  const steps = pipeSteps(s.status);
+  let actionsHtml = '';
+  if (isAdmin && st.next) {
+    actionsHtml = `<div class="hdr-actions">
+      <button class="hdr-btn" onclick="advanceStatus('${st.next}')">${st.nextLabel} &rarr;</button>
+    </div>`;
+  }
+  document.getElementById('hdr').innerHTML = `
+    <div class="hdr-row">
+      <a class="hdr-back" href="/imports">&lsaquo;</a>
+      <div style="flex:1">
+        <div class="hdr-title">${esc(p?.supplier?.name || p?.name || s.description)}</div>
+        <div class="hdr-code">${s.code}</div>
+        <div class="hdr-sub">${esc(s.description)}</div>
+      </div>
+      <span class="badge ${st.cls}" style="font-size:9px">${st.label}</span>
+    </div>
+    <div class="hdr-pipe">${steps.map(c=>`<div class="hp ${c}"></div>`).join('')}</div>
+    <div class="hdr-pipe-lbl"><span>Бэлтгэл</span><span>Ачилт</span><span>Хил</span><span>Гааль</span><span>Тээвэр</span><span>Ирсэн</span></div>
+    ${actionsHtml}
+  `;
+  document.title = s.code + ' — Импорт';
+}
+
+async function advanceStatus(newStatus) {
+  if (!confirm('Статус шинэчлэх: ' + (STATUS[newStatus]?.label || newStatus) + '?')) return;
+  const delivered_at = newStatus === 'delivered' ? new Date().toISOString().slice(0,10) : undefined;
+  const shipped_at = newStatus === 'in_transit_cn' ? new Date().toISOString().slice(0,10) : undefined;
+  const body = { status: newStatus, activity_event: STATUS[newStatus]?.label || newStatus };
+  if (delivered_at) body.delivered_at = delivered_at;
+  if (shipped_at) body.shipped_at = shipped_at;
+  await api('/shipments/' + code, { method: 'PUT', body: JSON.stringify(body) });
+  toast('Статус шинэчлэгдлээ');
+  reload();
+}
+
+// ═══════════════════════════════════════
+//  MAIN CONTENT
+// ═══════════════════════════════════════
+function renderContent(data) {
+  D = data;
+  const { shipment:s, project:p, lots, costs, cost_summary, total_cost_mnt, direct_cost_mnt, shared_cost_mnt, total_allocated_mnt, unallocated_count, balanced, readiness, product_codes } = data;
+  const paidTotal = costs.filter(c=>c.paid).reduce((s,c)=>s+(c.amount_mnt||0),0);
+  const unpaidTotal = costs.filter(c=>!c.paid).reduce((s,c)=>s+(c.amount_mnt||0),0);
+  const nonSampleLots = lots.filter(l=>!l.is_sample);
+  const logs = s.activity_log||[];
+  let html = '';
+
+  // ══ 1. COST HEALTH ══
+  html += `<div class="sec"><div class="sec-title">Зардлын эрүүл мэнд</div>`;
+  if (costs.length === 0) html += `<div class="banner info">Зардал бүртгэгдээгүй байна</div>`;
+  else if (balanced && unallocated_count === 0) html += `<div class="banner pass">Бүх зардал хуваарилагдсан — тэнцэл зөв</div>`;
+  else if (unallocated_count > 0) html += `<div class="banner warn">${unallocated_count} зардал хуваарилаагүй</div>`;
+  else html += `<div class="banner fail">Тэнцэл зөрсөн — шалгана уу</div>`;
+
+  html += `<div class="health-grid">
+    <div class="health-card"><div class="hc-label">Нийт зардал</div><div class="hc-val" style="color:var(--brand-dark)">${fmtShort(total_cost_mnt)}</div><div class="hc-sub">${costs.length} бичилт</div></div>
+    <div class="health-card"><div class="hc-label">Төлбөр</div><div class="hc-val" style="color:${unpaidTotal>0?'var(--amber)':'var(--green)'}">${total_cost_mnt>0&&unpaidTotal>0?Math.round(paidTotal/total_cost_mnt*100)+'%':'100%'}</div><div class="hc-sub">${unpaidTotal>0?'Үлдэгдэл '+fmtShort(unpaidTotal):'Бүрэн төлсөн'}</div></div>
+    <div class="health-card"><div class="hc-label">Хуваарилсан</div><div class="hc-val" style="color:${unallocated_count>0?'var(--amber)':'var(--green)'}">${fmt(total_allocated_mnt)}</div><div class="hc-sub">Shared: ${fmtShort(shared_cost_mnt)}</div></div>
+    <div class="health-card"><div class="hc-label">Хуваарилаагүй</div><div class="hc-val" style="color:${unallocated_count>0?'var(--red)':'var(--green)'}">${unallocated_count>0?fmt(shared_cost_mnt-total_allocated_mnt):'0₮'}</div><div class="hc-sub">${balanced?'Тэнцэл зөв':'Тэнцэл зөрсөн'}</div></div>
+  </div>`;
+  if (Object.keys(cost_summary).length) {
+    const colors={product:'#1565c0',freight:'#2563eb',customs:'#7c3aed',bank:'#d97706',other:'#6b7280'};
+    const labels={product:'Бүтээгдэхүүн',freight:'Тээвэр',customs:'Гааль',bank:'Банк/FX',other:'Бусад'};
+    html += `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px">`;
+    for (const [k,v] of Object.entries(cost_summary)) {
+      const pct = total_cost_mnt>0 ? Math.round(v/total_cost_mnt*100) : 0;
+      html += `<span style="font-size:10px;padding:3px 8px;border-radius:8px;background:${colors[k]||'#6b7280'}11;color:${colors[k]||'#6b7280'};font-weight:600">${labels[k]||k} ${pct}% (${fmtShort(v)})</span>`;
+    }
+    html += `</div>`;
+  }
+
+  // Allocation button
+  if (isAdmin && nonSampleLots.length > 0 && costs.length > 0) {
+    html += `<div style="margin-top:10px"><button class="act-btn primary" onclick="runAllocation()">Хуваарилалт хийх</button></div>`;
+  }
+  html += `</div>`;
+
+  // ══ 2. READINESS ══
+  html += `<div class="sec"><div class="sec-title">Агуулахад хүлээн авах бэлэн байдал</div>`;
+  if (readiness.can_receive) {
+    html += `<div class="banner pass">Агуулахад хүлээн авахад бэлэн — ${readiness.unreceived_lots} lot хүлээгдэж байна</div>`;
+  } else if (readiness.warnings.length) {
+    html += `<div class="banner warn">Хүлээн авах боломжгүй — ${readiness.warnings.length} асуудал</div>`;
+    html += `<ul class="warn-list">${readiness.warnings.map(w => {
+      const icons={unpaid:'💰',unallocated:'📊',no_lots:'📦',no_freight:'🚚',no_customs:'🏛'};
+      return `<li class="warn-item"><span>${icons[w.type]||'⚠️'}</span><span>${w.msg}</span></li>`;
+    }).join('')}</ul>`;
+  } else {
+    html += `<div class="banner info">Lot бүртгэгдээгүй</div>`;
+  }
+  html += `<div class="health-grid" style="margin-top:8px">
+    <div class="health-card"><div class="hc-label">Lot (үндсэн)</div><div class="hc-val">${readiness.total_lots}</div><div class="hc-sub">${readiness.unreceived_lots} хүлээгдэж байна</div></div>
+    <div class="health-card"><div class="hc-label">Загвар</div><div class="hc-val">${readiness.sample_lots}</div><div class="hc-sub">Склад бүртгэлд орохгүй</div></div>
+  </div></div>`;
+
+  // ══ 3. LOTS ══
+  html += `<div class="sec"><div class="sec-title">Лотууд (${lots.length})</div>`;
+  for (const l of lots) {
+    const isSample = l.is_sample;
+    const isReceived = l.warehouse_status === 'received';
+    const pc = (product_codes||[]).find(p=>p.code===l.product_code)||{};
+    const invUnit = pc.inventory_unit || l.units?.primary?.unit || '?';
+    let landedDisplay = '';
+    if (l.units?.secondary && invUnit === l.units.secondary.unit && l.units.secondary.landed_cost)
+      landedDisplay = fmt(l.units.secondary.landed_cost) + '/' + l.units.secondary.unit;
+    else if (l.units?.primary?.landed_cost)
+      landedDisplay = fmt(l.units.primary.landed_cost) + '/' + l.units.primary.unit;
+
+    html += `<div class="lot-card ${isSample?'sample':''} ${isReceived?'received':''}">
+      <div class="lc-top">
+        <div style="flex:1;min-width:0">
+          <div class="lc-name">${esc(l.product?.name||'?')}</div>
+          <div class="lc-spec">${esc(l.product?.spec||'')} ${isSample?'<span class="badge sample" style="font-size:8px;padding:2px 6px">Загвар</span>':''}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="lc-landed">${l.total_cost_mnt?fmtShort(l.total_cost_mnt):'—'}</div>
+          ${landedDisplay?`<div class="lc-per">${landedDisplay}</div>`:''}
+        </div>
+      </div>
+      <div class="lc-grid">
+        <div class="lc-box"><div class="lc-box-lbl">${l.units?.primary?.unit||'?'}</div><div class="lc-box-val">${l.units?.primary?.qty??'—'}</div></div>
+        ${l.units?.secondary?.qty ? `<div class="lc-box"><div class="lc-box-lbl">${l.units.secondary.unit}</div><div class="lc-box-val">${l.units.secondary.qty.toLocaleString()}</div></div>` :
+         `<div class="lc-box"><div class="lc-box-lbl">Бүт. үнэ</div><div class="lc-box-val">${l.product_cost?l.product_cost.toLocaleString()+' '+l.currency:'—'}</div></div>`}
+        <div class="lc-box"><div class="lc-box-lbl">Бүт. зардал (MNT)</div><div class="lc-box-val">${fmt(l.product_cost_mnt)}</div></div>
+        <div class="lc-box"><div class="lc-box-lbl">Склад</div><div class="lc-box-val">${isReceived?'✅ Бүртгэгдсэн':isSample?'🧪 Загвар':'⏳ Хүлээгдэж буй'}</div></div>
+      </div>`;
+
+    // Allocation detail
+    if ((l.allocations||[]).length) {
+      html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--g100)">
+        <div style="font-size:9px;font-weight:600;color:var(--g400);text-transform:uppercase;margin-bottom:4px">Хуваарилалт (${l.allocations.length})</div>
+        ${l.allocations.map(a => `<div style="display:flex;justify-content:space-between;font-size:10px;padding:2px 0;color:var(--g600)">
+          <span>${COST_TYPES[a.cost_type]||a.cost_type} <span style="color:var(--g400)">(${Math.round(a.auto_ratio*100)}%)</span></span>
+          <span style="font-weight:600">${fmt(a.final_value)}</span>
+        </div>`).join('')}
+        <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;padding-top:4px;border-top:1px solid var(--g100);margin-top:4px">
+          <span>Нийт</span><span>${fmt(l.total_allocated_mnt)}</span>
+        </div>
+      </div>`;
+    }
+
+    // Actions
+    html += `<div class="card-actions">`;
+    if (!isReceived && !isSample && l.total_cost_mnt > 0 && readiness.can_receive) {
+      html += `<button class="act-btn success" onclick="receiveLot('${l.id}', ${l.units?.primary?.qty||0}, '${l.units?.primary?.unit||'piece'}')">📦 Хүлээн авах</button>`;
+    }
+    if (isAdmin && !isReceived) {
+      html += `<button class="act-btn danger" onclick="deleteLot('${l.id}')">Устгах</button>`;
+    }
+    html += `</div>`;
+    html += `</div>`;
+  }
+
+  // Add lot button
+  if (isAdmin) {
+    html += `<button class="add-btn" onclick="showLotForm()">+ Лот нэмэх</button>`;
+    html += `<div id="lotFormArea"></div>`;
+  }
+  html += `</div>`;
+
+  // ══ 4. COST SOURCES ══
+  html += `<div class="sec"><div class="sec-title">Зардлын эх сурвалж (${costs.length})</div>`;
+  for (const c of costs) {
+    const typeLabel = COST_TYPES[c.type]||c.type;
+    const isPaid = c.paid;
+    const isShared = !c.lot_id;
+    const tx = c.linked_tx;
+    const lot = c.lot_id ? lots.find(l=>l.id===c.lot_id) : null;
+
+    html += `<div class="cost-card">
+      <div class="cc-top">
+        <div style="flex:1;min-width:0">
+          <div class="cc-type">${typeLabel}</div>
+          <div style="display:flex;gap:4px;margin-top:3px">
+            <span class="badge ${isPaid?'paid':'unpaid'}">${isPaid?'Төлсөн':'Төлөөгүй'}</span>
+            <span class="badge ${isShared?'shared':'direct'}">${isShared?'Shared':'Direct'}</span>
+          </div>
+        </div>
+        <div class="cc-amt">${fmt(c.amount_mnt)}</div>
+      </div>
+      <div class="cc-desc">${esc(c.description)}</div>
+      ${c.amount && c.currency !== 'MNT' ? `<div style="font-size:10px;color:var(--g400);margin-top:4px">${c.currency} ${c.amount.toLocaleString()} × ${c.exchange_rate?.toLocaleString()||'?'} = ${fmt(c.amount_mnt)}</div>` : ''}
+      <div class="cc-source">
+        <div style="font-size:9px;font-weight:600;color:var(--g400);text-transform:uppercase;margin-bottom:4px">Эх сурвалж</div>
+        <div class="cc-row"><span class="label">Төлбөр</span><span>${PAY_METHODS[c.payment_method]||c.payment_method||'—'}</span></div>
+        <div class="cc-row"><span class="label">Данс</span><span>${ACCOUNTS[c.payment_account]||c.payment_account||'—'}</span></div>
+        ${c.payment_reference ? `<div class="cc-row"><span class="label">Invoice</span><span style="font-family:monospace;font-size:9px">${esc(c.payment_reference)}</span></div>` : ''}
+        ${c.paid_at ? `<div class="cc-row"><span class="label">Огноо</span><span>${c.paid_at}</span></div>` : ''}
+        ${tx ? `<div style="margin-top:4px;padding-top:4px;border-top:1px solid var(--g100)">
+          <div class="cc-row"><span class="label">Банк TX</span><span style="font-family:monospace;font-size:9px">${c.transaction_id}</span></div>
+          <div class="cc-row"><span class="label">Дүн</span><span style="font-weight:600">${tx.amount?.toLocaleString()}₮</span></div>
+        </div>` : ''}
+        ${isShared ? `<div style="margin-top:4px"><div class="cc-row"><span class="label">Хуваарилалт</span><span>${ALLOC_METHODS[c.allocation_method]||c.allocation_method||'by_weight'}</span></div></div>` : ''}
+      </div>`;
+
+    if (isAdmin && !c.allocation_locked) {
+      html += `<div class="card-actions"><button class="act-btn danger" onclick="deleteCost('${c.id}')">Устгах</button></div>`;
+    }
+    html += `</div>`;
+  }
+
+  // Add cost button
+  if (isAdmin) {
+    html += `<button class="add-btn" onclick="showCostForm()">+ Зардал нэмэх</button>`;
+    html += `<div id="costFormArea"></div>`;
+  }
+  html += `</div>`;
+
+  // ══ 5. ACTIVITY LOG ══
+  html += `<div class="sec"><div class="sec-title">Түүх (${logs.length})</div>`;
+  if (logs.length) {
+    html += logs.slice().reverse().map(l => `
+      <div class="log-item">
+        <span class="log-dt">${l.date.slice(5)}</span>
+        <span class="log-dot"></span>
+        <span>${l.event}${l.by&&l.by!=='system'?' <span style="color:var(--g400)">('+esc(l.by)+')</span>':''}</span>
+      </div>
+    `).join('');
+  } else html += `<div class="empty">Түүх байхгүй</div>`;
+  html += `</div>`;
+
+  // ══ 6. META ══
+  html += `<div class="sec" style="margin-top:8px"><div class="sec-title">Мэдээлэл</div>
+    <div class="health-grid">
+      <div class="health-card"><div class="hc-label">Төрөл</div><div style="font-size:12px;font-weight:600;margin-top:2px">${({official:'Албан (банк)',agent:'Агент/Кэш',hybrid:'Холимог'})[p?.type]||p?.type||'—'}</div></div>
+      <div class="health-card"><div class="hc-label">Тээвэр</div><div style="font-size:12px;font-weight:600;margin-top:2px">${({truck:'Машин',cargo:'Карго',post:'Шуудан'})[s.freight_method]||s.freight_method||'—'}</div></div>
+      ${s.total_weight_kg?`<div class="health-card"><div class="hc-label">Жин</div><div style="font-size:12px;font-weight:600;margin-top:2px">${(s.total_weight_kg/1000).toFixed(1)} тонн</div></div>`:''}
+      ${s.shipped_at?`<div class="health-card"><div class="hc-label">Ачсан</div><div style="font-size:12px;font-weight:600;margin-top:2px">${s.shipped_at}</div></div>`:''}
+      ${s.delivered_at?`<div class="health-card"><div class="hc-label">Ирсэн</div><div style="font-size:12px;font-weight:600;margin-top:2px">${s.delivered_at}</div></div>`:''}
+    </div>
+    ${s.notes?`<div style="margin-top:8px;font-size:11px;color:var(--g600);line-height:1.5;padding:10px;background:#fff;border-radius:10px;border:1px solid var(--g200)">${esc(s.notes)}</div>`:''}
+  </div>`;
+
+  document.getElementById('content').innerHTML = html;
+}
+
+// ═══════════════════════════════════════
+//  ADD LOT FORM
+// ═══════════════════════════════════════
+function showLotForm() {
+  const area = document.getElementById('lotFormArea');
+  if (area.innerHTML) { area.innerHTML = ''; return; }
+  const pcodes = D.product_codes || [];
+  area.innerHTML = `<div class="inline-form">
+    <div class="sec-title" style="font-size:11px;margin-bottom:8px">Шинэ лот</div>
+    <div class="ff"><label>Бүтээгдэхүүний код *</label><select id="lf_pcode">
+      <option value="">— Сонгох —</option>
+      ${pcodes.map(p=>`<option value="${p.code}">${p.code} — ${p.name} (${p.primary_unit})</option>`).join('')}
+    </select></div>
+    <div class="ff"><label>Нэр</label><input id="lf_name" placeholder="80×80 дөрвөлжин хоолой"></div>
+    <div class="ff-row">
+      <div class="ff"><label>Тоо хэмжээ *</label><input type="number" step="any" id="lf_qty" placeholder="2.28"></div>
+      <div class="ff"><label>Spec / HS code</label><input id="lf_spec" placeholder="25×25×0.5mm"></div>
+    </div>
+    <div class="ff-row">
+      <div class="ff"><label>Нэгж үнэ</label><input type="number" step="any" id="lf_price" placeholder="580"></div>
+      <div class="ff"><label>Валют</label><select id="lf_currency">
+        <option value="USD">USD</option><option value="CNY">CNY</option><option value="MNT">MNT</option>
+      </select></div>
+    </div>
+    <div class="ff"><label>Ханш (1 валют = ? MNT)</label><input type="number" step="any" id="lf_rate" placeholder="3480"></div>
+    <div class="ff"><label>Склад бүтээгдэхүүн холбох</label><select id="lf_inv">
+      <option value="">— Холбохгүй —</option>
+    </select><div class="hint">Хүлээн авахад энэ бүтээгдэхүүний тоо нэмэгдэнэ</div></div>
+    <div class="ff"><label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="lf_sample" style="width:auto"> Загвар бараа (sample)</label></div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="act-btn primary" onclick="submitLot()">Хадгалах</button>
+      <button class="act-btn ghost" onclick="document.getElementById('lotFormArea').innerHTML=''">Болих</button>
+    </div>
+  </div>`;
+
+  // Load inventory items for linking
+  fetch('/api/inventory', {headers:{'Authorization':'Bearer '+token}})
+    .then(r=>r.json()).then(items => {
+      const sel = document.getElementById('lf_inv');
+      (items||[]).forEach(i => {
+        const opt = document.createElement('option');
+        opt.value = i.id;
+        opt.textContent = i.code + ' — ' + i.name + ' (' + i.unit + ')';
+        sel.appendChild(opt);
+      });
+    }).catch(()=>{});
+}
+
+async function submitLot() {
+  const pcode = document.getElementById('lf_pcode').value;
+  const qty = parseFloat(document.getElementById('lf_qty').value);
+  if (!pcode) { alert('Бүтээгдэхүүний код сонгоно уу'); return; }
+  if (!qty || qty <= 0) { alert('Тоо хэмжээ оруулна уу'); return; }
+
+  const body = {
+    shipment_id: D.shipment.id,
+    product_code: pcode,
+    units_primary_qty: qty,
+    unit_price: parseFloat(document.getElementById('lf_price').value) || 0,
+    currency: document.getElementById('lf_currency').value,
+    exchange_rate: parseFloat(document.getElementById('lf_rate').value) || 1,
+    product: {
+      name: document.getElementById('lf_name').value.trim(),
+      spec: document.getElementById('lf_spec').value.trim(),
+      hs_code: '',
+      category: 'raw_material'
+    },
+    is_sample: document.getElementById('lf_sample').checked,
+    inventory_item_id: document.getElementById('lf_inv').value ? parseInt(document.getElementById('lf_inv').value) : null
+  };
+
+  const res = await api('/lots', { method: 'POST', body: JSON.stringify(body) });
+  if (res.error) { toast(res.error, false); return; }
+  toast('Лот нэмэгдлээ: ' + res.id);
+  reload();
+}
+
+async function deleteLot(id) {
+  if (!confirm('Лот устгах уу?')) return;
+  const res = await api('/lots/' + id, { method: 'DELETE' });
+  if (res.error) { toast(res.error, false); return; }
+  toast('Лот устгагдлаа');
+  reload();
+}
+
+// ═══════════════════════════════════════
+//  ADD COST FORM
+// ═══════════════════════════════════════
+function showCostForm() {
+  const area = document.getElementById('costFormArea');
+  if (area.innerHTML) { area.innerHTML = ''; return; }
+  const lots = D.lots || [];
+  area.innerHTML = `<div class="inline-form">
+    <div class="sec-title" style="font-size:11px;margin-bottom:8px">Шинэ зардал</div>
+    <div class="ff"><label>Зардлын төрөл *</label><select id="cf_type">
+      ${Object.entries(COST_TYPES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}
+    </select></div>
+    <div class="ff"><label>Тайлбар</label><input id="cf_desc" placeholder="30% урьдчилгаа төлбөр"></div>
+    <div class="ff-row">
+      <div class="ff"><label>Дүн *</label><input type="number" step="any" id="cf_amount" placeholder="1113"></div>
+      <div class="ff"><label>Валют</label><select id="cf_currency">
+        <option value="MNT">MNT</option><option value="USD">USD</option><option value="CNY">CNY</option>
+      </select></div>
+    </div>
+    <div class="ff" id="cf_rate_wrap" style="display:none"><label>Ханш (→ MNT)</label><input type="number" step="any" id="cf_rate" placeholder="3480"></div>
+    <div class="ff" id="cf_mnt_wrap" style="display:none"><label>MNT дүн (автомат)</label><input type="number" id="cf_mnt" readonly style="background:var(--g50)"></div>
+    <div class="ff-row">
+      <div class="ff"><label>Төлбөрийн арга</label><select id="cf_paymethod">
+        ${Object.entries(PAY_METHODS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}
+      </select></div>
+      <div class="ff"><label>Данс</label><select id="cf_account">
+        ${Object.entries(ACCOUNTS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}
+      </select></div>
+    </div>
+    <div class="ff-row">
+      <div class="ff"><label>Invoice дугаар</label><input id="cf_ref" placeholder="YD002-20260508-01"></div>
+      <div class="ff"><label>Төлсөн огноо</label><input type="date" id="cf_paidat" value="${new Date().toISOString().slice(0,10)}"></div>
+    </div>
+    <div class="ff"><label>Lot-д шууд (Direct)</label><select id="cf_lotid">
+      <option value="">Shared — бүх lot-д хуваарилна</option>
+      ${lots.map(l=>`<option value="${l.id}">${l.id} — ${l.product?.name||'?'} (${l.units?.primary?.qty} ${l.units?.primary?.unit})</option>`).join('')}
+    </select></div>
+    <div class="ff" id="cf_alloc_wrap"><label>Хуваарилах арга</label><select id="cf_allocmethod">
+      ${Object.entries(ALLOC_METHODS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}
+    </select></div>
+    <div class="ff"><label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="cf_paid" checked style="width:auto"> Төлсөн</label></div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="act-btn primary" onclick="submitCost()">Хадгалах</button>
+      <button class="act-btn ghost" onclick="document.getElementById('costFormArea').innerHTML=''">Болих</button>
+    </div>
+  </div>`;
+
+  // Currency change handler
+  const curSel = document.getElementById('cf_currency');
+  const rateWrap = document.getElementById('cf_rate_wrap');
+  const mntWrap = document.getElementById('cf_mnt_wrap');
+  curSel.addEventListener('change', () => {
+    const isFx = curSel.value !== 'MNT';
+    rateWrap.style.display = isFx ? '' : 'none';
+    mntWrap.style.display = isFx ? '' : 'none';
+  });
+  document.getElementById('cf_amount').addEventListener('input', calcMnt);
+  document.getElementById('cf_rate').addEventListener('input', calcMnt);
+
+  // Lot selection hides alloc method
+  document.getElementById('cf_lotid').addEventListener('change', () => {
+    document.getElementById('cf_alloc_wrap').style.display = document.getElementById('cf_lotid').value ? 'none' : '';
+  });
+}
+
+function calcMnt() {
+  const amt = parseFloat(document.getElementById('cf_amount').value) || 0;
+  const rate = parseFloat(document.getElementById('cf_rate').value) || 0;
+  document.getElementById('cf_mnt').value = Math.round(amt * rate);
+}
+
+async function submitCost() {
+  const type = document.getElementById('cf_type').value;
+  const amount = parseFloat(document.getElementById('cf_amount').value);
+  if (!amount || amount <= 0) { alert('Дүн оруулна уу'); return; }
+
+  const currency = document.getElementById('cf_currency').value;
+  const rate = currency !== 'MNT' ? (parseFloat(document.getElementById('cf_rate').value) || 0) : 1;
+  const amount_mnt = currency !== 'MNT' ? Math.round(amount * rate) : amount;
+  if (currency !== 'MNT' && !rate) { alert('Ханш оруулна уу'); return; }
+
+  const lotId = document.getElementById('cf_lotid').value || null;
+
+  const body = {
+    project_id: D.project.id,
+    shipment_id: D.shipment.id,
+    shipment_code: D.shipment.code,
+    lot_id: lotId,
+    type,
+    description: document.getElementById('cf_desc').value.trim(),
+    amount,
+    currency,
+    exchange_rate: rate,
+    amount_mnt,
+    payment_method: document.getElementById('cf_paymethod').value,
+    payment_account: document.getElementById('cf_account').value,
+    payment_reference: document.getElementById('cf_ref').value.trim() || null,
+    paid: document.getElementById('cf_paid').checked,
+    paid_at: document.getElementById('cf_paidat').value || null,
+    allocation_method: lotId ? 'direct' : document.getElementById('cf_allocmethod').value
+  };
+
+  const res = await api('/costs', { method: 'POST', body: JSON.stringify(body) });
+  if (res.error) { toast(res.error, false); return; }
+  toast('Зардал нэмэгдлээ: ' + res.id);
+  reload();
+}
+
+async function deleteCost(id) {
+  if (!confirm('Зардал устгах уу? Хуваарилалт мөн устна.')) return;
+  const res = await api('/costs/' + id, { method: 'DELETE' });
+  if (res.error) { toast(res.error, false); return; }
+  toast('Зардал устгагдлаа');
+  reload();
+}
+
+// ═══════════════════════════════════════
+//  ALLOCATION
+// ═══════════════════════════════════════
+async function runAllocation() {
+  const res = await api('/allocate/' + code, { method: 'POST' });
+  if (res.error) { toast(res.error, false); return; }
+  if (res.warnings?.length) toast('Хуваарилалт: ' + res.warnings.join('; '), false);
+  else toast('Хуваарилалт амжилттай' + (res.balanced ? ' — тэнцэл зөв' : ''));
+  reload();
+}
+
+// ═══════════════════════════════════════
+//  WAREHOUSE RECEIVING
+// ═══════════════════════════════════════
+async function receiveLot(lotId, expectedQty, unit) {
+  const qty = prompt(`Хүлээн авах тоо хэмжээ (${unit}):`, expectedQty);
+  if (qty === null) return;
+  const qtyNum = parseFloat(qty);
+  if (!qtyNum || qtyNum <= 0) { alert('Буруу тоо'); return; }
+
+  const res = await api('/receive/' + lotId, {
+    method: 'POST',
+    body: JSON.stringify({ received_qty: qtyNum, received_unit: unit, quality_check: 'ok' })
+  });
+  if (res.error) { toast(res.error, false); return; }
+  toast(`Хүлээн авлаа: ${res.inventory_qty} ${res.inventory_unit} @ ${fmt(res.cost_per_unit)}`);
+  reload();
+}
+
+// ═══════════════════════════════════════
+//  LOAD / RELOAD
+// ═══════════════════════════════════════
+async function reload() {
+  try {
+    const data = await api('/shipment/' + code);
+    if (data.error) { document.getElementById('content').innerHTML = '<div class="empty">'+data.error+'</div>'; return; }
+    renderHeader(data.shipment, data.project);
+    renderContent(data);
+  } catch(e) {
+    document.getElementById('content').innerHTML = '<div class="empty">Алдаа: '+e.message+'</div>';
+  }
+}
+reload();
+</script>
+</body>
+</html>

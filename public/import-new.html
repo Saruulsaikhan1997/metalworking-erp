@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+<title>Шинэ ачилт — Импорт</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --brand:#1565c0;--brand-dark:#0d47a1;
+  --g50:#f9fafb;--g100:#f3f4f6;--g200:#e5e7eb;--g300:#d1d5db;
+  --g400:#9ca3af;--g600:#4b5563;--g900:#111827;
+  --green:#059669;--green-bg:#d1fae5;--green-fg:#065f46;
+  --amber:#d97706;--amber-bg:#fef3c7;--amber-fg:#92400e;
+  --blue:#2563eb;--blue-bg:#dbeafe;--blue-fg:#1e40af;
+  --red:#dc2626;--red-bg:#fee2e2;--red-fg:#991b1b;
+}
+body{font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;background:var(--g50);color:var(--g900);padding-bottom:40px;-webkit-font-smoothing:antialiased}
+
+.hdr{background:linear-gradient(135deg,#0d47a1,#1565c0);color:#fff;padding:16px 20px 14px;border-radius:0 0 20px 20px;box-shadow:0 4px 12px rgba(13,71,161,.18)}
+.hdr-row{display:flex;align-items:center;gap:10px}
+.hdr-back{font-size:22px;color:#fff;text-decoration:none;padding:4px 8px}
+.hdr-title{font-size:16px;font-weight:700;flex:1}
+.hdr-sub{font-size:11px;opacity:.8;margin-top:3px}
+
+/* Steps indicator */
+.steps{display:flex;gap:4px;padding:14px 16px 0}
+.step{flex:1;text-align:center}
+.step-bar{height:4px;border-radius:2px;background:var(--g200);margin-bottom:4px}
+.step-bar.done{background:var(--green)}.step-bar.now{background:var(--brand);animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.step-lbl{font-size:8px;color:var(--g400);font-weight:600;text-transform:uppercase}
+.step.active .step-lbl{color:var(--brand);font-weight:700}
+.step.done .step-lbl{color:var(--green)}
+
+/* Section */
+.sec{padding:14px 16px 0}
+.sec-title{font-size:12px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+
+/* Form */
+.form-card{background:#fff;border-radius:14px;padding:16px;border:1px solid var(--g200);margin-bottom:12px}
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--g600);margin-bottom:5px}
+.field input,.field select,.field textarea{
+  width:100%;padding:10px 12px;border:1.5px solid var(--g200);border-radius:10px;
+  font-size:14px;font-family:inherit;background:#fff;color:var(--g900);
+  transition:border-color .15s
+}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--brand)}
+.field textarea{resize:vertical;min-height:60px}
+.field .hint{font-size:10px;color:var(--g400);margin-top:3px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+/* Radio group */
+.radio-group{display:flex;gap:6px;flex-wrap:wrap}
+.radio-opt{
+  padding:8px 14px;border:1.5px solid var(--g200);border-radius:10px;
+  font-size:12px;font-weight:600;cursor:pointer;background:#fff;color:var(--g600);
+  transition:all .15s
+}
+.radio-opt.on{border-color:var(--brand);background:var(--blue-bg);color:var(--blue-fg)}
+
+/* Button */
+.btn{
+  display:block;width:100%;padding:14px;border:none;border-radius:12px;
+  font-size:15px;font-weight:700;cursor:pointer;text-align:center;
+  transition:all .15s;font-family:inherit
+}
+.btn-primary{background:var(--brand);color:#fff}
+.btn-primary:active{background:var(--brand-dark)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-secondary{background:var(--g100);color:var(--g600)}
+.btn-secondary:active{background:var(--g200)}
+.btn-row{display:flex;gap:8px;padding:16px}
+.btn-row .btn{flex:1}
+
+/* New project inline toggle */
+.toggle-link{font-size:11px;color:var(--brand);font-weight:600;cursor:pointer;margin-top:6px;display:inline-block}
+.new-project-form{display:none;margin-top:10px;padding:12px;background:var(--g50);border-radius:10px;border:1px solid var(--g200)}
+.new-project-form.open{display:block}
+
+/* Result */
+.result-card{background:#fff;border-radius:14px;padding:20px;border:1px solid var(--g200);text-align:center}
+.result-icon{font-size:48px;margin-bottom:8px}
+.result-title{font-size:18px;font-weight:800;margin-bottom:4px}
+.result-code{font-family:monospace;font-size:14px;color:var(--brand);font-weight:700;margin-bottom:10px}
+.result-hint{font-size:12px;color:var(--g400);margin-bottom:16px;line-height:1.5}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-row">
+    <a class="hdr-back" href="/imports">&lsaquo;</a>
+    <div style="flex:1">
+      <div class="hdr-title">Шинэ ачилт үүсгэх</div>
+      <div class="hdr-sub">Импортын бүтээгдэхүүн бүртгэх</div>
+    </div>
+  </div>
+</div>
+
+<div class="steps" id="stepsBar"></div>
+<div id="content"></div>
+
+<script>
+const token = localStorage.getItem('token');
+if (!token) window.location.href = '/';
+
+async function api(path, opts = {}) {
+  const r = await fetch('/api/import' + path, {
+    ...opts,
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', ...(opts.headers||{}) }
+  });
+  if (r.status === 401) { localStorage.clear(); window.location.href = '/'; }
+  return r.json();
+}
+
+const STEP_LABELS = ['Төсөл', 'Ачилт', 'Баталгаажуулалт'];
+let currentStep = 0;
+
+// Loaded data
+let projects = [];
+let productCodes = [];
+let inventoryItems = [];
+
+// Form state
+const state = {
+  project_id: null,
+  newProject: false,
+  np_name: '', np_supplier: '', np_country: 'CN', np_currency: 'USD', np_type: 'official',
+  product_code: '',
+  description: '', freight_method: '', total_weight_kg: '', notes: '',
+  is_sample: false
+};
+
+function renderSteps() {
+  document.getElementById('stepsBar').innerHTML = STEP_LABELS.map((lbl, i) => {
+    const cls = i < currentStep ? 'done' : i === currentStep ? 'active' : '';
+    const barCls = i < currentStep ? 'done' : i === currentStep ? 'now' : '';
+    return `<div class="step ${cls}"><div class="step-bar ${barCls}"></div><div class="step-lbl">${lbl}</div></div>`;
+  }).join('');
+}
+
+function renderStep0() {
+  let html = '<div class="sec"><div class="sec-title">1. Төсөл сонгох</div>';
+  html += '<div class="form-card">';
+  html += '<div class="field"><label>Одоо байгаа төсөл</label><select id="selProject"><option value="">— Сонгоно уу —</option>';
+  for (const p of projects) {
+    html += `<option value="${p.id}" ${state.project_id===p.id?'selected':''}>${p.name} (${p.supplier?.name || ''})</option>`;
+  }
+  html += '</select></div>';
+  html += `<div class="toggle-link" onclick="toggleNewProject()">+ Шинэ төсөл үүсгэх</div>`;
+  html += `<div class="new-project-form ${state.newProject?'open':''}" id="npForm">
+    <div class="field"><label>Төслийн нэр</label><input id="npName" value="${esc(state.np_name)}" placeholder="Yongding — Төмрийн материал"></div>
+    <div class="field"><label>Нийлүүлэгчийн нэр</label><input id="npSupplier" value="${esc(state.np_supplier)}" placeholder="Shandong Yongding Metal Technology Co., Ltd."></div>
+    <div class="field-row">
+      <div class="field"><label>Улс</label><select id="npCountry">
+        <option value="CN" ${state.np_country==='CN'?'selected':''}>CN — Хятад</option>
+        <option value="KR" ${state.np_country==='KR'?'selected':''}>KR — Солонгос</option>
+        <option value="RU" ${state.np_country==='RU'?'selected':''}>RU — Орос</option>
+        <option value="OTHER" ${!['CN','KR','RU'].includes(state.np_country)?'selected':''}>Бусад</option>
+      </select></div>
+      <div class="field"><label>Валют</label><select id="npCurrency">
+        <option value="USD" ${state.np_currency==='USD'?'selected':''}>USD</option>
+        <option value="CNY" ${state.np_currency==='CNY'?'selected':''}>CNY (юань)</option>
+        <option value="MNT" ${state.np_currency==='MNT'?'selected':''}>MNT (төгрөг)</option>
+      </select></div>
+    </div>
+    <div class="field"><label>Төлбөрийн төрөл</label>
+      <div class="radio-group">
+        ${['official','agent','hybrid'].map(v => {
+          const labels = {official:'Албан (банк)',agent:'Агент/Кэш',hybrid:'Холимог'};
+          return `<div class="radio-opt ${state.np_type===v?'on':''}" onclick="setRadio('np_type','${v}',this)">${labels[v]}</div>`;
+        }).join('')}
+      </div>
+    </div>
+  </div>`;
+  html += '</div></div>';
+
+  html += '<div class="btn-row"><button class="btn btn-primary" onclick="nextStep()">Үргэлжлүүлэх</button></div>';
+  document.getElementById('content').innerHTML = html;
+}
+
+function renderStep1() {
+  let html = '<div class="sec"><div class="sec-title">2. Ачилтын мэдээлэл</div>';
+  html += '<div class="form-card">';
+  html += '<div class="field"><label>Бүтээгдэхүүний код *</label><select id="selPCode">';
+  html += '<option value="">— Сонгоно уу —</option>';
+  for (const pc of productCodes) {
+    html += `<option value="${pc.code}" ${state.product_code===pc.code?'selected':''}>${pc.code} — ${pc.name} (${pc.primary_unit})</option>`;
+  }
+  html += '</select><div class="hint">Ачилтын код автоматаар үүснэ: STEEL-2026-002</div></div>';
+
+  html += `<div class="field"><label>Тайлбар</label><textarea id="fDesc" placeholder="Yongding 8т — хоолой + ган хавтан">${esc(state.description)}</textarea></div>`;
+  html += `<div class="field-row">
+    <div class="field"><label>Тээврийн арга</label><select id="fFreight">
+      <option value="" ${!state.freight_method?'selected':''}>— Сонгоно уу —</option>
+      <option value="truck" ${state.freight_method==='truck'?'selected':''}>Машин</option>
+      <option value="cargo" ${state.freight_method==='cargo'?'selected':''}>Карго</option>
+      <option value="post" ${state.freight_method==='post'?'selected':''}>Шуудан</option>
+    </select></div>
+    <div class="field"><label>Жин (кг)</label><input type="number" id="fWeight" value="${state.total_weight_kg}" placeholder="8000"></div>
+  </div>`;
+  html += `<div class="field"><label>Тэмдэглэл</label><textarea id="fNotes" placeholder="Нэмэлт мэдээлэл...">${esc(state.notes)}</textarea></div>`;
+  html += `<div class="field"><label style="display:flex;align-items:center;gap:8px">
+    <input type="checkbox" id="fSample" ${state.is_sample?'checked':''} style="width:auto"> Загвар бараа (sample shipment)
+  </label></div>`;
+  html += '</div></div>';
+
+  html += `<div class="btn-row">
+    <button class="btn btn-secondary" onclick="prevStep()">Буцах</button>
+    <button class="btn btn-primary" onclick="nextStep()">Үргэлжлүүлэх</button>
+  </div>`;
+  document.getElementById('content').innerHTML = html;
+}
+
+function renderStep2() {
+  const proj = projects.find(p => p.id === state.project_id);
+  const pc = productCodes.find(p => p.code === state.product_code);
+
+  let html = '<div class="sec"><div class="sec-title">3. Баталгаажуулалт</div>';
+  html += '<div class="form-card">';
+
+  // Summary
+  html += `<div style="font-size:13px;line-height:1.8">`;
+  html += `<div><strong>Төсөл:</strong> ${state.newProject ? esc(state.np_name) + ' <span style="color:var(--green);font-size:10px">ШИНЭ</span>' : proj?.name || '—'}</div>`;
+  if (state.newProject) {
+    html += `<div style="font-size:11px;color:var(--g400);margin-left:12px">Нийлүүлэгч: ${esc(state.np_supplier)} (${state.np_country})</div>`;
+  }
+  html += `<div><strong>Бүтээгдэхүүний код:</strong> ${state.product_code} — ${pc?.name || ''}</div>`;
+  html += `<div><strong>Тайлбар:</strong> ${esc(state.description) || '—'}</div>`;
+  html += `<div><strong>Тээвэр:</strong> ${({truck:'Машин',cargo:'Карго',post:'Шуудан'})[state.freight_method] || '—'}</div>`;
+  if (state.total_weight_kg) html += `<div><strong>Жин:</strong> ${Number(state.total_weight_kg).toLocaleString()} кг</div>`;
+  if (state.is_sample) html += `<div><span style="background:var(--purple-bg);color:var(--purple-fg);padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700">Загвар бараа</span></div>`;
+  html += `</div>`;
+
+  html += '</div></div>';
+
+  html += `<div class="btn-row">
+    <button class="btn btn-secondary" onclick="prevStep()">Буцах</button>
+    <button class="btn btn-primary" id="btnCreate" onclick="createShipment()">Ачилт үүсгэх</button>
+  </div>`;
+  document.getElementById('content').innerHTML = html;
+}
+
+function renderResult(shipmentCode) {
+  let html = '<div class="sec">';
+  html += '<div class="result-card">';
+  html += '<div class="result-icon">&#10003;</div>';
+  html += '<div class="result-title">Ачилт амжилттай үүслээ</div>';
+  html += `<div class="result-code">${shipmentCode}</div>`;
+  html += '<div class="result-hint">Одоо лот нэмж, зардал бүртгэж, хуваарилалт хийнэ үү.</div>';
+  html += `<a class="btn btn-primary" href="/imports/shipment/${shipmentCode}" style="text-decoration:none;display:block;max-width:280px;margin:0 auto">Ачилт руу очих</a>`;
+  html += '<div style="margin-top:10px"><a href="/imports" style="font-size:12px;color:var(--brand)">Жагсаалт руу буцах</a></div>';
+  html += '</div></div>';
+  document.getElementById('content').innerHTML = html;
+  document.getElementById('stepsBar').innerHTML = '';
+}
+
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function toggleNewProject() {
+  state.newProject = !state.newProject;
+  document.getElementById('npForm').classList.toggle('open', state.newProject);
+  if (state.newProject) document.getElementById('selProject').value = '';
+}
+
+function setRadio(key, val, el) {
+  state[key] = val;
+  el.parentElement.querySelectorAll('.radio-opt').forEach(e => e.classList.remove('on'));
+  el.classList.add('on');
+}
+
+function saveStep0() {
+  const sel = document.getElementById('selProject');
+  if (state.newProject) {
+    state.np_name = document.getElementById('npName').value.trim();
+    state.np_supplier = document.getElementById('npSupplier').value.trim();
+    state.np_country = document.getElementById('npCountry').value;
+    state.np_currency = document.getElementById('npCurrency').value;
+    state.project_id = null;
+  } else {
+    state.project_id = sel.value || null;
+  }
+}
+
+function saveStep1() {
+  state.product_code = document.getElementById('selPCode').value;
+  state.description = document.getElementById('fDesc').value.trim();
+  state.freight_method = document.getElementById('fFreight').value;
+  state.total_weight_kg = document.getElementById('fWeight').value;
+  state.notes = document.getElementById('fNotes').value.trim();
+  state.is_sample = document.getElementById('fSample').checked;
+}
+
+function validate0() {
+  if (state.newProject) {
+    if (!state.np_name) { alert('Төслийн нэр оруулна уу'); return false; }
+    if (!state.np_supplier) { alert('Нийлүүлэгчийн нэр оруулна уу'); return false; }
+  } else {
+    if (!state.project_id) { alert('Төсөл сонгоно уу'); return false; }
+  }
+  return true;
+}
+
+function validate1() {
+  if (!state.product_code) { alert('Бүтээгдэхүүний код сонгоно уу'); return false; }
+  return true;
+}
+
+function prevStep() {
+  if (currentStep === 1) saveStep1();
+  if (currentStep === 2) {}
+  currentStep--;
+  render();
+}
+
+function nextStep() {
+  if (currentStep === 0) { saveStep0(); if (!validate0()) return; }
+  if (currentStep === 1) { saveStep1(); if (!validate1()) return; }
+  currentStep++;
+  render();
+}
+
+async function createShipment() {
+  const btn = document.getElementById('btnCreate');
+  btn.disabled = true;
+  btn.textContent = 'Үүсгэж байна...';
+
+  try {
+    // Step 1: Create project if new
+    if (state.newProject) {
+      const projRes = await api('/projects', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: state.np_name,
+          supplier_name: state.np_supplier,
+          supplier_country: state.np_country,
+          currency: state.np_currency,
+          type: state.np_type
+        })
+      });
+      if (projRes.error) { alert(projRes.error); btn.disabled = false; btn.textContent = 'Ачилт үүсгэх'; return; }
+      state.project_id = projRes.id;
+    }
+
+    // Step 2: Create shipment
+    const shipRes = await api('/shipments', {
+      method: 'POST',
+      body: JSON.stringify({
+        project_id: state.project_id,
+        product_code: state.product_code,
+        description: state.description,
+        freight_method: state.freight_method || null,
+        total_weight_kg: state.total_weight_kg ? Number(state.total_weight_kg) : null,
+        notes: state.notes,
+        is_sample: state.is_sample
+      })
+    });
+    if (shipRes.error) { alert(shipRes.error); btn.disabled = false; btn.textContent = 'Ачилт үүсгэх'; return; }
+
+    renderResult(shipRes.code);
+  } catch(e) {
+    alert('Алдаа: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = 'Ачилт үүсгэх';
+  }
+}
+
+function render() {
+  renderSteps();
+  if (currentStep === 0) renderStep0();
+  else if (currentStep === 1) renderStep1();
+  else if (currentStep === 2) renderStep2();
+}
+
+async function init() {
+  [projects, productCodes] = await Promise.all([
+    api('/projects'),
+    api('/product-codes')
+  ]);
+  render();
+}
+init();
+</script>
+</body>
+</html>

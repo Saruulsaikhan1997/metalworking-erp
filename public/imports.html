@@ -4,44 +4,37 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
-<title>Импорт — Метал ворkинг Центр</title>
+<title>Импорт — Метал Воркинг Центр</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
   --brand: #1565c0; --brand-dark: #0d47a1;
   --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
   --gray-400: #9ca3af; --gray-600: #4b5563; --gray-900: #111827;
+  --green: #059669; --amber: #d97706; --blue: #2563eb; --red: #dc2626;
 }
-body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; background: var(--gray-50); color: var(--gray-900); padding-bottom: 30px; -webkit-font-smoothing: antialiased; }
+body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; background: var(--gray-50); color: var(--gray-900); padding-bottom: 90px; -webkit-font-smoothing: antialiased; }
 
-.id-bar {
+/* Header */
+.hdr {
   background: linear-gradient(135deg, #0d47a1 0%, #1565c0 100%);
-  color: #fff; padding: 18px 20px;
+  color: #fff; padding: 18px 20px 16px;
   border-radius: 0 0 20px 20px;
   box-shadow: 0 4px 12px rgba(13,71,161,0.18);
 }
-.id-top { display: flex; align-items: center; gap: 12px; }
-.id-back { font-size: 22px; color: #fff; text-decoration: none; padding: 4px 8px; }
-.id-title { font-size: 17px; font-weight: 700; flex: 1; }
-.id-sub { font-size: 11px; opacity: 0.85; margin-top: 3px; }
+.hdr-top { display: flex; align-items: center; gap: 12px; }
+.hdr-back { font-size: 22px; color: #fff; text-decoration: none; padding: 4px 8px; }
+.hdr-title { font-size: 17px; font-weight: 700; flex: 1; }
+.hdr-sub { font-size: 11px; opacity: 0.85; margin-top: 3px; }
 
-/* Summary stats */
-.stats-row {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
-  padding: 14px 16px 0;
-}
-.stat-box {
-  background: #fff; border-radius: 12px; padding: 12px 10px; text-align: center;
-  border: 1px solid var(--gray-200);
-}
-.stat-val { font-size: 20px; font-weight: 900; color: var(--brand-dark); }
-.stat-lbl { font-size: 10px; color: var(--gray-400); font-weight: 600; margin-top: 2px; text-transform: uppercase; }
+/* Summary row */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; padding: 14px 16px 0; }
+.st { background: #fff; border-radius: 12px; padding: 10px 6px; text-align: center; border: 1px solid var(--gray-200); }
+.st-v { font-size: 20px; font-weight: 900; }
+.st-l { font-size: 9px; color: var(--gray-400); font-weight: 600; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
 
-.section { padding: 18px 16px 0; }
-.section-label { font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 1.3px; margin-bottom: 12px; padding: 0 4px; }
-
-/* Filter chips */
-.chips { display: flex; gap: 6px; overflow-x: auto; padding: 0 0 12px; scrollbar-width: none; }
+/* Chips */
+.chips { display: flex; gap: 6px; overflow-x: auto; padding: 0 0 10px; scrollbar-width: none; }
 .chips::-webkit-scrollbar { display: none; }
 .chip {
   flex-shrink: 0; padding: 7px 13px;
@@ -49,274 +42,275 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
   background: #fff; font-size: 11.5px; font-weight: 600;
   color: var(--gray-600); cursor: pointer; white-space: nowrap;
 }
-.chip.active { background: var(--brand-dark); border-color: var(--brand-dark); color: #fff; }
-.chip-count { display: inline-block; margin-left: 4px; padding: 1px 5px; background: rgba(0,0,0,0.08); border-radius: 8px; font-size: 9px; }
-.chip.active .chip-count { background: rgba(255,255,255,0.2); }
+.chip.on { background: var(--brand-dark); border-color: var(--brand-dark); color: #fff; }
+.chip .cnt { display: inline-block; margin-left: 4px; padding: 1px 5px; background: rgba(0,0,0,0.07); border-radius: 8px; font-size: 9px; }
+.chip.on .cnt { background: rgba(255,255,255,0.2); }
 
-.shipment-card {
+.sec { padding: 16px 16px 0; }
+.sec-lbl { font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 10px; }
+
+/* Card */
+.card {
   background: #fff; border-radius: 14px;
-  padding: 16px 18px; margin-bottom: 10px;
+  padding: 14px 16px; margin-bottom: 10px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.05); border: 1px solid var(--gray-200);
   border-left: 4px solid var(--brand);
-  cursor: pointer;
+  text-decoration: none; color: inherit; display: block;
 }
-.shipment-card.st-delivered { border-left-color: #059669; }
-.shipment-card.st-transit { border-left-color: #2563eb; }
-.shipment-card.st-manufacturing { border-left-color: #f59e0b; }
-.shipment-card.st-pending { border-left-color: #dc2626; }
+.card.s-delivered { border-left-color: var(--green); }
+.card.s-transit { border-left-color: var(--blue); }
+.card.s-preparing { border-left-color: var(--amber); }
 
-.sc-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
-.sc-supplier { font-size: 14px; font-weight: 700; color: var(--gray-900); }
-.sc-product { font-size: 11.5px; color: var(--gray-600); margin-top: 3px; line-height: 1.4; }
-.sc-amount { font-size: 13px; font-weight: 700; color: var(--brand-dark); white-space: nowrap; }
+.c-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.c-supplier { font-size: 14px; font-weight: 700; }
+.c-code { font-size: 10px; color: var(--gray-400); font-family: monospace; margin-top: 2px; }
+.c-desc { font-size: 11.5px; color: var(--gray-600); margin-top: 3px; line-height: 1.4; }
+.c-cost { font-size: 13px; font-weight: 700; color: var(--brand-dark); white-space: nowrap; }
 
-/* Status badges */
-.sc-status {
-  display: inline-block; font-size: 10.5px; font-weight: 700;
-  padding: 3px 9px; border-radius: 10px;
-  margin-top: 2px;
-}
-.sc-status.transit { background: #dbeafe; color: #1e40af; }
-.sc-status.manufacturing { background: #fef3c7; color: #92400e; }
-.sc-status.delivered { background: #d1fae5; color: #065f46; }
-.sc-status.pending { background: #fee2e2; color: #991b1b; }
-.sc-status.customs { background: #fed7aa; color: #9a3412; }
-
-.inv-status {
+/* Status + badge row */
+.badge {
   display: inline-block; font-size: 10px; font-weight: 700;
-  padding: 2px 8px; border-radius: 8px;
-  background: #fef3c7; color: #92400e;
-  margin-left: 6px;
+  padding: 3px 9px; border-radius: 10px;
 }
+.badge.transit { background: #dbeafe; color: #1e40af; }
+.badge.preparing { background: #fef3c7; color: #92400e; }
+.badge.delivered { background: #d1fae5; color: #065f46; }
+.badge.sample { background: #ede9fe; color: #5b21b6; }
 
 /* Pipeline */
-.pipeline { display: flex; gap: 4px; margin: 10px 0 8px; }
-.pipe-step { flex: 1; height: 4px; background: var(--gray-200); border-radius: 2px; }
-.pipe-step.done { background: #059669; }
-.pipe-step.current { background: #f59e0b; animation: pulse 1.5s ease-in-out infinite; }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+.pipe { display: flex; gap: 4px; margin: 10px 0 4px; }
+.pipe-s { flex: 1; height: 4px; background: var(--gray-200); border-radius: 2px; }
+.pipe-s.done { background: var(--green); }
+.pipe-s.now { background: var(--amber); animation: pulse 1.5s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.5 } }
+.pipe-lbl { display: flex; justify-content: space-between; font-size: 8px; color: var(--gray-400); margin-bottom: 6px; }
 
-.pipe-labels { display: flex; justify-content: space-between; font-size: 8.5px; color: var(--gray-400); margin-bottom: 6px; }
+/* Payment bar */
+.pay-bar-wrap { margin-top: 8px; }
+.pay-bar-bg { height: 6px; background: var(--gray-200); border-radius: 3px; overflow: hidden; }
+.pay-bar-fill { height: 100%; border-radius: 3px; background: var(--green); transition: width 0.3s; }
+.pay-bar-fill.partial { background: var(--amber); }
+.pay-bar-fill.zero { background: var(--gray-200); }
+.pay-info { display: flex; justify-content: space-between; font-size: 10px; color: var(--gray-400); margin-top: 3px; }
+.pay-info .paid { color: var(--green); font-weight: 600; }
+.pay-info .unpaid { color: var(--red); font-weight: 600; }
 
-.payment-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--gray-600); padding: 3px 0; }
-.payment-row.paid { color: #059669; }
-.payment-row.pend { color: #c62828; font-weight: 600; }
-
-.sc-meta {
-  display: flex; gap: 10px; flex-wrap: wrap;
-  font-size: 10.5px; color: var(--gray-400);
+/* Meta row */
+.c-meta {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  font-size: 10px; color: var(--gray-400);
   margin-top: 8px; padding-top: 8px;
   border-top: 1px solid var(--gray-100);
 }
+.c-meta span { white-space: nowrap; }
 
-.next-milestone {
-  margin-top: 8px; padding: 8px 10px;
-  background: #eff6ff; border-radius: 8px;
-  font-size: 11px; color: #1e40af; font-weight: 600;
-}
-
-/* Activity log (collapsible) */
-.log-toggle {
-  font-size: 10.5px; color: var(--brand); font-weight: 600;
+/* Activity log */
+.log-btn {
+  font-size: 10px; color: var(--brand); font-weight: 600;
   cursor: pointer; margin-top: 8px; padding-top: 6px;
   border-top: 1px solid var(--gray-100);
 }
-.activity-log { display: none; margin-top: 8px; }
-.activity-log.shown { display: block; }
-.log-item {
-  display: flex; gap: 8px; font-size: 10.5px;
-  padding: 4px 0; color: var(--gray-600);
-}
-.log-date { font-weight: 700; color: var(--gray-400); flex-shrink: 0; width: 58px; }
-.log-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--brand); margin-top: 5px; flex-shrink: 0; }
+.log { display: none; margin-top: 6px; }
+.log.open { display: block; }
+.log-row { display: flex; gap: 8px; font-size: 10px; padding: 3px 0; color: var(--gray-600); }
+.log-dt { font-weight: 700; color: var(--gray-400); flex-shrink: 0; width: 44px; }
+.log-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--brand); margin-top: 5px; flex-shrink: 0; }
 
-.empty { text-align: center; color: var(--gray-400); padding: 30px; font-size: 13px; }
+.empty { text-align: center; color: var(--gray-400); padding: 40px 20px; font-size: 13px; }
+
+/* Cost summary pill */
+.cost-summary {
+  display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px;
+}
+.cost-pill {
+  font-size: 9px; padding: 2px 7px; border-radius: 6px;
+  background: var(--gray-100); color: var(--gray-600); font-weight: 600;
+}
 </style>
 </head>
 <body>
 
-<div class="id-bar">
-  <div class="id-top">
-    <a class="id-back" href="/dashboard">‹</a>
+<div class="hdr">
+  <div class="hdr-top">
+    <a class="hdr-back" href="/dashboard">‹</a>
     <div style="flex:1">
-      <div class="id-title">🚢 Импорт</div>
-      <div class="id-sub">Худалдан авалт, тээвэр, агуулахын төлөв</div>
+      <div class="hdr-title">Импорт</div>
+      <div class="hdr-sub">Ачилт, зардал, агуулахын төлөв</div>
     </div>
+    <a href="/imports/new" style="background:rgba(255,255,255,.2);color:#fff;font-size:12px;font-weight:700;padding:8px 14px;border-radius:10px;text-decoration:none;white-space:nowrap">+ Шинэ</a>
   </div>
 </div>
 
-<div class="stats-row" id="statsRow"></div>
+<div class="stats" id="stats"></div>
 
-<div class="section">
-  <div class="chips" id="filterChips"></div>
-  <div id="shipmentList"></div>
+<div class="sec">
+  <div class="chips" id="chips"></div>
+  <div id="list"></div>
 </div>
 
 <script src="/js/bottom-nav.js"></script>
 <script>
 const token = localStorage.getItem('token');
-const user  = JSON.parse(localStorage.getItem('user') || '{}');
 if (!token) window.location.href = '/';
 
 async function api(path) {
-  const r = await fetch('/api' + path, { headers: { 'Authorization': 'Bearer ' + token }});
+  const r = await fetch('/api/import' + path, { headers: { 'Authorization': 'Bearer ' + token }});
   if (r.status === 401) { localStorage.clear(); window.location.href = '/'; }
   return r.json();
 }
 
-const STATUS_MAP = {
-  delivered:     { label: '✅ Хүргэгдсэн', cls: 'delivered', order: 4 },
-  transit:       { label: '🚚 Замд яваа', cls: 'transit', order: 3 },
-  customs:       { label: '🏛 Гаальд', cls: 'customs', order: 2 },
-  manufacturing: { label: '🏭 Үйлдвэрлэлд', cls: 'manufacturing', order: 1 },
-  pending:       { label: '⏳ Хүлээгдэж буй', cls: 'pending', order: 0 },
+const STATUS = {
+  in_transit_cn: { label: '🚚 Хятадаас замд', cls: 'transit', group: 'transit' },
+  at_border:     { label: '🏛 Хилд ирсэн', cls: 'transit', group: 'transit' },
+  customs:       { label: '🏛 Гаальд', cls: 'transit', group: 'transit' },
+  in_transit_mn: { label: '🚚 МН руу замд', cls: 'transit', group: 'transit' },
+  preparing:     { label: '🏭 Бэлтгэгдэж байна', cls: 'preparing', group: 'preparing' },
+  delivered:     { label: '✅ Хүргэгдсэн', cls: 'delivered', group: 'delivered' },
 };
-
-const INV_STATUS_MAP = {
-  awaiting_registration: '📋 Агуулах бүртгэл хүлээгдэж байна',
-  registered: '✅ Бүртгэгдсэн',
-};
-
-// Pipeline: manufacturing → transit → customs → delivered
-const STAGES = ['manufacturing','transit','customs','delivered'];
+const STAGES = ['preparing','in_transit_cn','at_border','customs','in_transit_mn','delivered'];
 function pipeSteps(status) {
   const idx = STAGES.indexOf(status);
   return STAGES.map((_, i) => {
     if (idx < 0) return '';
     if (i < idx) return 'done';
-    if (i === idx) return status === 'delivered' ? 'done' : 'current';
+    if (i === idx) return status === 'delivered' ? 'done' : 'now';
     return '';
   });
 }
 
-let allImports = [];
-let activeFilter = 'all';
+function fmt(n) {
+  if (!n) return '0₮';
+  if (n >= 1e6) return (n/1e6).toFixed(1).replace(/\.0$/,'') + 'сая₮';
+  return n.toLocaleString() + '₮';
+}
 
-function setFilter(key) {
-  activeFilter = key;
-  document.querySelectorAll('.chip').forEach(el => el.classList.toggle('active', el.dataset.f === key));
+let all = [];
+let filter = 'all';
+
+function setFilter(k) {
+  filter = k;
+  document.querySelectorAll('.chip').forEach(el => el.classList.toggle('on', el.dataset.f === k));
   renderList();
 }
 
-function renderStats(imports) {
-  const transit = imports.filter(i => i.status === 'transit').length;
-  const mfg = imports.filter(i => i.status === 'manufacturing').length;
-  const delivered = imports.filter(i => i.status === 'delivered').length;
-  document.getElementById('statsRow').innerHTML = `
-    <div class="stat-box"><div class="stat-val" style="color:#2563eb">${transit}</div><div class="stat-lbl">Замд</div></div>
-    <div class="stat-box"><div class="stat-val" style="color:#d97706">${mfg}</div><div class="stat-lbl">Үйлдвэрт</div></div>
-    <div class="stat-box"><div class="stat-val" style="color:#059669">${delivered}</div><div class="stat-lbl">Ирсэн</div></div>
+function renderStats(d) {
+  document.getElementById('stats').innerHTML = `
+    <div class="st"><div class="st-v" style="color:var(--blue)">${d.in_transit}</div><div class="st-l">Замд</div></div>
+    <div class="st"><div class="st-v" style="color:var(--amber)">${d.manufacturing}</div><div class="st-l">Бэлтгэл</div></div>
+    <div class="st"><div class="st-v" style="color:var(--green)">${d.delivered}</div><div class="st-l">Ирсэн</div></div>
+    <div class="st"><div class="st-v" style="color:${d.unpaid_count?'var(--red)':'var(--gray-400)'}">${d.unpaid_count}</div><div class="st-l">Төлөөгүй</div></div>
   `;
 }
 
-function renderChips(imports) {
-  const counts = { all: imports.length };
-  for (const [k] of Object.entries(STATUS_MAP)) counts[k] = imports.filter(i => i.status === k).length;
-  const chips = [
-    { key: 'all', label: 'Бүгд' },
-    { key: 'transit', label: '🚚 Замд' },
-    { key: 'manufacturing', label: '🏭 Үйлдвэрт' },
-    { key: 'delivered', label: '✅ Ирсэн' },
+function renderChips() {
+  const counts = { all: all.length };
+  for (const s of all) {
+    const g = (STATUS[s.status]||{}).group || s.status;
+    counts[g] = (counts[g]||0) + 1;
+  }
+  const defs = [
+    { key:'all', label:'Бүгд' },
+    { key:'transit', label:'🚚 Замд' },
+    { key:'preparing', label:'🏭 Бэлтгэл' },
+    { key:'delivered', label:'✅ Ирсэн' },
   ].filter(c => counts[c.key] > 0 || c.key === 'all');
 
-  document.getElementById('filterChips').innerHTML = chips.map(c =>
-    `<button class="chip ${c.key === activeFilter ? 'active' : ''}" data-f="${c.key}" onclick="setFilter('${c.key}')">
-      ${c.label} <span class="chip-count">${counts[c.key]}</span>
+  document.getElementById('chips').innerHTML = defs.map(c =>
+    `<button class="chip ${c.key===filter?'on':''}" data-f="${c.key}" onclick="setFilter('${c.key}')">
+      ${c.label} <span class="cnt">${counts[c.key]||0}</span>
     </button>`
   ).join('');
 }
 
 function renderList() {
-  let items = allImports;
-  if (activeFilter !== 'all') items = items.filter(i => i.status === activeFilter);
+  let items = all;
+  if (filter !== 'all') items = items.filter(s => (STATUS[s.status]||{}).group === filter);
 
-  // Sort: transit first, then manufacturing, then delivered
-  items.sort((a, b) => {
-    const oa = (STATUS_MAP[a.status]||{}).order || 0;
-    const ob = (STATUS_MAP[b.status]||{}).order || 0;
-    if (oa !== ob) return oa - ob; // lower order = more urgent = first? Actually transit first
-    return 0;
-  });
-  // Reverse so highest order (most progressed but active) is at top — actually let's put transit first
-  items.sort((a, b) => {
-    const priority = { transit: 0, manufacturing: 1, customs: 2, pending: 3, delivered: 4 };
-    return (priority[a.status] ?? 5) - (priority[b.status] ?? 5);
-  });
-
-  const el = document.getElementById('shipmentList');
+  const el = document.getElementById('list');
   if (!items.length) { el.innerHTML = '<div class="empty">Тохирох ачилт байхгүй</div>'; return; }
 
-  el.innerHTML = items.map(imp => {
-    const st = STATUS_MAP[imp.status] || STATUS_MAP.pending;
-    const steps = pipeSteps(imp.status);
-    const hasRemaining = imp.remaining && imp.remaining !== '$0' && imp.remaining !== '¥0' && imp.remaining !== '0' && imp.remaining !== '—';
-    const invSt = imp.inventory_status ? INV_STATUS_MAP[imp.inventory_status] || imp.inventory_status : '';
-    const logs = imp.activity_log || [];
+  el.innerHTML = items.map(s => {
+    const st = STATUS[s.status] || { label: s.status, cls: 'transit', group: 'transit' };
+    const steps = pipeSteps(s.status);
+    const isSample = s.code.endsWith('-S');
+    const payPct = s.payment_pct || 0;
+    const payClass = payPct >= 100 ? '' : payPct > 0 ? 'partial' : 'zero';
+    const logs = s.activity_log || [];
 
-    return `<div class="shipment-card st-${st.cls}">
-      <div class="sc-top">
+    return `<a class="card s-${st.cls}" href="/imports/shipment/${s.code}">
+      <div class="c-top">
         <div style="flex:1;min-width:0">
-          <div class="sc-supplier">${imp.supplier}</div>
-          <div class="sc-product">${imp.product}</div>
+          <div class="c-supplier">${s.supplier_name || s.project_name}</div>
+          <div class="c-code">${s.code}</div>
+          <div class="c-desc">${s.description}</div>
         </div>
-        <div class="sc-amount">${imp.total}</div>
+        <div class="c-cost">${s.total_cost_mnt ? fmt(s.total_cost_mnt) : '—'}</div>
       </div>
 
-      <div class="pipeline">
-        ${steps.map(s => `<div class="pipe-step ${s}"></div>`).join('')}
+      <div class="pipe">
+        ${steps.map(c => `<div class="pipe-s ${c}"></div>`).join('')}
       </div>
-      <div class="pipe-labels">
-        <span>Үйлдвэр</span><span>Тээвэр</span><span>Гааль</span><span>Ирсэн</span>
-      </div>
-
-      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px">
-        <span class="sc-status ${st.cls}">${st.label}</span>
-        ${invSt ? `<span class="inv-status">${invSt}</span>` : ''}
+      <div class="pipe-lbl">
+        <span>Бэлтгэл</span><span>Ачилт</span><span>Хил</span><span>Гааль</span><span>Тээвэр</span><span>Ирсэн</span>
       </div>
 
-      <div style="margin-top:8px;font-size:11px">
-        <div class="payment-row paid">✅ Төлсөн: ${imp.paid}</div>
-        ${hasRemaining ? `<div class="payment-row pend">⏳ Үлдэгдэл: ${imp.remaining}</div>` : ''}
-        ${imp.payment_status === 'awaiting_proforma' ? `<div class="payment-row pend">📄 Proforma хүлээгдэж байна</div>` : ''}
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <span class="badge ${st.cls}">${st.label}</span>
+        ${isSample ? '<span class="badge sample">🧪 Загвар</span>' : ''}
+        ${s.lot_count ? `<span style="font-size:10px;color:var(--gray-400)">${s.lot_count} lot</span>` : ''}
       </div>
 
-      ${imp.next_milestone ? `<div class="next-milestone">🎯 ${imp.next_milestone}</div>` : ''}
+      ${s.total_cost_mnt > 0 ? `
+      <div class="pay-bar-wrap">
+        <div class="pay-bar-bg"><div class="pay-bar-fill ${payClass}" style="width:${Math.min(payPct,100)}%"></div></div>
+        <div class="pay-info">
+          <span class="paid">✅ ${fmt(s.total_paid_mnt)}</span>
+          ${payPct < 100 ? `<span class="unpaid">⏳ ${fmt(s.total_cost_mnt - s.total_paid_mnt)}</span>` : ''}
+          <span>${payPct}%</span>
+        </div>
+      </div>` : ''}
 
-      <div class="sc-meta">
-        <span>📅 ETA: ${imp.eta}</span>
-        ${imp.eta_mongolia ? `<span>🇲🇳 Монголд: ~${imp.eta_mongolia}</span>` : ''}
+      <div class="c-meta">
+        ${s.shipped_at ? `<span>📦 Ачсан: ${s.shipped_at.slice(5)}</span>` : ''}
+        ${s.delivered_at ? `<span>🏁 Ирсэн: ${s.delivered_at.slice(5)}</span>` : ''}
+        ${s.freight_method ? `<span>🚛 ${({truck:'Машин',cargo:'Карго',post:'Шуудан'})[s.freight_method]||s.freight_method}</span>` : ''}
+        ${s.total_weight_kg ? `<span>⚖️ ${(s.total_weight_kg/1000).toFixed(1)}т</span>` : ''}
       </div>
 
-      ${imp.note ? `<div style="margin-top:6px;font-size:10.5px;color:var(--gray-600);line-height:1.5">📝 ${imp.note}</div>` : ''}
+      ${s.notes ? `<div style="margin-top:6px;font-size:10px;color:var(--gray-600);line-height:1.4">📝 ${s.notes}</div>` : ''}
 
       ${logs.length ? `
-        <div class="log-toggle" onclick="toggleLog(this)">📋 Түүх (${logs.length}) ›</div>
-        <div class="activity-log">
+        <div class="log-btn" onclick="event.preventDefault();toggleLog(this)">📋 Түүх (${logs.length}) ›</div>
+        <div class="log">
           ${logs.slice().reverse().map(l => `
-            <div class="log-item">
-              <span class="log-date">${l.date.slice(5)}</span>
+            <div class="log-row">
+              <span class="log-dt">${l.date.slice(5)}</span>
               <span class="log-dot"></span>
               <span>${l.event}</span>
             </div>
           `).join('')}
         </div>
       ` : ''}
-    </div>`;
+    </a>`;
   }).join('');
 }
 
 function toggleLog(el) {
   const log = el.nextElementSibling;
-  log.classList.toggle('shown');
-  el.textContent = log.classList.contains('shown')
+  log.classList.toggle('open');
+  el.textContent = log.classList.contains('open')
     ? '📋 Түүх ↑ Хаах'
     : `📋 Түүх (${log.children.length}) ›`;
 }
 
 async function load() {
-  allImports = await api('/imports') || [];
-  renderStats(allImports);
-  renderChips(allImports);
+  const [dashboard, shipments] = await Promise.all([
+    api('/dashboard'),
+    api('/shipments')
+  ]);
+  renderStats(dashboard);
+  all = shipments;
+  renderChips();
   renderList();
 }
 load();

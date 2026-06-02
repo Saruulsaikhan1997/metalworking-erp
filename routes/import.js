@@ -1,0 +1,840 @@
+const express = require('express');
+const router = express.Router();
+const { load, save } = require('../database');
+
+// Auth middleware
+function authRequired(req, res, next) {
+  const jwt = require('jsonwebtoken');
+  const token = (req.headers.authorization || '').replace('Bearer ', '');
+  try {
+    req.user = jwt.verify(token, process.env.JWT_SECRET || 'metalworking-secret-2026');
+    next();
+  } catch { res.status(401).json({ error: 'Нэвтрэх шаардлагатай' }); }
+}
+function adminOnly(req, res, next) {
+  if (!['admin'].includes(req.user?.role)) return res.status(403).json({ error: 'Зөвхөн админ' });
+  next();
+}
+function adminOrWarehouse(req, res, next) {
+  if (!['admin', 'warehouse'].includes(req.user?.role)) return res.status(403).json({ error: 'Эрх хүрэхгүй' });
+  next();
+}
+
+router.use(authRequired);
+
+// ══════════════════════════════════════════
+//  PRODUCT CODES
+// ══════════════════════════════════════════
+router.get('/product-codes', (req, res) => {
+  const db = load();
+  res.json(db.import_product_codes || []);
+});
+
+router.post('/product-codes', adminOnly, (req, res) => {
+  const db = load();
+  const b = req.body;
+  if (!b.code || !b.name) return res.status(400).json({ error: 'code, name шаардлагатай' });
+  db.import_product_codes = db.import_product_codes || [];
+  if (db.import_product_codes.find(p => p.code === b.code)) return res.status(409).json({ error: 'Код давхцаж байна' });
+  const pcode = {
+    code: b.code.toUpperCase(),
+    name: b.name,
+    category: b.category || 'raw_material',
+    primary_unit: b.primary_unit || 'piece',
+    secondary_unit: b.secondary_unit || null,
+    conversion: b.conversion || null,
+    inventory_unit: b.inventory_unit || b.primary_unit || 'piece',
+    cost_method: b.cost_method || 'weighted_average'
+  };
+  db.import_product_codes.push(pcode);
+  save(db);
+  res.json({ code: pcode.code });
+});
+
+// ══════════════════════════════════════════
+//  PROJECTS
+// ══════════════════════════════════════════
+router.get('/projects', (req, res) => {
+  const db = load();
+  res.json(db.import_projects || []);
+});
+
+router.post('/projects', adminOnly, (req, res) => {
+  const db = load();
+  const b = req.body;
+  if (!b.name || !b.supplier_name) return res.status(400).json({ error: 'name, supplier_name шаардлагатай' });
+
+  db.import_projects = db.import_projects || [];
+  const maxId = db.import_projects.reduce((m, p) => {
+    const n = parseInt((p.id || '').replace('proj_', ''), 10);
+    return n > m ? n : m;
+  }, 0);
+
+  const project = {
+    id: 'proj_' + String(maxId + 1).padStart(3, '0'),
+    code: b.code || ('PROJ-' + b.supplier_name.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12)),
+    name: b.name,
+    supplier: {
+      name: b.supplier_name,
+      country: b.supplier_country || 'CN',
+      contact: b.supplier_contact || null
+    },
+    type: b.type || 'official',
+    currency: b.currency || 'USD',
+    status: 'active',
+    created_at: new Date().toISOString()
+  };
+  db.import_projects.push(project);
+  save(db);
+  res.json({ id: project.id, code: project.code });
+});
+
+// ══════════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════════
+router.get('/dashboard', (req, res) => {
+  const db = load();
+  const shipments = db.import_shipments || [];
+  const lots = db.import_lots || [];
+  const costs = db.import_cost_ledger || [];
+
+  const in_transit = shipments.filter(s => ['in_transit_cn', 'at_border', 'customs', 'in_transit_mn'].includes(s.status)).length;
+  const manufacturing = shipments.filter(s => s.status === 'preparing').length;
+  const delivered = shipments.filter(s => s.status === 'delivered').length;
+  const total_cost_mnt = costs.reduce((s, c) => s + (c.amount_mnt || 0), 0);
+  const unpaid = costs.filter(c => !c.paid);
+
+  res.json({
+    total_shipments: shipments.length,
+    in_transit,
+    manufacturing,
+    delivered,
+    total_cost_mnt,
+    unpaid_count: unpaid.length,
+    unpaid_mnt: unpaid.reduce((s, c) => s + (c.amount_mnt || 0), 0)
+  });
+});
+
+// ══════════════════════════════════════════
+//  SHIPMENTS
+// ══════════════════════════════════════════
+router.get('/shipments', (req, res) => {
+  const db = load();
+  const shipments = db.import_shipments || [];
+  const projects = db.import_projects || [];
+  const lots = db.import_lots || [];
+  const costs = db.import_cost_ledger || [];
+
+  // Enrich each shipment with project name and summary
+  const result = shipments.map(s => {
+    const proj = projects.find(p => p.id === s.project_id);
+    const sLots = lots.filter(l => l.shipment_id === s.id);
+    const sCosts = costs.filter(c => c.shipment_id === s.id);
+    const totalPaid = sCosts.filter(c => c.paid).reduce((sum, c) => sum + (c.amount_mnt || 0), 0);
+    const totalCost = sCosts.reduce((sum, c) => sum + (c.amount_mnt || 0), 0);
+
+    return {
+      ...s,
+      project_name: proj?.name || '',
+      supplier_name: proj?.supplier?.name || '',
+      lot_count: sLots.length,
+      total_cost_mnt: totalCost,
+      total_paid_mnt: totalPaid,
+      payment_pct: totalCost > 0 ? Math.round(totalPaid / totalCost * 100) : 0
+    };
+  });
+
+  // Sort: in_transit first, then preparing, then delivered
+  const priority = { in_transit_cn: 0, at_border: 1, customs: 2, in_transit_mn: 3, preparing: 4, delivered: 5 };
+  result.sort((a, b) => (priority[a.status] ?? 9) - (priority[b.status] ?? 9));
+
+  res.json(result);
+});
+
+router.get('/shipment/:code', (req, res) => {
+  const db = load();
+  const shipment = (db.import_shipments || []).find(s => s.code === req.params.code);
+  if (!shipment) return res.status(404).json({ error: 'Ачилт олдсонгүй' });
+
+  const project = (db.import_projects || []).find(p => p.id === shipment.project_id);
+  const lots = (db.import_lots || []).filter(l => l.shipment_id === shipment.id);
+  const costs = (db.import_cost_ledger || []).filter(c => c.shipment_id === shipment.id);
+
+  // Cost summary by type group
+  const costGroups = {};
+  for (const c of costs) {
+    const group = c.type.startsWith('freight') ? 'freight'
+      : c.type.startsWith('customs') ? 'customs'
+      : c.type === 'product' || c.type === 'product_adjustment' ? 'product'
+      : c.type.startsWith('bank') || c.type === 'fx_loss' ? 'bank'
+      : 'other';
+    costGroups[group] = (costGroups[group] || 0) + (c.amount_mnt || 0);
+  }
+
+  // Check allocation status
+  const sharedCosts = costs.filter(c => !c.lot_id);
+  const nonSampleLots = lots.filter(l => !l.is_sample);
+  const totalAllocated = nonSampleLots.reduce((s, l) => s + (l.total_allocated_mnt || 0), 0);
+  const directCostsMnt = costs.filter(c => c.lot_id).reduce((s, c) => s + (c.amount_mnt || 0), 0);
+  const totalCostMnt = costs.reduce((s, c) => s + (c.amount_mnt || 0), 0);
+  const sharedCostMnt = sharedCosts.reduce((s, c) => s + (c.amount_mnt || 0), 0);
+
+  const unallocated = sharedCosts.filter(c => {
+    const allocatedTotal = nonSampleLots.reduce((s, l) => {
+      const alloc = (l.allocations || []).find(a => a.cost_ledger_id === c.id);
+      return s + (alloc ? alloc.final_value : 0);
+    }, 0);
+    return Math.abs(allocatedTotal - (c.amount_mnt || 0)) > 1;
+  });
+
+  const balanced = unallocated.length === 0 && sharedCosts.length > 0
+    ? Math.abs(totalAllocated - sharedCostMnt) <= 1
+    : sharedCosts.length === 0;
+
+  // Landed Cost Readiness checks
+  const warnings = [];
+  const paidCosts = costs.filter(c => c.paid);
+  const unpaidCosts = costs.filter(c => !c.paid);
+  if (unpaidCosts.length) warnings.push({ type: 'unpaid', msg: `${unpaidCosts.length} төлөөгүй зардал (${unpaidCosts.reduce((s,c)=>s+(c.amount_mnt||0),0).toLocaleString()}₮)` });
+  if (unallocated.length) warnings.push({ type: 'unallocated', msg: `${unallocated.length} хуваарилаагүй зардал` });
+  if (!nonSampleLots.length) warnings.push({ type: 'no_lots', msg: 'Lot бүртгэгдээгүй' });
+  const hasFreight = costs.some(c => c.type.startsWith('freight'));
+  if (!hasFreight && shipment.status !== 'preparing') warnings.push({ type: 'no_freight', msg: 'Тээврийн зардал бүртгэгдээгүй' });
+  const hasCustoms = costs.some(c => c.type.startsWith('customs'));
+  if (!hasCustoms && shipment.status === 'delivered') warnings.push({ type: 'no_customs', msg: 'Гаалийн зардал бүртгэгдээгүй' });
+  const unreceived = nonSampleLots.filter(l => l.warehouse_status === 'not_received');
+  const canReceive = warnings.length === 0 && nonSampleLots.length > 0 && balanced;
+
+  // Enrich costs with linked bank transaction data
+  const txs = db.transactions || [];
+  const enrichedCosts = costs.map(c => {
+    const linked = c.transaction_id ? txs.find(t => t.id === c.transaction_id) : null;
+    return {
+      ...c,
+      linked_tx: linked ? {
+        id: linked.id,
+        date: linked.date,
+        counterparty: linked.counterparty,
+        amount: linked.amount,
+        account: linked.account,
+        category: linked.category,
+        memo: linked.memo
+      } : null
+    };
+  });
+
+  // Product codes for display
+  const productCodes = db.import_product_codes || [];
+
+  res.json({
+    shipment,
+    project: project ? { id: project.id, code: project.code, name: project.name, supplier: project.supplier, type: project.type } : null,
+    lots,
+    costs: enrichedCosts,
+    cost_summary: costGroups,
+    total_cost_mnt: totalCostMnt,
+    direct_cost_mnt: directCostsMnt,
+    shared_cost_mnt: sharedCostMnt,
+    total_allocated_mnt: totalAllocated,
+    unallocated_count: unallocated.length,
+    unallocated_ids: unallocated.map(c => c.id),
+    all_allocated: unallocated.length === 0,
+    balanced,
+    readiness: {
+      can_receive: canReceive,
+      warnings,
+      unreceived_lots: unreceived.length,
+      total_lots: nonSampleLots.length,
+      sample_lots: lots.filter(l => l.is_sample).length
+    },
+    product_codes: productCodes
+  });
+});
+
+router.post('/shipments', adminOnly, (req, res) => {
+  const db = load();
+  const b = req.body;
+  if (!b.project_id || !b.product_code) return res.status(400).json({ error: 'project_id, product_code шаардлагатай' });
+
+  const project = (db.import_projects || []).find(p => p.id === b.project_id);
+  if (!project) return res.status(404).json({ error: 'Төсөл олдсонгүй' });
+
+  const pcode = (db.import_product_codes || []).find(p => p.code === b.product_code);
+  if (!pcode) return res.status(404).json({ error: 'Бүтээгдэхүүний код олдсонгүй' });
+
+  // Auto-generate shipment code: {PRODUCT_CODE}-{YEAR}-{SEQ}
+  const year = new Date().getFullYear();
+  const isSample = b.is_sample || false;
+  const existing = (db.import_shipments || []).filter(s =>
+    s.code.startsWith(b.product_code + '-' + year) && !s.code.endsWith('-S')
+  );
+  const seq = String(existing.length + 1).padStart(3, '0');
+  let code = b.product_code + '-' + year + '-' + seq;
+  if (isSample) code += '-S';
+
+  // Auto-generate ID
+  db.import_shipments = db.import_shipments || [];
+  const maxId = db.import_shipments.reduce((m, s) => {
+    const n = parseInt((s.id || '').replace('ship_', ''), 10);
+    return n > m ? n : m;
+  }, 0);
+
+  const shipment = {
+    id: 'ship_' + String(maxId + 1).padStart(3, '0'),
+    code,
+    project_id: project.id,
+    description: b.description || '',
+    status: b.status || 'preparing',
+    route: b.route || '',
+    shipped_at: b.shipped_at || null,
+    delivered_at: null,
+    freight_method: b.freight_method || null,
+    freight_company: b.freight_company || null,
+    total_weight_kg: b.total_weight_kg || null,
+    notes: b.notes || '',
+    activity_log: [{
+      date: new Date().toISOString().slice(0, 10),
+      event: 'Ачилт үүсгэсэн',
+      by: req.user.name || req.user.username
+    }],
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  db.import_shipments.push(shipment);
+  save(db);
+  res.json({ id: shipment.id, code: shipment.code });
+});
+
+router.put('/shipments/:code', adminOnly, (req, res) => {
+  const db = load();
+  const idx = (db.import_shipments || []).findIndex(s => s.code === req.params.code);
+  if (idx === -1) return res.status(404).json({ error: 'Олдсонгүй' });
+
+  const allowed = ['status', 'route', 'shipped_at', 'delivered_at', 'freight_method', 'freight_company', 'total_weight_kg', 'notes'];
+  for (const k of allowed) {
+    if (req.body[k] !== undefined) db.import_shipments[idx][k] = req.body[k];
+  }
+  db.import_shipments[idx].updated_at = new Date().toISOString();
+
+  if (req.body.activity_event) {
+    db.import_shipments[idx].activity_log = db.import_shipments[idx].activity_log || [];
+    db.import_shipments[idx].activity_log.push({
+      date: new Date().toISOString().slice(0, 10),
+      event: req.body.activity_event,
+      by: req.user.name || req.user.username
+    });
+  }
+
+  save(db);
+  res.json({ ok: true });
+});
+
+// ══════════════════════════════════════════
+//  LOTS
+// ══════════════════════════════════════════
+router.post('/lots', adminOnly, (req, res) => {
+  const db = load();
+  const b = req.body;
+  if (!b.shipment_id || !b.product_code) return res.status(400).json({ error: 'shipment_id, product_code шаардлагатай' });
+
+  const shipment = (db.import_shipments || []).find(s => s.id === b.shipment_id);
+  if (!shipment) return res.status(404).json({ error: 'Ачилт олдсонгүй' });
+
+  const pcode = (db.import_product_codes || []).find(p => p.code === b.product_code);
+
+  // Auto-calculate secondary unit qty
+  let secondaryUnit = null;
+  if (pcode && pcode.secondary_unit) {
+    secondaryUnit = {
+      unit: pcode.secondary_unit,
+      qty: pcode.conversion ? b.units_primary_qty * pcode.conversion : (b.units_secondary_qty || null),
+      conversion: pcode.conversion || null,
+      landed_cost: 0
+    };
+  }
+
+  const maxId = (db.import_lots || []).reduce((m, l) => {
+    const n = parseInt((l.id || '').replace('lot_', ''), 10);
+    return n > m ? n : m;
+  }, 0);
+
+  const lot = {
+    id: 'lot_' + String(maxId + 1).padStart(3, '0'),
+    project_id: shipment.project_id,
+    shipment_id: shipment.id,
+    shipment_code: shipment.code,
+    product_code: b.product_code,
+    product: b.product || { name: '', hs_code: '', spec: '', category: 'raw_material' },
+    units: {
+      primary: { unit: pcode?.primary_unit || b.unit || 'piece', qty: b.units_primary_qty || b.qty || 0, landed_cost: 0 },
+      secondary: secondaryUnit
+    },
+    unit_price: b.unit_price || 0,
+    currency: b.currency || 'MNT',
+    exchange_rate: b.exchange_rate || 1,
+    product_cost: (b.unit_price || 0) * (b.units_primary_qty || b.qty || 0),
+    product_cost_mnt: 0,
+    allocations: [],
+    total_allocated_mnt: 0,
+    total_cost_mnt: 0,
+    is_sample: b.is_sample || false,
+    sample_purpose: b.sample_purpose || null,
+    sample_parent_lot: b.sample_parent_lot || null,
+    inventory_item_id: b.inventory_item_id || null,
+    warehouse_status: 'not_received',
+    received_qty: null,
+    received_at: null,
+    received_by: null,
+    quality_check: null,
+    quality_notes: null,
+    created_at: new Date().toISOString()
+  };
+  lot.product_cost_mnt = Math.round(lot.product_cost * lot.exchange_rate);
+
+  db.import_lots = db.import_lots || [];
+  db.import_lots.push(lot);
+  save(db);
+  res.json({ id: lot.id });
+});
+
+router.put('/lots/:id', adminOnly, (req, res) => {
+  const db = load();
+  const idx = (db.import_lots || []).findIndex(l => l.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Lot олдсонгүй' });
+
+  const allowed = ['product', 'units', 'unit_price', 'currency', 'exchange_rate',
+    'product_cost', 'product_cost_mnt', 'is_sample', 'sample_purpose',
+    'warehouse_status', 'received_qty', 'received_at', 'received_by',
+    'quality_check', 'quality_notes', 'inventory_item_id'];
+  for (const k of allowed) {
+    if (req.body[k] !== undefined) db.import_lots[idx][k] = req.body[k];
+  }
+  save(db);
+  res.json({ ok: true });
+});
+
+router.delete('/lots/:id', adminOnly, (req, res) => {
+  const db = load();
+  const idx = (db.import_lots || []).findIndex(l => l.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Lot олдсонгүй' });
+  const lot = db.import_lots[idx];
+  if (lot.warehouse_status === 'received') return res.status(400).json({ error: 'Хүлээн авсан lot устгах боломжгүй' });
+  db.import_lots.splice(idx, 1);
+  save(db);
+  res.json({ ok: true });
+});
+
+// ══════════════════════════════════════════
+//  COST LEDGER
+// ══════════════════════════════════════════
+router.post('/costs', adminOnly, (req, res) => {
+  const db = load();
+  const b = req.body;
+  if (!b.project_id || !b.type) return res.status(400).json({ error: 'project_id, type шаардлагатай' });
+  if (b.type === 'other' && !b.description) return res.status(400).json({ error: 'Тодорхойлолт шаардлагатай (other type)' });
+
+  const maxId = (db.import_cost_ledger || []).reduce((m, c) => {
+    const n = parseInt((c.id || '').replace('cost_', ''), 10);
+    return n > m ? n : m;
+  }, 0);
+
+  const cost = {
+    id: 'cost_' + String(maxId + 1).padStart(3, '0'),
+    project_id: b.project_id,
+    shipment_id: b.shipment_id || null,
+    shipment_code: b.shipment_code || null,
+    lot_id: b.lot_id || null,
+    type: b.type,
+    description: b.description || '',
+    amount: b.amount || 0,
+    currency: b.currency || 'MNT',
+    exchange_rate: b.exchange_rate || null,
+    amount_mnt: b.amount_mnt || Math.round((b.amount || 0) * (b.exchange_rate || 1)),
+    payment_method: b.payment_method || 'bank_transfer',
+    payment_account: b.payment_account || 'tdb',
+    payment_reference: b.payment_reference || null,
+    transaction_id: b.transaction_id || null,
+    paid: b.paid !== undefined ? b.paid : true,
+    paid_at: b.paid_at || (b.paid !== false ? new Date().toISOString().slice(0, 10) : null),
+    due_date: b.due_date || null,
+    allocation_method: b.allocation_method || (b.lot_id ? 'direct' : 'by_weight'),
+    allocation_locked: false,
+    created_at: new Date().toISOString(),
+    created_by: req.user.name || req.user.username,
+    modified_at: null,
+    modified_by: null,
+    modification_log: []
+  };
+
+  db.import_cost_ledger = db.import_cost_ledger || [];
+  db.import_cost_ledger.push(cost);
+  save(db);
+  res.json({ id: cost.id });
+});
+
+router.put('/costs/:id', adminOnly, (req, res) => {
+  const db = load();
+  const idx = (db.import_cost_ledger || []).findIndex(c => c.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Зардал олдсонгүй' });
+  const cost = db.import_cost_ledger[idx];
+
+  if (cost.allocation_locked) return res.status(403).json({ error: 'Түгжигдсэн зардал засах боломжгүй' });
+
+  const b = req.body;
+  const logEntry = { date: new Date().toISOString(), by: req.user.name || req.user.username, changes: [] };
+
+  const allowed = ['type', 'description', 'amount', 'currency', 'exchange_rate', 'amount_mnt',
+    'payment_method', 'payment_account', 'payment_reference', 'transaction_id',
+    'paid', 'paid_at', 'due_date', 'allocation_method'];
+  for (const k of allowed) {
+    if (b[k] !== undefined && b[k] !== cost[k]) {
+      logEntry.changes.push({ field: k, old: cost[k], new: b[k] });
+      cost[k] = b[k];
+    }
+  }
+  if (logEntry.changes.length) {
+    cost.modified_at = new Date().toISOString();
+    cost.modified_by = req.user.name || req.user.username;
+    cost.modification_log.push(logEntry);
+  }
+  save(db);
+  res.json({ ok: true });
+});
+
+router.delete('/costs/:id', adminOnly, (req, res) => {
+  const db = load();
+  const idx = (db.import_cost_ledger || []).findIndex(c => c.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Зардал олдсонгүй' });
+  const cost = db.import_cost_ledger[idx];
+  if (cost.allocation_locked) return res.status(400).json({ error: 'Түгжигдсэн зардал устгах боломжгүй' });
+  // Remove any allocations referencing this cost
+  for (const lot of (db.import_lots || [])) {
+    if (lot.allocations) {
+      lot.allocations = lot.allocations.filter(a => a.cost_ledger_id !== cost.id);
+    }
+  }
+  db.import_cost_ledger.splice(idx, 1);
+  save(db);
+  res.json({ ok: true });
+});
+
+// ══════════════════════════════════════════
+//  ALLOCATION ENGINE
+// ══════════════════════════════════════════
+router.post('/allocate/:shipmentCode', adminOnly, (req, res) => {
+  const db = load();
+  const shipment = (db.import_shipments || []).find(s => s.code === req.params.shipmentCode);
+  if (!shipment) return res.status(404).json({ error: 'Ачилт олдсонгүй' });
+
+  const lots = (db.import_lots || []).filter(l => l.shipment_id === shipment.id && !l.is_sample);
+  const allCosts = (db.import_cost_ledger || []).filter(c => c.shipment_id === shipment.id);
+  const costs = allCosts.filter(c => !c.lot_id); // Shared costs to allocate
+
+  if (!lots.length) return res.status(400).json({ error: 'Lot байхгүй' });
+
+  // Calculate ratios
+  const totalWeight = lots.reduce((s, l) => s + (l.units?.primary?.qty || 0), 0);
+  const totalValue = lots.reduce((s, l) => s + (l.product_cost_mnt || 0), 0);
+  const totalPieces = lots.reduce((s, l) => {
+    const sec = l.units?.secondary;
+    return s + (sec ? sec.qty || 0 : l.units?.primary?.qty || 0);
+  }, 0);
+  const lotCount = lots.length;
+
+  function getRatios(method) {
+    return lots.map((l, i) => {
+      if (method === 'by_weight') return totalWeight > 0 ? (l.units?.primary?.qty || 0) / totalWeight : 1 / lotCount;
+      if (method === 'by_value') return totalValue > 0 ? (l.product_cost_mnt || 0) / totalValue : 1 / lotCount;
+      if (method === 'by_qty') return totalPieces > 0 ? ((l.units?.secondary?.qty || l.units?.primary?.qty || 0) / totalPieces) : 1 / lotCount;
+      if (method === 'equal') return 1 / lotCount;
+      return 1 / lotCount;
+    });
+  }
+
+  const warnings = [];
+
+  // For each shared cost, allocate across lots
+  for (const cost of costs) {
+    if (cost.allocation_locked) { warnings.push(`${cost.id} түгжигдсэн, алгассан`); continue; }
+
+    const ratios = getRatios(cost.allocation_method || 'by_weight');
+    let remaining = cost.amount_mnt || 0;
+
+    for (let i = 0; i < lots.length; i++) {
+      const lot = lots[i];
+      lot.allocations = lot.allocations || [];
+
+      // Find or create allocation record for this cost
+      let alloc = lot.allocations.find(a => a.cost_ledger_id === cost.id);
+      if (!alloc) {
+        alloc = {
+          cost_ledger_id: cost.id,
+          cost_type: cost.type,
+          auto_method: cost.allocation_method || 'by_weight',
+          auto_ratio: 0,
+          auto_value: 0,
+          manual_override: null,
+          override_reason: null,
+          overridden_by: null,
+          overridden_at: null,
+          final_value: 0,
+          locked: false,
+          locked_by: null,
+          locked_at: null
+        };
+        lot.allocations.push(alloc);
+      }
+
+      alloc.auto_method = cost.allocation_method || 'by_weight';
+      alloc.auto_ratio = ratios[i];
+
+      if (i === lots.length - 1) {
+        // Last lot gets remainder (prevents rounding drift)
+        const othersSum = lots.slice(0, -1).reduce((s, ol) => {
+          const oa = (ol.allocations || []).find(a => a.cost_ledger_id === cost.id);
+          return s + (oa ? oa.auto_value : 0);
+        }, 0);
+        alloc.auto_value = (cost.amount_mnt || 0) - othersSum;
+      } else {
+        alloc.auto_value = Math.round((cost.amount_mnt || 0) * ratios[i]);
+      }
+
+      alloc.final_value = alloc.manual_override !== null ? alloc.manual_override : alloc.auto_value;
+    }
+
+    // Balance check
+    const allocSum = lots.reduce((s, l) => {
+      const a = (l.allocations || []).find(a => a.cost_ledger_id === cost.id);
+      return s + (a ? a.final_value : 0);
+    }, 0);
+    if (Math.abs(allocSum - (cost.amount_mnt || 0)) > 1) {
+      warnings.push(`${cost.id}: тэнцэл зөрсөн (${allocSum} vs ${cost.amount_mnt})`);
+    }
+  }
+
+  // Recalculate landed costs for each lot
+  // total_cost = direct costs (lot_id set in cost_ledger) + allocated shared costs
+  for (const lot of lots) {
+    const directCostsMnt = allCosts.filter(c => c.lot_id === lot.id).reduce((s, c) => s + (c.amount_mnt || 0), 0);
+    lot.total_allocated_mnt = (lot.allocations || []).reduce((s, a) => s + (a.final_value || 0), 0);
+    lot.total_cost_mnt = directCostsMnt + lot.total_allocated_mnt;
+
+    const pQty = lot.units?.primary?.qty || 1;
+    if (lot.units?.primary) lot.units.primary.landed_cost = Math.round(lot.total_cost_mnt / pQty);
+    if (lot.units?.secondary && lot.units.secondary.qty) {
+      lot.units.secondary.landed_cost = Math.round(lot.total_cost_mnt / lot.units.secondary.qty);
+    }
+  }
+
+  // Also allocate to sample lots
+  const sampleLots = (db.import_lots || []).filter(l => l.shipment_id === shipment.id && l.is_sample);
+  for (const sl of sampleLots) {
+    const directCostsMnt = allCosts.filter(c => c.lot_id === sl.id).reduce((s, c) => s + (c.amount_mnt || 0), 0);
+    sl.total_allocated_mnt = (sl.allocations || []).reduce((s, a) => s + (a.final_value || 0), 0);
+    sl.total_cost_mnt = directCostsMnt + sl.total_allocated_mnt;
+    const pQty = sl.units?.primary?.qty || 1;
+    if (sl.units?.primary) sl.units.primary.landed_cost = Math.round(sl.total_cost_mnt / pQty);
+    if (sl.units?.secondary && sl.units.secondary.qty) {
+      sl.units.secondary.landed_cost = Math.round(sl.total_cost_mnt / sl.units.secondary.qty);
+    }
+  }
+
+  save(db);
+
+  const balanced = warnings.filter(w => w.includes('тэнцэл')).length === 0;
+  res.json({
+    ok: true,
+    balanced,
+    warnings,
+    lots: lots.map(l => ({
+      id: l.id,
+      product_name: l.product?.name,
+      total_cost_mnt: l.total_cost_mnt,
+      primary: l.units?.primary,
+      secondary: l.units?.secondary
+    }))
+  });
+});
+
+// Manual override
+router.put('/allocate/override', adminOnly, (req, res) => {
+  const db = load();
+  const { lot_id, cost_ledger_id, manual_override, override_reason } = req.body;
+
+  if (!lot_id || !cost_ledger_id) return res.status(400).json({ error: 'lot_id, cost_ledger_id шаардлагатай' });
+  if (manual_override !== null && !override_reason) return res.status(400).json({ error: 'Шалтгаан оруулна уу' });
+
+  const lot = (db.import_lots || []).find(l => l.id === lot_id);
+  if (!lot) return res.status(404).json({ error: 'Lot олдсонгүй' });
+
+  const alloc = (lot.allocations || []).find(a => a.cost_ledger_id === cost_ledger_id);
+  if (!alloc) return res.status(404).json({ error: 'Allocation олдсонгүй' });
+  if (alloc.locked) return res.status(403).json({ error: 'Түгжигдсэн' });
+
+  alloc.manual_override = manual_override;
+  alloc.override_reason = override_reason;
+  alloc.overridden_by = req.user.name || req.user.username;
+  alloc.overridden_at = new Date().toISOString();
+  alloc.final_value = manual_override !== null ? manual_override : alloc.auto_value;
+
+  // Recalculate lot landed cost
+  const directCostsMnt = (db.import_cost_ledger || []).filter(c => c.lot_id === lot.id).reduce((s, c) => s + (c.amount_mnt || 0), 0);
+  lot.total_allocated_mnt = (lot.allocations || []).reduce((s, a) => s + (a.final_value || 0), 0);
+  lot.total_cost_mnt = directCostsMnt + lot.total_allocated_mnt;
+  const pQty = lot.units?.primary?.qty || 1;
+  if (lot.units?.primary) lot.units.primary.landed_cost = Math.round(lot.total_cost_mnt / pQty);
+  if (lot.units?.secondary && lot.units.secondary.qty) {
+    lot.units.secondary.landed_cost = Math.round(lot.total_cost_mnt / lot.units.secondary.qty);
+  }
+
+  // Check balance for this cost
+  const cost = (db.import_cost_ledger || []).find(c => c.id === cost_ledger_id);
+  const shipmentLots = (db.import_lots || []).filter(l => l.shipment_id === lot.shipment_id && !l.is_sample);
+  const allocSum = shipmentLots.reduce((s, l) => {
+    const a = (l.allocations || []).find(a => a.cost_ledger_id === cost_ledger_id);
+    return s + (a ? a.final_value : 0);
+  }, 0);
+  const balanced = cost ? Math.abs(allocSum - (cost.amount_mnt || 0)) <= 1 : true;
+
+  save(db);
+  res.json({ ok: true, balanced, alloc_sum: allocSum, cost_total: cost?.amount_mnt });
+});
+
+// ══════════════════════════════════════════
+//  WAREHOUSE RECEIVING
+//  Value integrity rule: total_value is source of truth.
+//  cost_per_unit is derived (display only). Never use qty × cpu for valuation.
+// ══════════════════════════════════════════
+router.post('/receive/:lotId', adminOrWarehouse, (req, res) => {
+  const db = load();
+  const lot = (db.import_lots || []).find(l => l.id === req.params.lotId);
+  if (!lot) return res.status(404).json({ error: 'Lot олдсонгүй' });
+  if (lot.warehouse_status === 'received') return res.status(400).json({ error: 'Аль хэдийн хүлээн авсан' });
+  if (lot.is_sample) return res.status(400).json({ error: 'Загвар бараа склад бүртгэлд орохгүй' });
+  if (!lot.total_cost_mnt || lot.total_cost_mnt === 0) return res.status(400).json({ error: 'Landed cost тооцоолоогүй — allocation хийнэ үү' });
+
+  const { received_qty, received_unit, quality_check, quality_notes } = req.body;
+  if (!received_qty || received_qty <= 0) return res.status(400).json({ error: 'Тоо хэмжээ оруулна уу' });
+
+  // Determine inventory unit from product code
+  const pcode = (db.import_product_codes || []).find(p => p.code === lot.product_code);
+  const inventoryUnit = pcode?.inventory_unit || lot.units?.primary?.unit || 'piece';
+
+  // Convert received_qty to inventory_unit
+  let invQty = received_qty;
+  const recUnit = received_unit || lot.units?.primary?.unit;
+  if (recUnit !== inventoryUnit && pcode?.conversion) {
+    if (recUnit === pcode.primary_unit && inventoryUnit === pcode.secondary_unit) {
+      invQty = received_qty * pcode.conversion;
+    } else if (recUnit === pcode.secondary_unit && inventoryUnit === pcode.primary_unit) {
+      invQty = received_qty / pcode.conversion;
+    }
+  }
+
+  // ── VALUE INTEGRITY: use exact lot cost, not rounded per-unit ──
+  // lot.total_cost_mnt is the exact allocated cost from the cost ledger.
+  // cost_per_unit is derived for display only.
+  const exactTotalCost = lot.total_cost_mnt;
+  const costPerUnit = invQty > 0 ? Math.round(exactTotalCost / invQty) : 0;
+
+  // Update lot
+  lot.warehouse_status = 'received';
+  lot.received_qty = received_qty;
+  lot.received_unit = recUnit;
+  lot.received_at = new Date().toISOString();
+  lot.received_by = req.user.name || req.user.username;
+  lot.quality_check = quality_check || 'ok';
+  lot.quality_notes = quality_notes || null;
+
+  // Check variance
+  const expectedPrimary = lot.units?.primary?.qty || 0;
+  if (recUnit === lot.units?.primary?.unit && Math.abs(received_qty - expectedPrimary) > 0.001) {
+    lot.warehouse_status = 'discrepancy';
+    lot.quality_check = received_qty < expectedPrimary ? 'shortage' : 'excess';
+  }
+
+  // Create inventory_log entry
+  db.inventory_log = db.inventory_log || [];
+  const logId = db.inventory_log.length + 1;
+  const invLogEntry = {
+    id: logId,
+    item_id: lot.inventory_item_id,
+    item_code: lot.product_code,
+    item_name: lot.product?.name || '',
+    type: 'in',
+    source: 'import',
+    source_id: lot.id,
+    shipment_code: lot.shipment_code,
+    qty: invQty,
+    unit: inventoryUnit,
+    unit_cost: costPerUnit,
+    total_cost: exactTotalCost,
+    before_qty: 0,
+    before_value: 0,
+    after_qty: invQty,
+    after_value: exactTotalCost,
+    by: req.user.name || req.user.username,
+    by_role: req.user.role,
+    date: new Date().toISOString().slice(0, 10),
+    created_at: new Date().toISOString()
+  };
+
+  // Update inventory item if linked
+  if (lot.inventory_item_id) {
+    const inv = (db.inventory || []).find(i => i.id === lot.inventory_item_id || i.code === lot.inventory_item_id);
+    if (inv) {
+      // Initialize total_value if missing (legacy items)
+      if (inv.total_value === undefined) {
+        inv.total_value = (inv.qty || 0) * (inv.cost_per_unit || 0);
+      }
+
+      const oldQty = inv.qty || 0;
+      const oldValue = inv.total_value || 0;
+
+      invLogEntry.before_qty = oldQty;
+      invLogEntry.before_value = oldValue;
+
+      // Exact value accumulation — no rounding drift
+      inv.qty = oldQty + invQty;
+      inv.total_value = oldValue + exactTotalCost;
+      inv.cost_per_unit = inv.qty > 0 ? Math.round(inv.total_value / inv.qty) : 0;
+
+      invLogEntry.after_qty = inv.qty;
+      invLogEntry.after_value = inv.total_value;
+
+      // ── INTEGRITY CHECK ──
+      // Sum of all import log entries for this item must equal inv.total_value
+      const importLogs = (db.inventory_log || []).filter(l =>
+        l.source === 'import' && (l.item_id === inv.id || l.item_code === inv.code) && l.type === 'in'
+      );
+      const sumLogCosts = importLogs.reduce((s, l) => s + (l.total_cost || 0), 0) + exactTotalCost;
+      // Only check if no other source types (manufacturing, transfer) exist yet
+      const otherLogs = (db.inventory_log || []).filter(l =>
+        (l.item_id === inv.id || l.item_code === inv.code) && l.source !== 'import'
+      );
+      if (otherLogs.length === 0 && sumLogCosts !== inv.total_value) {
+        return res.status(500).json({
+          error: 'Inventory Integrity Error',
+          detail: `Sum(received lot costs) = ${sumLogCosts}₮ ≠ inventory.total_value = ${inv.total_value}₮`,
+          diff: sumLogCosts - inv.total_value
+        });
+      }
+    }
+  }
+
+  db.inventory_log.push(invLogEntry);
+  save(db);
+
+  res.json({
+    ok: true,
+    inventory_log_id: logId,
+    inventory_unit: inventoryUnit,
+    inventory_qty: invQty,
+    cost_per_unit: costPerUnit,
+    exact_total_cost: exactTotalCost,
+    lot_status: lot.warehouse_status
+  });
+});
+
+module.exports = router;
