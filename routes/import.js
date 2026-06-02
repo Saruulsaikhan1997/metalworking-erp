@@ -151,6 +151,107 @@ router.get('/shipments', (req, res) => {
   res.json(result);
 });
 
+// ══════════════════════════════════════════
+//  COST ANALYSIS — management view (per product)
+//  Inventory units remain source of truth; business unit is derived for display.
+//  business_unit_cost = inventory_unit_cost × conversion_factor
+// ══════════════════════════════════════════
+router.get('/cost-analysis', (req, res) => {
+  const db = load();
+  const lots = (db.import_lots || []).filter(l => !l.is_sample);
+  const shipments = db.import_shipments || [];
+  const costs = db.import_cost_ledger || [];
+  const pcodes = db.import_product_codes || [];
+
+  // Bucket a cost-ledger type into management categories
+  const bucketOf = (type) => {
+    const t = (type || '').toLowerCase();
+    if (t === 'product' || t === 'product_adjustment') return 'product';
+    if (t.startsWith('freight')) return 'freight';
+    if (t.includes('vat') || t === 'tax' || t.includes('duty')) return 'tax';
+    if (t.startsWith('customs')) return 'customs';
+    return 'other';
+  };
+
+  // Inventory-unit quantity of a lot (the unit warehouse/valuation uses)
+  const invQtyOf = (l, invUnit) => {
+    if (l.units?.primary?.unit === invUnit) return l.units.primary.qty || 0;
+    if (l.units?.secondary?.unit === invUnit) return l.units.secondary.qty || 0;
+    // fallback: prefer secondary (finer) then primary
+    return l.units?.secondary?.qty || l.units?.primary?.qty || 0;
+  };
+
+  // Group lots by product code
+  const groups = {};
+  for (const l of lots) (groups[l.product_code] = groups[l.product_code] || []).push(l);
+
+  const result = Object.entries(groups).map(([code, glots]) => {
+    const pcode = pcodes.find(p => p.code === code) || {};
+    const invUnit = pcode.inventory_unit || glots[0].units?.primary?.unit || 'piece';
+    const bizUnit = pcode.business_unit || invUnit;
+    const factor = pcode.conversion_factor || 1;
+    const convType = pcode.conversion_type || 'identity';
+
+    const totalLanded = glots.reduce((s, l) => s + (l.total_cost_mnt || 0), 0);
+    const totalInvQty = glots.reduce((s, l) => s + invQtyOf(l, invUnit), 0);
+    const invUnitCost = totalInvQty > 0 ? Math.round(totalLanded / totalInvQty) : 0;
+    const bizQty = factor > 0 ? totalInvQty / factor : totalInvQty;
+    const bizUnitCost = Math.round(invUnitCost * factor);
+
+    // Cost breakdown across this product's shipments
+    const shipIds = [...new Set(glots.map(l => l.shipment_id))];
+    const gcosts = costs.filter(c => shipIds.includes(c.shipment_id));
+    const breakdown = { product: 0, freight: 0, customs: 0, tax: 0, other: 0 };
+    for (const c of gcosts) breakdown[bucketOf(c.type)] += (c.amount_mnt || 0);
+
+    // Trend history — one point per shipment, chronological
+    const trend = shipIds.map(sid => {
+      const ship = shipments.find(s => s.id === sid) || {};
+      const sLots = glots.filter(l => l.shipment_id === sid);
+      const sLanded = sLots.reduce((s, l) => s + (l.total_cost_mnt || 0), 0);
+      const sInvQty = sLots.reduce((s, l) => s + invQtyOf(l, invUnit), 0);
+      const sInvCost = sInvQty > 0 ? Math.round(sLanded / sInvQty) : 0;
+      return {
+        shipment_code: ship.code || sid,
+        date: ship.delivered_at || ship.shipped_at || ship.created_at || '',
+        status: ship.status || '',
+        total_landed_cost: sLanded,
+        inventory_unit_cost: sInvCost,
+        business_unit_cost: Math.round(sInvCost * factor)
+      };
+    }).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+    // Aggregate status
+    const statuses = shipIds.map(sid => (shipments.find(s => s.id === sid) || {}).status);
+    const status = statuses.length && statuses.every(s => s === 'delivered')
+      ? 'delivered' : (trend[trend.length - 1]?.status || statuses[0] || '');
+
+    return {
+      product_code: code,
+      product_name: pcode.name || code,
+      category: pcode.category || '',
+      lot_count: glots.length,
+      shipment_count: shipIds.length,
+      inventory_unit: invUnit,
+      business_unit: bizUnit,
+      conversion_factor: factor,
+      conversion_type: convType,
+      total_qty_inventory: Math.round(totalInvQty * 100) / 100,
+      total_qty_business: Math.round(bizQty * 100) / 100,
+      total_landed_cost: totalLanded,
+      inventory_unit_cost: invUnitCost,
+      business_unit_cost: bizUnitCost,
+      breakdown,
+      trend,
+      status,
+      allocated: totalLanded > 0
+    };
+  });
+
+  result.sort((a, b) => b.total_landed_cost - a.total_landed_cost);
+  res.json(result);
+});
+
 router.get('/shipment/:code', (req, res) => {
   const db = load();
   const shipment = (db.import_shipments || []).find(s => s.code === req.params.code);

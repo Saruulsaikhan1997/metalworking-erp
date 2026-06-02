@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+<title>Өртгийн шинжилгээ — Метал Воркинг Центр</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --brand: #1565c0; --brand-dark: #0d47a1;
+  --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+  --gray-400: #9ca3af; --gray-500: #6b7280; --gray-600: #4b5563; --gray-900: #111827;
+  --green: #059669; --amber: #d97706; --blue: #2563eb; --red: #dc2626; --purple: #7c3aed;
+}
+body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; background: var(--gray-50); color: var(--gray-900); padding-bottom: 90px; -webkit-font-smoothing: antialiased; }
+
+.hdr {
+  background: linear-gradient(135deg, #0d47a1 0%, #1565c0 100%);
+  color: #fff; padding: 18px 20px 16px;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 4px 12px rgba(13,71,161,0.18);
+}
+.hdr-top { display: flex; align-items: center; gap: 12px; }
+.hdr-back { font-size: 22px; color: #fff; text-decoration: none; padding: 4px 8px; }
+.hdr-title { font-size: 17px; font-weight: 700; flex: 1; }
+.hdr-sub { font-size: 11px; opacity: 0.85; margin-top: 3px; }
+
+/* Top totals */
+.totals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 14px 16px 0; }
+.tt { background: #fff; border-radius: 12px; padding: 12px 8px; text-align: center; border: 1px solid var(--gray-200); }
+.tt-v { font-size: 17px; font-weight: 900; color: var(--brand-dark); }
+.tt-l { font-size: 9px; color: var(--gray-400); font-weight: 600; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.4px; }
+
+.sec { padding: 16px 16px 0; }
+
+/* Product card */
+.card {
+  background: #fff; border-radius: 16px;
+  padding: 16px; margin-bottom: 14px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06); border: 1px solid var(--gray-200);
+  border-left: 5px solid var(--brand);
+}
+.card.s-delivered { border-left-color: var(--green); }
+.card.s-transit { border-left-color: var(--blue); }
+.card.s-preparing { border-left-color: var(--amber); }
+.card.s-pending { border-left-color: var(--gray-400); }
+
+.p-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 12px; }
+.p-name { font-size: 16px; font-weight: 800; }
+.p-meta { font-size: 10.5px; color: var(--gray-500); margin-top: 3px; }
+.p-code { font-family: monospace; font-size: 10px; color: var(--gray-400); }
+.badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 10px; }
+.badge.transit { background: #dbeafe; color: #1e40af; }
+.badge.preparing { background: #fef3c7; color: #92400e; }
+.badge.delivered { background: #d1fae5; color: #065f46; }
+.badge.pending { background: var(--gray-100); color: var(--gray-500); }
+
+/* Headline cost block */
+.cost-head {
+  display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 8px;
+  background: linear-gradient(135deg, #f0f7ff, #f9fafb);
+  border: 1px solid #dbeafe; border-radius: 12px; padding: 12px 10px; margin-bottom: 12px;
+}
+.ch { text-align: center; }
+.ch-v { font-size: 16px; font-weight: 900; color: var(--brand-dark); }
+.ch-v.biz { color: var(--purple); }
+.ch-u { font-size: 9px; color: var(--gray-400); font-weight: 700; }
+.ch-l { font-size: 9.5px; color: var(--gray-500); font-weight: 600; margin-top: 3px; }
+.ch-divider { border-left: 1px dashed var(--gray-200); }
+
+.qty-line { font-size: 11px; color: var(--gray-600); margin-bottom: 12px; text-align: center; }
+.conv-note { font-size: 10px; color: var(--purple); font-weight: 600; }
+
+.blk-lbl { font-size: 10px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.8px; margin: 4px 0 7px; }
+
+/* Breakdown bar */
+.bd-bar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 8px; background: var(--gray-100); }
+.bd-seg { height: 100%; }
+.bd-seg.product { background: var(--brand); }
+.bd-seg.freight { background: var(--green); }
+.bd-seg.customs { background: var(--amber); }
+.bd-seg.tax { background: var(--red); }
+.bd-seg.other { background: var(--gray-400); }
+.bd-rows { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.bd-row { display: flex; align-items: center; gap: 5px; font-size: 11px; }
+.bd-dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
+.bd-dot.product { background: var(--brand); }
+.bd-dot.freight { background: var(--green); }
+.bd-dot.customs { background: var(--amber); }
+.bd-dot.tax { background: var(--red); }
+.bd-dot.other { background: var(--gray-400); }
+.bd-name { color: var(--gray-600); }
+.bd-val { font-weight: 700; }
+.bd-pct { color: var(--gray-400); font-size: 9.5px; }
+
+/* Trend */
+.trend { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--gray-100); }
+.trend-row { display: flex; align-items: center; gap: 8px; font-size: 11px; padding: 5px 0; }
+.trend-dt { width: 52px; font-weight: 700; color: var(--gray-400); flex-shrink: 0; font-family: monospace; font-size: 10px; }
+.trend-code { flex: 1; color: var(--gray-600); font-family: monospace; font-size: 10px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trend-cost { font-weight: 700; color: var(--brand-dark); white-space: nowrap; }
+.trend-arrow { font-size: 11px; width: 16px; text-align: center; }
+.up { color: var(--red); }
+.down { color: var(--green); }
+.flat { color: var(--gray-400); }
+
+.empty { text-align: center; color: var(--gray-400); padding: 50px 20px; font-size: 13px; }
+.note { font-size: 10px; color: var(--gray-400); text-align: center; padding: 4px 16px 0; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-top">
+    <a class="hdr-back" href="/imports">‹</a>
+    <div style="flex:1">
+      <div class="hdr-title">Өртгийн шинжилгээ</div>
+      <div class="hdr-sub">Бодит өртөг · удирдлагын шийдвэр гаргалт</div>
+    </div>
+  </div>
+</div>
+
+<div class="totals" id="totals"></div>
+<div class="sec" id="list"></div>
+<div class="note">Агуулахын нэгж = бараа материалын эх сурвалж. Бизнес нэгж = борлуулалтын нэгж рүү хөрвүүлсэн өртөг.</div>
+
+<script src="/js/bottom-nav.js"></script>
+<script>
+const token = localStorage.getItem('token');
+if (!token) window.location.href = '/';
+
+async function api(path) {
+  const r = await fetch('/api/import' + path, { headers: { 'Authorization': 'Bearer ' + token }});
+  if (r.status === 401) { localStorage.clear(); window.location.href = '/'; }
+  return r.json();
+}
+
+function fmt(n) {
+  if (!n) return '0₮';
+  if (n >= 1e6) return (n/1e6).toFixed(1).replace(/\.0$/,'') + 'сая₮';
+  return Math.round(n).toLocaleString() + '₮';
+}
+function fmtFull(n) { return Math.round(n||0).toLocaleString() + '₮'; }
+function fmtQty(n, u) {
+  const v = (Math.round(n*100)/100).toLocaleString();
+  return v + ' ' + (u||'');
+}
+const UNIT_MN = { meter:'метр', kg:'кг', ton:'тонн', m2:'м²', piece:'ширхэг', set:'иж бүрдэл', bundle:'багц', stick:'ширхэг' };
+function unitMn(u) { return UNIT_MN[u] || u || ''; }
+
+const STATUS = {
+  in_transit_cn:{l:'🚚 Замд',c:'transit'}, at_border:{l:'🏛 Хилд',c:'transit'},
+  customs:{l:'🏛 Гаальд',c:'transit'}, in_transit_mn:{l:'🚚 МН замд',c:'transit'},
+  preparing:{l:'🏭 Бэлтгэл',c:'preparing'}, delivered:{l:'✅ Ирсэн',c:'delivered'}
+};
+
+function renderTotals(data) {
+  const totalCost = data.reduce((s,p)=>s+p.total_landed_cost,0);
+  const products = data.length;
+  const shipments = data.reduce((s,p)=>s+p.shipment_count,0);
+  document.getElementById('totals').innerHTML = `
+    <div class="tt"><div class="tt-v">${fmt(totalCost)}</div><div class="tt-l">Нийт өртөг</div></div>
+    <div class="tt"><div class="tt-v">${products}</div><div class="tt-l">Бүтээгдэхүүн</div></div>
+    <div class="tt"><div class="tt-v">${shipments}</div><div class="tt-l">Ачилт</div></div>
+  `;
+}
+
+const BD = [
+  { k:'product', n:'Бараа' }, { k:'freight', n:'Тээвэр' },
+  { k:'customs', n:'Гааль' }, { k:'tax', n:'Татвар (НӨАТ)' }, { k:'other', n:'Бусад' }
+];
+
+function renderBreakdown(b) {
+  const total = BD.reduce((s,x)=>s+(b[x.k]||0),0);
+  if (total <= 0) return '<div style="font-size:11px;color:var(--gray-400)">Зардал бүртгэгдээгүй</div>';
+  const bar = BD.map(x => {
+    const v = b[x.k]||0; if (!v) return '';
+    return `<div class="bd-seg ${x.k}" style="width:${(v/total*100).toFixed(2)}%"></div>`;
+  }).join('');
+  const rows = BD.filter(x=>(b[x.k]||0)>0).map(x => {
+    const v = b[x.k]||0;
+    return `<div class="bd-row">
+      <span class="bd-dot ${x.k}"></span>
+      <span class="bd-name">${x.n}</span>
+      <span class="bd-val">${fmt(v)}</span>
+      <span class="bd-pct">${(v/total*100).toFixed(0)}%</span>
+    </div>`;
+  }).join('');
+  return `<div class="bd-bar">${bar}</div><div class="bd-rows">${rows}</div>`;
+}
+
+function renderTrend(trend, bizUnit) {
+  if (!trend.length) return '';
+  const rows = trend.map((t, i) => {
+    const prev = i > 0 ? trend[i-1].business_unit_cost : null;
+    let arrow = '<span class="trend-arrow flat">·</span>';
+    if (prev !== null && t.business_unit_cost > prev) arrow = '<span class="trend-arrow up">▲</span>';
+    else if (prev !== null && t.business_unit_cost < prev) arrow = '<span class="trend-arrow down">▼</span>';
+    const dt = t.date ? t.date.slice(5,10) : '—';
+    return `<div class="trend-row">
+      <span class="trend-dt">${dt}</span>
+      <span class="trend-code">${t.shipment_code}</span>
+      ${arrow}
+      <span class="trend-cost">${fmt(t.business_unit_cost)}/${unitMn(bizUnit)}</span>
+    </div>`;
+  }).join('');
+  return `<div class="trend"><div class="blk-lbl">Өртгийн түүх (нэгж/${unitMn(bizUnit)})</div>${rows}</div>`;
+}
+
+function renderProduct(p) {
+  const st = STATUS[p.status] || { l: p.allocated ? '—' : '⏳ Хүлээгдэж буй', c: 'pending' };
+  const sameUnit = p.business_unit === p.inventory_unit || p.conversion_factor === 1;
+
+  const bizBlock = sameUnit ? '' : `
+    <div class="ch-divider"></div>
+    <div class="ch">
+      <div class="ch-v biz">${fmt(p.business_unit_cost)}</div>
+      <div class="ch-u">₮/${unitMn(p.business_unit)}</div>
+      <div class="ch-l">Бизнес нэгж</div>
+    </div>`;
+
+  const headCols = sameUnit ? '1.2fr 1fr' : '1.1fr 1fr 1fr';
+
+  const convNote = sameUnit ? '' :
+    `<div class="conv-note">1 ${unitMn(p.business_unit)} = ${p.conversion_factor} ${unitMn(p.inventory_unit)} · ${fmt(p.inventory_unit_cost)}/${unitMn(p.inventory_unit)} × ${p.conversion_factor} = ${fmt(p.business_unit_cost)}/${unitMn(p.business_unit)}</div>`;
+
+  return `<div class="card s-${st.c}">
+    <div class="p-top">
+      <div style="flex:1;min-width:0">
+        <div class="p-name">${p.product_name}</div>
+        <div class="p-meta"><span class="p-code">${p.product_code}</span> · ${p.shipment_count} ачилт · ${p.lot_count} lot</div>
+      </div>
+      <span class="badge ${st.c}">${st.l}</span>
+    </div>
+
+    <div class="cost-head" style="grid-template-columns:${headCols}">
+      <div class="ch">
+        <div class="ch-v">${fmt(p.total_landed_cost)}</div>
+        <div class="ch-u">нийт</div>
+        <div class="ch-l">Нийт өртөг</div>
+      </div>
+      <div class="ch-divider"></div>
+      <div class="ch">
+        <div class="ch-v">${fmt(p.inventory_unit_cost)}</div>
+        <div class="ch-u">₮/${unitMn(p.inventory_unit)}</div>
+        <div class="ch-l">Агуулахын нэгж</div>
+      </div>
+      ${bizBlock}
+    </div>
+
+    <div class="qty-line">
+      Нийт тоо: <b>${fmtQty(p.total_qty_inventory, unitMn(p.inventory_unit))}</b>${sameUnit ? '' : ` ≈ <b>${fmtQty(p.total_qty_business, unitMn(p.business_unit))}</b>`}
+      <br>${convNote}
+    </div>
+
+    <div class="blk-lbl">Зардлын задаргаа</div>
+    ${renderBreakdown(p.breakdown)}
+
+    ${renderTrend(p.trend, p.business_unit)}
+  </div>`;
+}
+
+async function load() {
+  const data = await api('/cost-analysis');
+  if (!Array.isArray(data) || !data.length) {
+    document.getElementById('list').innerHTML = '<div class="empty">Өртгийн мэдээлэл байхгүй</div>';
+    return;
+  }
+  renderTotals(data);
+  document.getElementById('list').innerHTML = data.map(renderProduct).join('');
+}
+load();
+</script>
+</body>
+</html>

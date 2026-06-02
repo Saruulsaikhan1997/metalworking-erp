@@ -38,6 +38,7 @@ app.get('/finance-detail', (req, res) => res.sendFile(path.join(__dirname, 'publ
 app.get('/more',       (req, res) => res.sendFile(path.join(__dirname, 'public', 'more.html')));
 app.get('/news',       (req, res) => res.sendFile(path.join(__dirname, 'public', 'news.html')));
 app.get('/imports',    (req, res) => res.sendFile(path.join(__dirname, 'public', 'imports.html')));
+app.get('/imports/cost-analysis', (req, res) => res.sendFile(path.join(__dirname, 'public', 'import-cost-analysis.html')));
 app.get('/imports/shipment/:code', (req, res) => res.sendFile(path.join(__dirname, 'public', 'import-shipment.html')));
 app.get('/imports/new',            (req, res) => res.sendFile(path.join(__dirname, 'public', 'import-new.html')));
 app.get('/income',     (req, res) => res.sendFile(path.join(__dirname, 'public', 'income.html')));
@@ -116,11 +117,11 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
 
     // 1. Product Codes
     db.import_product_codes = [
-      { code: 'STEEL', name: 'Төмрийн материал', category: 'raw_material', primary_unit: 'ton', secondary_unit: 'kg', conversion: 1000, inventory_unit: 'kg', cost_method: 'weighted_average' },
-      { code: 'UPVC', name: 'UPVC хавтан', category: 'raw_material', primary_unit: 'm2', secondary_unit: null, conversion: null, inventory_unit: 'm2', cost_method: 'lot_based' },
-      { code: 'DOOR', name: 'Кабины хаалга', category: 'component', primary_unit: 'piece', secondary_unit: null, conversion: null, inventory_unit: 'piece', cost_method: 'lot_based' },
-      { code: 'PAVING', name: 'Явган замын хавтан', category: 'finished_good', primary_unit: 'piece', secondary_unit: 'm2', conversion: null, inventory_unit: 'piece', cost_method: 'lot_based' },
-      { code: 'PNEUM', name: 'Пневматик суултуур', category: 'component', primary_unit: 'set', secondary_unit: 'piece', conversion: 8, inventory_unit: 'piece', cost_method: 'lot_based' }
+      { code: 'STEEL', name: 'Төмрийн материал', category: 'raw_material', primary_unit: 'ton', secondary_unit: 'kg', conversion: 1000, inventory_unit: 'kg', cost_method: 'weighted_average', business_unit: 'meter', conversion_factor: 3.02, conversion_type: 'weight_per_length' },
+      { code: 'UPVC', name: 'UPVC хавтан', category: 'raw_material', primary_unit: 'm2', secondary_unit: null, conversion: null, inventory_unit: 'm2', cost_method: 'lot_based', business_unit: 'm2', conversion_factor: 1, conversion_type: 'identity' },
+      { code: 'DOOR', name: 'Кабины хаалга', category: 'component', primary_unit: 'piece', secondary_unit: null, conversion: null, inventory_unit: 'piece', cost_method: 'lot_based', business_unit: 'piece', conversion_factor: 1, conversion_type: 'identity' },
+      { code: 'PAVING', name: 'Явган замын хавтан', category: 'finished_good', primary_unit: 'piece', secondary_unit: 'm2', conversion: null, inventory_unit: 'piece', cost_method: 'lot_based', business_unit: 'piece', conversion_factor: 1, conversion_type: 'identity' },
+      { code: 'PNEUM', name: 'Пневматик суултуур', category: 'component', primary_unit: 'set', secondary_unit: 'piece', conversion: 8, inventory_unit: 'piece', cost_method: 'lot_based', business_unit: 'piece', conversion_factor: 1, conversion_type: 'identity' }
     ];
 
     // 2. Projects (one per supplier relationship)
@@ -507,6 +508,37 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
 
     save(db);
     console.log(`Import migration: created ${db.import_product_codes.length} product codes, ${db.import_projects.length} projects, ${db.import_shipments.length} shipments, ${db.import_lots.length} lots, ${db.import_cost_ledger.length} costs`);
+  }
+
+  // ── Business-unit conversion layer (generic, metadata-driven) ──
+  // Inventory stays the source of truth for receiving/valuation/stock.
+  // business_unit + conversion_factor are display-only metadata for Cost Analysis.
+  // Rule: business_unit_cost = inventory_unit_cost × conversion_factor
+  //       (conversion_factor = inventory units per 1 business unit, e.g. 3.02 kg per meter)
+  if (db.import_product_codes && !db.import_business_unit_v1) {
+    const BU = {
+      STEEL:  { business_unit: 'meter', conversion_factor: 3.02, conversion_type: 'weight_per_length' },
+      UPVC:   { business_unit: 'm2',    conversion_factor: 1,    conversion_type: 'identity' },
+      DOOR:   { business_unit: 'piece', conversion_factor: 1,    conversion_type: 'identity' },
+      PAVING: { business_unit: 'piece', conversion_factor: 1,    conversion_type: 'identity' },
+      PNEUM:  { business_unit: 'piece', conversion_factor: 1,    conversion_type: 'identity' }
+    };
+    for (const pc of db.import_product_codes) {
+      const b = BU[pc.code];
+      if (b) {
+        pc.business_unit = b.business_unit;
+        pc.conversion_factor = b.conversion_factor;
+        pc.conversion_type = b.conversion_type;
+      } else {
+        // generic fallback: business unit = inventory unit, 1:1
+        pc.business_unit = pc.business_unit || pc.inventory_unit;
+        pc.conversion_factor = pc.conversion_factor || 1;
+        pc.conversion_type = pc.conversion_type || 'identity';
+      }
+    }
+    db.import_business_unit_v1 = true;
+    save(db);
+    console.log('Migration: business-unit conversion layer added to product codes');
   }
 })();
 
