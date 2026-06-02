@@ -579,6 +579,175 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
     save(db);
     console.log(`Migration: per-lot business conversion set on ${n} steel lots`);
   }
+
+  // ── Reclassify PNEUM shipment → VACUUM TOILET product family ──
+  // The single "Пневматик суултуур" lot was an inaccurate classification.
+  // Supplier sales doc (2026.05.20) itemises 3 vacuum-toilet models:
+  //   Household 2×¥650, Public 2×¥650, VIP 4×¥1600 = ¥9,000 (8 pcs).
+  // We split the lot into 3 model lots + 3 inventory items, and KEEP the
+  // historical bank-linked payment (cost_009) intact — only reclassifying it
+  // to a shipment-level shared product cost so it allocates per model by value.
+  // Idempotent, guarded. No freight/customs/tax exist on this shipment, so
+  // landed cost per model = its supplier value (¥each × 530₮).
+  if (db.import_lots && !db.import_vacuum_toilet_v1) {
+    const ship = (db.import_shipments || []).find(s => s.code === 'PNEUM-2026-001');
+    const oldLot = (db.import_lots || []).find(l => l.id === 'lot_009' || (l.shipment_id === ship?.id && l.product_code === 'PNEUM'));
+    if (ship && oldLot) {
+      const RATE = 530; // ₮/RMB (¥9,000 = 4,770,000₮)
+      const MODELS = [
+        { code: 'VACUUM-TOILET-HOUSEHOLD', name: 'Vacuum Toilet - Household', qty: 2, rmb_each: 650,
+          spec: 'Айл өрхийн вакуум суултуур (гэр хороолол/айл өрх)',
+          description: 'Residential vacuum toilet designed for ger district and household installations.' },
+        { code: 'VACUUM-TOILET-PUBLIC', name: 'Vacuum Toilet - Public', qty: 2, rmb_each: 650,
+          spec: 'Нийтийн ариун цэврийн вакуум суултуур',
+          description: 'Vacuum toilet designed for public restroom installations.' },
+        { code: 'VACUUM-TOILET-VIP', name: 'Vacuum Toilet - VIP', qty: 4, rmb_each: 1600,
+          spec: 'VIP премиум вакуум суултуурын систем',
+          description: 'Premium vacuum toilet system for high-end residential projects.' }
+      ];
+
+      // 1) Product codes (one per model, family = VACUUM-TOILET)
+      db.import_product_codes = db.import_product_codes || [];
+      for (const m of MODELS) {
+        if (!db.import_product_codes.find(p => p.code === m.code)) {
+          db.import_product_codes.push({
+            code: m.code, name: m.name, category: 'finished_good',
+            primary_unit: 'piece', secondary_unit: null, conversion: null,
+            inventory_unit: 'piece', cost_method: 'lot_based',
+            business_unit: 'piece', conversion_factor: 1, conversion_type: 'identity',
+            family: 'VACUUM-TOILET', description: m.description
+          });
+        }
+      }
+
+      // 2) Inventory items — reuse placeholder item 5 (PNEUM-TOILET, qty 0) for
+      //    the first model, create fresh items for the other two.
+      db.inventory = db.inventory || [];
+      let maxInvId = db.inventory.reduce((mx, i) => Math.max(mx, i.id || 0), 0);
+      const nowIso = new Date().toISOString();
+      const invIdFor = {};
+      MODELS.forEach((m, idx) => {
+        let item;
+        if (idx === 0) {
+          item = db.inventory.find(i => i.id === (oldLot.inventory_item_id || 5));
+        }
+        if (item) {
+          item.code = m.code; item.name = m.name; item.category = 'finished';
+          item.unit = 'ширхэг'; item.qty = 0; item.cost_per_unit = 0; item.total_value = 0;
+          item.status = item.status || 'available'; item.active = item.active !== false;
+          item.updated_at = nowIso;
+        } else {
+          item = {
+            id: ++maxInvId, code: m.code, name: m.name, category: 'finished',
+            status: 'available', unit: 'ширхэг', location: 'Пластик Центр үйлдвэр',
+            qty: 0, threshold: 0, cost_per_unit: 0, active: true, has_manual_adjustment: false,
+            created_at: nowIso, created_by: 'migration (vacuum-toilet reclassify)', total_value: 0
+          };
+          db.inventory.push(item);
+        }
+        invIdFor[m.code] = item.id;
+      });
+
+      // 3) Remove old lot, create 3 model lots
+      db.import_lots = db.import_lots.filter(l => l.id !== oldLot.id);
+      let maxLotId = (db.import_lots || []).reduce((mx, l) => {
+        const n = parseInt((l.id || '').replace('lot_', ''), 10); return n > mx ? n : mx;
+      }, 9); // keep ≥ 9 so we never reuse lot_009
+      const newLots = MODELS.map(m => {
+        const lot = {
+          id: 'lot_' + String(++maxLotId).padStart(3, '0'),
+          project_id: ship.project_id, shipment_id: ship.id, shipment_code: ship.code,
+          product_code: m.code,
+          product: { name: m.name, spec: m.spec, category: 'finished_good' },
+          units: { primary: { unit: 'piece', qty: m.qty, landed_cost: 0 }, secondary: null },
+          unit_price: m.rmb_each, currency: 'CNY', exchange_rate: RATE,
+          product_cost: m.rmb_each * m.qty,
+          product_cost_mnt: Math.round(m.rmb_each * m.qty * RATE),
+          allocations: [], total_allocated_mnt: 0, total_cost_mnt: 0,
+          is_sample: false, sample_purpose: null, sample_parent_lot: null,
+          inventory_item_id: invIdFor[m.code],
+          warehouse_status: 'not_received', received_qty: null, received_at: null, received_by: null,
+          quality_check: null, quality_notes: null,
+          created_at: oldLot.created_at || nowIso,
+          reclassified_from: oldLot.id
+        };
+        db.import_lots.push(lot);
+        return lot;
+      });
+
+      // 4) Reclassify the historical payment (cost_009): keep amount, bank-tx
+      //    link and PAID status; move it from lot-level to shipment-level shared
+      //    product cost so it allocates per model by value.
+      const payCost = (db.import_cost_ledger || []).find(c => c.lot_id === oldLot.id && c.type === 'product')
+        || (db.import_cost_ledger || []).find(c => c.shipment_id === ship.id && c.type === 'product');
+      if (payCost) {
+        payCost.lot_id = null;
+        payCost.allocation_method = 'by_value';
+        payCost.description = 'Vacuum Toilet 100% төлбөр (¥9,000) — 3 загвар (Household/Public/VIP)';
+        payCost.paid = true; // PAID IN FULL — cash account, via agent/intermediary
+        payCost.payment_account = payCost.payment_account || 'kass';
+        payCost.payment_method = payCost.payment_method || 'agent';
+        payCost.modification_log = payCost.modification_log || [];
+        payCost.modification_log.push({
+          at: nowIso, by: 'migration',
+          note: 'PNEUM→VACUUM-TOILET reclassify: lot-level direct cost → shipment-level shared (by_value). Amount/tx/paid unchanged.'
+        });
+        payCost.modified_at = nowIso;
+        payCost.modified_by = 'migration';
+      }
+
+      // 5) Allocate shared product cost across the 3 model lots by value
+      const sharedCosts = (db.import_cost_ledger || []).filter(c => c.shipment_id === ship.id && !c.lot_id);
+      const totalValue = newLots.reduce((s, l) => s + (l.product_cost_mnt || 0), 0);
+      for (const cost of sharedCosts) {
+        for (let i = 0; i < newLots.length; i++) {
+          const lot = newLots[i];
+          const ratio = totalValue > 0 ? (lot.product_cost_mnt || 0) / totalValue : 1 / newLots.length;
+          let alloc = (lot.allocations || []).find(a => a.cost_ledger_id === cost.id);
+          if (!alloc) { alloc = { cost_ledger_id: cost.id, cost_type: cost.type }; lot.allocations.push(alloc); }
+          alloc.auto_method = 'by_value';
+          alloc.auto_ratio = ratio;
+          if (i === newLots.length - 1) {
+            const others = newLots.slice(0, -1).reduce((s, ol) => {
+              const a = (ol.allocations || []).find(a => a.cost_ledger_id === cost.id);
+              return s + (a ? a.auto_value : 0);
+            }, 0);
+            alloc.auto_value = (cost.amount_mnt || 0) - others;
+          } else {
+            alloc.auto_value = Math.round((cost.amount_mnt || 0) * ratio);
+          }
+          alloc.manual_override = null; alloc.override_reason = null;
+          alloc.overridden_by = null; alloc.overridden_at = null;
+          alloc.final_value = alloc.auto_value;
+          alloc.locked = false; alloc.locked_by = null; alloc.locked_at = null;
+        }
+      }
+
+      // 6) Recompute landed cost per lot
+      for (const lot of newLots) {
+        const directCostsMnt = (db.import_cost_ledger || [])
+          .filter(c => c.lot_id === lot.id).reduce((s, c) => s + (c.amount_mnt || 0), 0);
+        lot.total_allocated_mnt = (lot.allocations || []).reduce((s, a) => s + (a.final_value || 0), 0);
+        lot.total_cost_mnt = directCostsMnt + lot.total_allocated_mnt;
+        const pQty = lot.units?.primary?.qty || 1;
+        lot.units.primary.landed_cost = Math.round(lot.total_cost_mnt / pQty);
+      }
+
+      // 7) Update shipment description + activity log (keep code/status/dates intact)
+      ship.description = 'Vacuum Toilet (Household / Public / VIP)';
+      ship.activity_log = ship.activity_log || [];
+      ship.activity_log.push({
+        date: nowIso.slice(0, 10),
+        event: 'Ангилал засвар: Пневматик → Vacuum Toilet 3 загвар (Household/Public/VIP)',
+        by: 'system'
+      });
+      ship.updated_at = nowIso;
+
+      db.import_vacuum_toilet_v1 = true;
+      save(db);
+      console.log(`Migration: PNEUM reclassified → 3 VACUUM-TOILET model lots (${newLots.map(l => l.id).join(', ')})`);
+    }
+  }
 })();
 
 const PORT = process.env.PORT || 3000;

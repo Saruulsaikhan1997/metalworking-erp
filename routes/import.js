@@ -327,12 +327,18 @@ router.get('/final-cost', (req, res) => {
     const allReceived = lots.every(l => l.warehouse_status === 'received');
     const anyReceived = lots.some(l => l.warehouse_status === 'received');
 
+    // Header name: single product code → its name; multiple models → family / shipment desc
+    const distinctCodes = [...new Set(lots.map(l => l.product_code))];
+    const headerName = distinctCodes.length === 1
+      ? (pcodes.find(p => p.code === distinctCodes[0])?.name || distinctCodes[0])
+      : (ship.description || (pcodes.find(p => p.code === distinctCodes[0])?.family) || 'Олон загвар');
+
     return {
       shipment_code: ship.code,
       status: ship.status,
       supplier: project.supplier?.name || '',
-      product_code: lots[0].product_code,
-      product_name: pcodes.find(p => p.code === lots[0].product_code)?.name || lots[0].product_code,
+      product_code: distinctCodes.length === 1 ? distinctCodes[0] : (pcodes.find(p => p.code === distinctCodes[0])?.family || distinctCodes[0]),
+      product_name: headerName,
       date: ship.delivered_at || ship.shipped_at || ship.created_at || '',
       lot_count: lots.length,
       total_landed_cost: totalLanded,
