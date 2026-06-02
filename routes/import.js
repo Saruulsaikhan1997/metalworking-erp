@@ -304,9 +304,11 @@ router.get('/final-cost', (req, res) => {
       const breakdown = { product: 0, freight: 0, customs: 0, tax: 0, other: 0 };
       for (const c of costs.filter(c => c.lot_id === lot.id)) breakdown[bucketOf(c.type)] += (c.amount_mnt || 0);
       for (const a of (lot.allocations || [])) breakdown[bucketOf(a.cost_type)] += (a.final_value || 0);
+      const pcode = pcodes.find(p => p.code === lot.product_code) || {};
       return {
         lot_id: lot.id,
         name: lot.product?.name || lot.product_code,
+        image: lot.product?.image || pcode.image || null,
         spec: lot.product?.spec || '',
         inventory_unit: b.invUnit,
         inventory_qty: Math.round(b.invQty * 100) / 100,
@@ -336,6 +338,7 @@ router.get('/final-cost', (req, res) => {
     return {
       shipment_code: ship.code,
       status: ship.status,
+      reference_image: ship.reference_image || null,
       supplier: project.supplier?.name || '',
       product_code: distinctCodes.length === 1 ? distinctCodes[0] : (pcodes.find(p => p.code === distinctCodes[0])?.family || distinctCodes[0]),
       product_name: headerName,

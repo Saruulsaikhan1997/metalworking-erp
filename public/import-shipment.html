@@ -235,6 +235,7 @@ function renderHeader(s, p) {
       </div>
       <span class="badge ${st.cls}" style="font-size:9px">${st.label}</span>
     </div>
+    ${s.reference_image ? `<div style="margin:10px 0 4px"><img src="${s.reference_image}" alt="Лавлах зураг" onclick="window.open('${s.reference_image}','_blank')" style="width:100%;max-height:220px;object-fit:contain;border-radius:12px;border:1px solid #eee;background:#fff;cursor:zoom-in"><div style="font-size:10.5px;color:#888;font-weight:600;margin:5px 2px 0">📷 Нийлүүлэгчийн лавлах зураг</div></div>` : ''}
     <div class="hdr-pipe">${steps.map(c=>`<div class="hp ${c}"></div>`).join('')}</div>
     <div class="hdr-pipe-lbl"><span>Бэлтгэл</span><span>Ачилт</span><span>Хил</span><span>Гааль</span><span>Тээвэр</span><span>Ирсэн</span></div>
     ${actionsHtml}
@@ -327,8 +328,10 @@ function renderContent(data) {
     else if (l.units?.primary?.landed_cost)
       landedDisplay = fmt(l.units.primary.landed_cost) + '/' + l.units.primary.unit;
 
+    const lotImg = (l.product?.image||pc.image) ? `<img src="${l.product?.image||pc.image}" alt="${esc(l.product?.name||'')}" onclick="window.open('${l.product?.image||pc.image}','_blank')" style="width:44px;height:44px;border-radius:8px;object-fit:cover;border:1px solid #eee;cursor:zoom-in;flex-shrink:0;margin-right:10px">` : '';
     html += `<div class="lot-card ${isSample?'sample':''} ${isReceived?'received':''}">
       <div class="lc-top">
+        ${lotImg}
         <div style="flex:1;min-width:0">
           <div class="lc-name">${esc(l.product?.name||'?')}</div>
           <div class="lc-spec">${esc(l.product?.spec||'')} ${isSample?'<span class="badge sample" style="font-size:8px;padding:2px 6px">Загвар</span>':''}</div>

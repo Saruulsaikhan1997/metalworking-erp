@@ -58,6 +58,11 @@ tbody td { padding: 9px 14px; border-bottom: 1px solid var(--gray-100); font-siz
 tbody td.l { text-align: left; }
 tbody tr:last-child td { border-bottom: none; }
 .r-name { font-weight: 700; }
+.r-name-row { display: flex; align-items: center; gap: 9px; }
+.r-thumb { width: 42px; height: 42px; border-radius: 8px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--gray-100); cursor: zoom-in; background: var(--gray-100); }
+.c-ref { display: block; margin: 0 0 12px; }
+.c-ref img { width: 100%; max-height: 220px; object-fit: contain; border-radius: 12px; border: 1px solid var(--gray-100); background: #fff; cursor: zoom-in; }
+.c-ref-label { font-size: 10.5px; color: var(--gray-500); font-weight: 600; margin: 6px 2px 0; }
 .r-spec { font-size: 10px; color: var(--gray-500); margin-top: 2px; font-family: monospace; }
 .r-qty { color: var(--gray-600); white-space: nowrap; }
 .r-unit-cost { font-weight: 900; color: var(--purple); white-space: nowrap; }
@@ -155,8 +160,9 @@ function renderRow(r) {
   const kgLine = r.same_unit ? '' :
     `<div class="r-kg">${r.business_qty.toLocaleString()}${unitMn(r.business_unit)} · ${fmt(r.inventory_unit_cost)}/${unitMn(r.inventory_unit)}</div>`;
   const specLine = r.spec ? `<div class="r-spec">${r.spec}</div>` : '';
+  const thumb = r.image ? `<img class="r-thumb" src="${r.image}" alt="${r.name}" onclick="window.open('${r.image}','_blank')" loading="lazy">` : '';
   return `<tr>
-    <td class="l"><div class="r-name">${r.name}</div>${specLine}</td>
+    <td class="l"><div class="r-name-row">${thumb}<div><div class="r-name">${r.name}</div>${specLine}</div></div></td>
     <td><span class="r-qty">${qtyTxt}</span>${kgLine}</td>
     <td><span class="r-unit-cost">${fmtFull(r.business_unit_cost)}</span><div class="r-unit-sub">₮/${unitMn(r.business_unit)}</div></td>
     <td><span class="r-total">${fmt(r.total_landed_cost)}</span></td>
@@ -175,6 +181,7 @@ function renderShipment(s) {
       </div>
       <span class="badge ${ws.c}">${ws.l}</span>
     </div>
+    ${s.reference_image ? `<div class="c-ref"><img src="${s.reference_image}" alt="Лавлах зураг" onclick="window.open('${s.reference_image}','_blank')"><div class="c-ref-label">📷 Нийлүүлэгчийн лавлах зураг</div></div>` : ''}
     ${warn}
     <table>
       <thead><tr>

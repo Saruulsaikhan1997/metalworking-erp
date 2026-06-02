@@ -805,6 +805,43 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
     save(db);
     console.log('Migration: vacuum-toilet activity-log history scrubbed of legacy term');
   }
+
+  // ── Attach approved supplier reference images to the vacuum-toilet shipment ──
+  // Source: supplier sales sheet (2026.5.20 销售表). The full sheet is stored as
+  // the shipment reference image; each model gets its cropped product visual.
+  // Files committed under public/uploads/products/ (served at /uploads/...).
+  // Idempotent, guarded.
+  if (db.import_product_codes && !db.import_vacuum_toilet_images_v4) {
+    const IMG = {
+      'VACUUM-TOILET-HOUSEHOLD': '/uploads/products/vacuum-toilet-household.jpg',
+      'VACUUM-TOILET-PUBLIC': '/uploads/products/vacuum-toilet-public.jpg',
+      'VACUUM-TOILET-VIP': '/uploads/products/vacuum-toilet-vip.jpg'
+    };
+    const SHEET = '/uploads/products/vacuum-toilet-2026-001-sheet.jpg';
+    // product code visuals
+    for (const pc of db.import_product_codes) if (IMG[pc.code]) pc.image = IMG[pc.code];
+    // inventory item visuals
+    for (const it of (db.inventory || [])) if (IMG[it.code]) it.image = IMG[it.code];
+    // lot product visuals
+    for (const l of (db.import_lots || [])) {
+      if (l.product && IMG[l.product_code]) l.product.image = IMG[l.product_code];
+    }
+    // shipment reference image (the full approved sales sheet)
+    const vship = (db.import_shipments || []).find(s => s.code === 'VACUUM-TOILET-2026-001');
+    if (vship) {
+      vship.reference_image = SHEET;
+      vship.activity_log = vship.activity_log || [];
+      vship.activity_log.push({
+        date: new Date().toISOString().slice(0, 10),
+        event: 'Лавлах зураг нэмэгдсэн (нийлүүлэгчийн борлуулалтын хүснэгт + загвар тус бүрийн зураг)',
+        by: 'system'
+      });
+      vship.updated_at = new Date().toISOString();
+    }
+    db.import_vacuum_toilet_images_v4 = true;
+    save(db);
+    console.log('Migration: vacuum-toilet supplier reference images attached');
+  }
 })();
 
 const PORT = process.env.PORT || 3000;
