@@ -39,6 +39,7 @@ app.get('/more',       (req, res) => res.sendFile(path.join(__dirname, 'public',
 app.get('/news',       (req, res) => res.sendFile(path.join(__dirname, 'public', 'news.html')));
 app.get('/imports',    (req, res) => res.sendFile(path.join(__dirname, 'public', 'imports.html')));
 app.get('/imports/cost-analysis', (req, res) => res.sendFile(path.join(__dirname, 'public', 'import-cost-analysis.html')));
+app.get('/imports/final-cost', (req, res) => res.sendFile(path.join(__dirname, 'public', 'import-final-cost.html')));
 app.get('/imports/shipment/:code', (req, res) => res.sendFile(path.join(__dirname, 'public', 'import-shipment.html')));
 app.get('/imports/new',            (req, res) => res.sendFile(path.join(__dirname, 'public', 'import-new.html')));
 app.get('/income',     (req, res) => res.sendFile(path.join(__dirname, 'public', 'income.html')));
@@ -539,6 +540,44 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
     db.import_business_unit_v1 = true;
     save(db);
     console.log('Migration: business-unit conversion layer added to product codes');
+  }
+
+  // ── Per-lot business conversion for steel profiles (хийцлэл) ──
+  // The product-code factor (3.02 kg/m) is a blended average and is misleading
+  // per profile. Each steel lot is a single profile, so we derive that profile's
+  // own kg/m from its spec and store it on the lot. business unit stays "meter".
+  // kg/m = cross-section area (mm²) × 0.00785  (steel density 7.85 g/cm³)
+  if (db.import_lots && !db.import_lot_business_unit_v1) {
+    const steelKgPerM = (spec) => {
+      const m = String(spec || '').match(/(\d+(?:\.\d+)?)\s*[×xX*]\s*(\d+(?:\.\d+)?)(?:\s*[×xX*]\s*(\d+(?:\.\d+)?))?/);
+      if (!m) return null;
+      const a = parseFloat(m[1]), b = parseFloat(m[2]);
+      const t = m[3] !== undefined ? parseFloat(m[3]) : null;
+      let areaMm2;
+      if (t != null) {
+        // hollow tube (square/rectangular): outer area − inner area
+        areaMm2 = a * b - (a - 2 * t) * (b - 2 * t);
+      } else {
+        // flat bar: width × thickness
+        areaMm2 = a * b;
+      }
+      if (!(areaMm2 > 0)) return null;
+      return areaMm2 * 0.00785;
+    };
+    let n = 0;
+    for (const lot of db.import_lots) {
+      if (lot.product_code !== 'STEEL') continue;
+      const kgm = steelKgPerM(lot.product?.spec || '');
+      if (kgm) {
+        lot.business_unit = 'meter';
+        lot.conversion_factor = Math.round(kgm * 1000) / 1000; // kg per meter
+        lot.conversion_type = 'weight_per_length';
+        n++;
+      }
+    }
+    db.import_lot_business_unit_v1 = true;
+    save(db);
+    console.log(`Migration: per-lot business conversion set on ${n} steel lots`);
   }
 })();
 

@@ -252,6 +252,100 @@ router.get('/cost-analysis', (req, res) => {
   res.json(result);
 });
 
+// ══════════════════════════════════════════
+//  PRE-WAREHOUSE FINAL LANDED COST
+//  Per shipment, one row per lot (= per profile/хийцлэл for steel).
+//  Shows the final landed cost in business units BEFORE goods are received,
+//  in the same profile→₮/meter table format management reviews.
+// ══════════════════════════════════════════
+router.get('/final-cost', (req, res) => {
+  const db = load();
+  const shipments = db.import_shipments || [];
+  const allLots = (db.import_lots || []).filter(l => !l.is_sample);
+  const costs = db.import_cost_ledger || [];
+  const pcodes = db.import_product_codes || [];
+  const projects = db.import_projects || [];
+
+  const bucketOf = (type) => {
+    const t = (type || '').toLowerCase();
+    if (t === 'product' || t === 'product_adjustment') return 'product';
+    if (t.startsWith('freight')) return 'freight';
+    if (t.includes('vat') || t === 'tax' || t.includes('duty')) return 'tax';
+    if (t.startsWith('customs')) return 'customs';
+    return 'other';
+  };
+
+  // Business numbers for a single lot. Per-lot business_unit/conversion_factor
+  // (e.g. steel profile kg/m) override the product-code default when present.
+  const lotBusiness = (lot) => {
+    const pcode = pcodes.find(p => p.code === lot.product_code) || {};
+    const invUnit = pcode.inventory_unit || lot.units?.primary?.unit || 'piece';
+    const invQty = (lot.units?.primary?.unit === invUnit) ? (lot.units.primary.qty || 0)
+      : (lot.units?.secondary?.unit === invUnit) ? (lot.units.secondary.qty || 0)
+      : (lot.units?.secondary?.qty || lot.units?.primary?.qty || 0);
+    const bizUnit = lot.business_unit || pcode.business_unit || invUnit;
+    const factor = lot.conversion_factor || pcode.conversion_factor || 1;
+    const bizQty = factor > 0 ? invQty / factor : invQty;
+    const total = lot.total_cost_mnt || 0;
+    return {
+      invUnit, invQty, bizUnit, factor, bizQty,
+      invCost: invQty > 0 ? Math.round(total / invQty) : 0,
+      bizCost: bizQty > 0 ? Math.round(total / bizQty) : 0
+    };
+  };
+
+  const shipRows = shipments.map(ship => {
+    const lots = allLots.filter(l => l.shipment_id === ship.id);
+    if (!lots.length) return null;
+    const project = projects.find(p => p.id === ship.project_id) || {};
+
+    const rows = lots.map(lot => {
+      const b = lotBusiness(lot);
+      const breakdown = { product: 0, freight: 0, customs: 0, tax: 0, other: 0 };
+      for (const c of costs.filter(c => c.lot_id === lot.id)) breakdown[bucketOf(c.type)] += (c.amount_mnt || 0);
+      for (const a of (lot.allocations || [])) breakdown[bucketOf(a.cost_type)] += (a.final_value || 0);
+      return {
+        lot_id: lot.id,
+        name: lot.product?.name || lot.product_code,
+        spec: lot.product?.spec || '',
+        inventory_unit: b.invUnit,
+        inventory_qty: Math.round(b.invQty * 100) / 100,
+        business_unit: b.bizUnit,
+        business_qty: Math.round(b.bizQty * 100) / 100,
+        conversion_factor: b.factor,
+        same_unit: b.bizUnit === b.invUnit || b.factor === 1,
+        total_landed_cost: lot.total_cost_mnt || 0,
+        inventory_unit_cost: b.invCost,
+        business_unit_cost: b.bizCost,
+        breakdown,
+        warehouse_status: lot.warehouse_status || 'not_received',
+        allocated: (lot.total_cost_mnt || 0) > 0
+      };
+    });
+
+    const totalLanded = rows.reduce((s, r) => s + r.total_landed_cost, 0);
+    const allReceived = lots.every(l => l.warehouse_status === 'received');
+    const anyReceived = lots.some(l => l.warehouse_status === 'received');
+
+    return {
+      shipment_code: ship.code,
+      status: ship.status,
+      supplier: project.supplier?.name || '',
+      product_code: lots[0].product_code,
+      product_name: pcodes.find(p => p.code === lots[0].product_code)?.name || lots[0].product_code,
+      date: ship.delivered_at || ship.shipped_at || ship.created_at || '',
+      lot_count: lots.length,
+      total_landed_cost: totalLanded,
+      all_allocated: rows.every(r => r.allocated),
+      warehouse_state: allReceived ? 'received' : anyReceived ? 'partial' : 'pending',
+      rows
+    };
+  }).filter(Boolean);
+
+  shipRows.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  res.json(shipRows);
+});
+
 router.get('/shipment/:code', (req, res) => {
   const db = load();
   const shipment = (db.import_shipments || []).find(s => s.code === req.params.code);
