@@ -738,7 +738,7 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
       ship.activity_log = ship.activity_log || [];
       ship.activity_log.push({
         date: nowIso.slice(0, 10),
-        event: 'Ангилал засвар: Пневматик → Vacuum Toilet 3 загвар (Household/Public/VIP)',
+        event: 'Ангилал засвар: Vacuum Toilet 3 загвар болгон ангилав (Household/Public/VIP)',
         by: 'system'
       });
       ship.updated_at = nowIso;
@@ -785,6 +785,25 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
     db.import_vacuum_toilet_naming_v2 = true;
     save(db);
     console.log('Migration: vacuum-toilet naming normalized + shipment code renamed');
+  }
+
+  // ── Scrub legacy term from the (user-visible) activity-log history ──
+  // v2 cleaned display fields but the reclassification audit entry still
+  // literally contained "Пневматик", which surfaces in the shipment "Түүх"
+  // panel. Reword it to record the same correction without the legacy term.
+  // The original "from" classification stays preserved in the cost-ledger
+  // modification_log (internal) and git history. Idempotent, guarded.
+  if (db.import_shipments && !db.import_vacuum_toilet_log_v3) {
+    for (const s of db.import_shipments) {
+      for (const l of (s.activity_log || [])) {
+        if (l.event && /пневмат/i.test(l.event)) {
+          l.event = 'Ангилал засвар: Vacuum Toilet 3 загвар болгон ангилав (Household/Public/VIP)';
+        }
+      }
+    }
+    db.import_vacuum_toilet_log_v3 = true;
+    save(db);
+    console.log('Migration: vacuum-toilet activity-log history scrubbed of legacy term');
   }
 })();
 
