@@ -271,7 +271,7 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
         unit_price: 472, currency: 'USD', exchange_rate: 3577, product_cost: 1076.16, product_cost_mnt: 3849424,
         allocations: [], total_allocated_mnt: 0, total_cost_mnt: 0,
         is_sample: false, sample_purpose: null, sample_parent_lot: null,
-        inventory_item_id: null, warehouse_status: 'not_received',
+        inventory_item_id: 1, warehouse_status: 'not_received',
         received_qty: null, received_at: null, received_by: null,
         quality_check: null, quality_notes: null,
         created_at: '2026-05-14T00:00:00Z'
@@ -284,7 +284,7 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
         unit_price: 442, currency: 'USD', exchange_rate: 3577, product_cost: 698.36, product_cost_mnt: 2498232,
         allocations: [], total_allocated_mnt: 0, total_cost_mnt: 0,
         is_sample: false, sample_purpose: null, sample_parent_lot: null,
-        inventory_item_id: null, warehouse_status: 'not_received',
+        inventory_item_id: 1, warehouse_status: 'not_received',
         received_qty: null, received_at: null, received_by: null,
         quality_check: null, quality_notes: null,
         created_at: '2026-05-14T00:00:00Z'
@@ -297,7 +297,7 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
         unit_price: 455, currency: 'USD', exchange_rate: 3577, product_cost: 1674.40, product_cost_mnt: 5990149,
         allocations: [], total_allocated_mnt: 0, total_cost_mnt: 0,
         is_sample: false, sample_purpose: null, sample_parent_lot: null,
-        inventory_item_id: null, warehouse_status: 'not_received',
+        inventory_item_id: 1, warehouse_status: 'not_received',
         received_qty: null, received_at: null, received_by: null,
         quality_check: null, quality_notes: null,
         created_at: '2026-05-14T00:00:00Z'
@@ -310,7 +310,7 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
         unit_price: 418, currency: 'USD', exchange_rate: 3577, product_cost: 192.28, product_cost_mnt: 687978,
         allocations: [], total_allocated_mnt: 0, total_cost_mnt: 0,
         is_sample: false, sample_purpose: null, sample_parent_lot: null,
-        inventory_item_id: null, warehouse_status: 'not_received',
+        inventory_item_id: 1, warehouse_status: 'not_received',
         received_qty: null, received_at: null, received_by: null,
         quality_check: null, quality_notes: null,
         created_at: '2026-05-14T00:00:00Z'
@@ -324,7 +324,7 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
         unit_price: 22.79, currency: 'CNY', exchange_rate: 530, product_cost: 55634.40, product_cost_mnt: 29486232,
         allocations: [], total_allocated_mnt: 0, total_cost_mnt: 0,
         is_sample: false, sample_purpose: null, sample_parent_lot: null,
-        inventory_item_id: null, warehouse_status: 'not_received',
+        inventory_item_id: 2, warehouse_status: 'not_received',
         received_qty: null, received_at: null, received_by: null,
         quality_check: null, quality_notes: null,
         created_at: '2026-05-14T00:00:00Z'
@@ -352,7 +352,7 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
         unit_price: 390, currency: 'CNY', exchange_rate: 530, product_cost: 39000, product_cost_mnt: 20670000,
         allocations: [], total_allocated_mnt: 0, total_cost_mnt: 0,
         is_sample: false, sample_purpose: null, sample_parent_lot: null,
-        inventory_item_id: null, warehouse_status: 'not_received',
+        inventory_item_id: 3, warehouse_status: 'not_received',
         received_qty: null, received_at: null, received_by: null,
         quality_check: null, quality_notes: null,
         created_at: '2026-05-18T00:00:00Z'
@@ -380,7 +380,7 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
         unit_price: 9000, currency: 'CNY', exchange_rate: 530, product_cost: 9000, product_cost_mnt: 4770000,
         allocations: [], total_allocated_mnt: 0, total_cost_mnt: 0,
         is_sample: false, sample_purpose: null, sample_parent_lot: null,
-        inventory_item_id: null, warehouse_status: 'not_received',
+        inventory_item_id: 5, warehouse_status: 'not_received',
         received_qty: null, received_at: null, received_by: null,
         quality_check: null, quality_notes: null,
         created_at: '2026-05-22T00:00:00Z'
@@ -488,6 +488,22 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
 
     // 7. Initialize inventory_log if needed
     db.inventory_log = db.inventory_log || [];
+
+    // 8. Ensure PNEUM inventory item exists and all items have total_value
+    if (db.inventory && !db.inventory.find(i => i.code === 'PNEUM-TOILET')) {
+      const maxId = db.inventory.reduce((m, i) => Math.max(m, i.id || 0), 0);
+      db.inventory.push({
+        id: maxId + 1, code: 'PNEUM-TOILET', name: 'Пневматик суултуурын систем',
+        category: 'component', qty: 0, unit: 'ширхэг', cost_per_unit: 0, total_value: 0,
+        min_qty: 0, location: 'Пластик Центр үйлдвэр'
+      });
+    }
+    for (const inv of (db.inventory || [])) {
+      if (inv.total_value === undefined || inv.total_value === null) {
+        inv.total_value = 0;
+        inv.cost_per_unit = inv.cost_per_unit || 0;
+      }
+    }
 
     save(db);
     console.log(`Import migration: created ${db.import_product_codes.length} product codes, ${db.import_projects.length} projects, ${db.import_shipments.length} shipments, ${db.import_lots.length} lots, ${db.import_cost_ledger.length} costs`);
