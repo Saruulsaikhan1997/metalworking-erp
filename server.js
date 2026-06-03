@@ -842,6 +842,25 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
     save(db);
     console.log('Migration: vacuum-toilet supplier reference images attached');
   }
+
+  // ── Create the warehouse-manager (нярав-менежер) staff login ──
+  // One combined operational account: warehouse/inventory + sales input +
+  // operational views. No finance access (finance stays admin/shareholder).
+  // Password is stored as a bcrypt hash (same scheme as other users).
+  // Idempotent — only creates the user if the username is not already present.
+  if (db.users && !db.users.some(u => u.username === 'mnk9')) {
+    const nextId = Math.max(0, ...db.users.map(u => u.id || 0)) + 1;
+    db.users.push({
+      id: nextId,
+      username: 'mnk9',
+      // bcrypt hash of the password chosen by the CEO
+      password: '$2a$10$hOR1s7U89sKI3b/gHfNCSuV./AoZPMI/Ml/4FVjFDIpkd2fUWBM.m',
+      role: 'manager',
+      name: 'Нярав-Менежер'
+    });
+    save(db);
+    console.log('Migration: warehouse-manager user (mnk9) created');
+  }
 })();
 
 const PORT = process.env.PORT || 3000;

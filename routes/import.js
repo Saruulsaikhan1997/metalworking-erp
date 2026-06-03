@@ -16,7 +16,7 @@ function adminOnly(req, res, next) {
   next();
 }
 function adminOrWarehouse(req, res, next) {
-  if (!['admin', 'warehouse'].includes(req.user?.role)) return res.status(403).json({ error: 'Эрх хүрэхгүй' });
+  if (!['admin', 'warehouse', 'manager'].includes(req.user?.role)) return res.status(403).json({ error: 'Эрх хүрэхгүй' });
   next();
 }
 

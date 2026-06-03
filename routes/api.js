@@ -247,7 +247,7 @@ router.get('/inventory', (req, res) => {
 
 // ── Create item (catalog only — qty always starts at 0) ──
 router.post('/inventory/item', (req, res) => {
-  if (!['admin','warehouse'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
+  if (!['admin','warehouse','manager'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
   const db = load();
   if (!db.inventory) db.inventory = [];
 
@@ -278,7 +278,7 @@ router.post('/inventory/item', (req, res) => {
 
 // ── Update item metadata — qty is FORBIDDEN here ──
 router.put('/inventory/item/:id', (req, res) => {
-  if (!['admin','warehouse'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
+  if (!['admin','warehouse','manager'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
   if ('qty' in req.body) {
     return res.status(403).json({ error: 'qty талбар шууд өөрчилж болохгүй. inventory_log ашиглана уу.' });
   }
@@ -310,7 +310,7 @@ router.get('/inventory/log', (req, res) => {
 
 // ── Record movement (the ONLY way to change qty) ──
 router.post('/inventory/log', (req, res) => {
-  if (!['admin','warehouse'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
+  if (!['admin','warehouse','manager'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
   const db = load();
   if (!db.inventory) db.inventory = [];
   if (!db.inventory_log) db.inventory_log = [];
@@ -389,7 +389,7 @@ router.post('/inventory/log', (req, res) => {
 
 // ── Reconcile: item.qty vs ledger sum ──
 router.get('/inventory/reconcile', (req, res) => {
-  if (!['admin','warehouse'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
+  if (!['admin','warehouse','manager'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
   const db = load();
   const items = db.inventory || [];
   const logs  = db.inventory_log || [];
@@ -426,7 +426,7 @@ router.get('/production', (req, res) => {
 });
 
 router.post('/production', (req, res) => {
-  if (!['admin','warehouse'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
+  if (!['admin','warehouse','manager'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
   const db = load();
   if (!db.production) db.production = [];
   const id = Math.max(0, ...db.production.map(p => p.id || 0)) + 1;
@@ -444,7 +444,7 @@ router.get('/sales', (req, res) => {
 });
 
 router.post('/sales', (req, res) => {
-  if (!['admin', 'sales'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
+  if (!['admin', 'sales', 'manager'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
   const db = load();
   if (!db.sales) db.sales = [];
 
@@ -495,7 +495,7 @@ router.post('/sales', (req, res) => {
 });
 
 router.put('/sales/:id', (req, res) => {
-  if (!['admin', 'sales'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
+  if (!['admin', 'sales', 'manager'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
   const db  = load();
   const idx = (db.sales || []).findIndex(s => String(s.id) === String(req.params.id));
   if (idx === -1) return res.status(404).json({ error: 'Олдсонгүй' });
