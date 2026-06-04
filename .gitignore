@@ -22,6 +22,9 @@ Thumbs.db
 *.swp
 *.swo
 
+# Claude Code — personal/local settings (each dev keeps their own)
+.claude/settings.local.json
+
 # Logs
 *.log
 npm-debug.log*
