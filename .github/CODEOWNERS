@@ -1,0 +1,65 @@
+# ════════════════════════════════════════════════════════════
+# CODEOWNERS — Эзэмшлийн хил (Owner vs Нярав-Менежер)
+#
+# Owner    : @Saruulsaikhan1997
+# Менежер  : @munhturchinbat656  (write collaborator)
+#
+# ⚠️ Энэ файл ЗӨВХӨН GitHub branch protection-д "Require review from
+#    Code Owners" ЗААВАЛ ИДЭВХЖСЭН үед хүчинтэй. Тэр чеклист асаагаагүй
+#    бол CODEOWNERS зүгээр л баримт болж, хаалт ажиллахгүй.
+#
+# Логик (last-match-wins):
+#   • Доор ЖАГСААСАН зам  → @Saruulsaikhan1997-ийн review ЗААВАЛ
+#     (Менежер эдгээрийг өөрөө merge хийж чадахгүй).
+#   • ЖАГСААГААГҮЙ зам (склад/борлуулалтын модуль) → code owner байхгүй
+#     тул Owner-ийн зөвшөөрөлгүйгээр merge хийгдэнэ (Менежерийн эзэмшил).
+# ════════════════════════════════════════════════════════════
+
+# ── Bootstrap / deploy / migration (хамгийн эмзэг — migration RBAC-г тойрдог) ──
+/server.js              @Saruulsaikhan1997
+/database.js            @Saruulsaikhan1997
+/package.json           @Saruulsaikhan1997
+/package-lock.json      @Saruulsaikhan1997
+/render.yaml            @Saruulsaikhan1997
+/DEPLOY.md              @Saruulsaikhan1997
+
+# ── Аюулгүй байдал / нэвтрэлт ──
+/routes/auth.js         @Saruulsaikhan1997
+/middleware/            @Saruulsaikhan1997
+/lib/                   @Saruulsaikhan1997
+
+# ── Owner бизнес логик: Санхүү, импортын бүтэц/тооцоо, мэдээ, тохиргоо, admin ──
+# (Склад/борлуулалт энд БАЙХГҮЙ болсон — routes/inventory.js, routes/sales.js руу
+#  салгасан тул энэ файл бүхэлдээ Owner-ийн эзэмшил.)
+/routes/api.js          @Saruulsaikhan1997
+/routes/import.js       @Saruulsaikhan1997
+
+# ── Санхүү / хөрөнгө оруулагч / самбар UI ──
+/public/finance.html         @Saruulsaikhan1997
+/public/finance-admin.html   @Saruulsaikhan1997
+/public/finance-detail.html  @Saruulsaikhan1997
+/public/finance-import.html  @Saruulsaikhan1997
+/public/investment.html      @Saruulsaikhan1997
+/public/dashboard.html       @Saruulsaikhan1997
+
+# ── Засаглал, эзэмшлийн дүрэм өөрөө (Менежер өөрчилж чадахгүй) ──
+/.github/                       @Saruulsaikhan1997
+/.claude/                       @Saruulsaikhan1997
+/GOVERNANCE.md                  @Saruulsaikhan1997
+/MANAGER_CLAUDE_RULEBOOK.md     @Saruulsaikhan1997
+/MANAGER_SETUP.md               @Saruulsaikhan1997
+
+# ════════════════════════════════════════════════════════════
+# Менежерийн эзэмшил — ЗОРИУДААР жагсаагаагүй (Owner зөвшөөрөл шаардахгүй):
+#   routes/inventory.js, routes/sales.js
+#   public/inventory.html, public/sales.html, public/sales-entry.html,
+#   public/production.html, public/inventory-admin.html
+#
+# ⚠️ ҮЛДЭГДЭЛ ЭРСДЭЛ (баримтжуулсан, GOVERNANCE §11.6):
+#    Менежер routes/inventory.js-г эзэмшдэг тул түүн доторх admin-only
+#    "MANUAL_ADJUSTMENT" (гар тохируулга) хоригийг кодоор сулруулж болзошгүй.
+#    Нөлөөллийн хүрээ: зөвхөн нөөцийн тоо (мөнгө/санхүү/үнэлгээ БИШ — тэдгээр
+#    нь Owner-ийн эзэмшил), бүх тохируулга inventory_log-д by_role-тойгоо
+#    бүртгэгдэж, reconcile-аар илрэх боломжтой. Хатуу хаалт хүсвэл энэ
+#    маршрутыг Owner-ийн файл руу зөөнө (тусдаа hardening PR).
+# ════════════════════════════════════════════════════════════
