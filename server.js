@@ -25,6 +25,9 @@ app.use('/uploads', express.static(UPLOAD_DIR));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/import', require('./routes/import'));
 app.use('/api', require('./routes/api'));
+// Module-separated routers (Нярав-Менежер эзэмшил): склад/үйлдвэрлэл + борлуулалт
+app.use('/api', require('./routes/inventory'));
+app.use('/api', require('./routes/sales'));
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
 app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
