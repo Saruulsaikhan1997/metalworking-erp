@@ -236,7 +236,12 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
     <button class="tab-pill" id="t-hist" onclick="showTab('hist')">Хөдөлгөөний түүх</button>
   </div>
 
-  <div id="panel-stock" class="panel active"><div id="stockList"></div></div>
+  <div id="panel-stock" class="panel active">
+    <div id="stock-summary" style="display:none;background:#f0f7f3;border:1px solid #cfe6da;border-left:4px solid #1a7a4c;border-radius:6px;padding:10px 16px;margin-bottom:12px;font-size:14px;color:#26433a">
+      📦 Нийт төрөл: <b id="summary-count">0</b> &nbsp;·&nbsp; Нийт үлдэгдэл: <b id="summary-qty">0</b> нэгж
+    </div>
+    <div id="stockList"></div>
+  </div>
 
   <div id="panel-in" class="panel">
     <div class="intake-card">
@@ -508,7 +513,16 @@ async function loadStock() {
     return;
   }
   const fmt = n => (n == null ? '0' : Number(n).toLocaleString('en-US'));
-  el.innerHTML = items.filter(i => i.active !== false).map(i => {
+  // ── Хураангуй мөр ──
+  const activeItems = items.filter(i => i.active !== false);
+  const totalQty = activeItems.reduce((sum, i) => sum + (Number(i.qty) || 0), 0);
+  const summaryEl = document.getElementById('stock-summary');
+  if (summaryEl) {
+    document.getElementById('summary-count').textContent = activeItems.length;
+    document.getElementById('summary-qty').textContent = fmt(totalQty);
+    summaryEl.style.display = 'block';
+  }
+  el.innerHTML = activeItems.map(i => {
     const isLow = i.threshold > 0 && i.qty <= i.threshold;
     const lots = Array.isArray(i.lots) ? i.lots : [];
     const hasLots = lots.length > 0;
