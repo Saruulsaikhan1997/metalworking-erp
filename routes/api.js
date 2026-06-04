@@ -237,12 +237,54 @@ function ensureInventorySeed(db) {
   }
 }
 
-// ── List items ──
+// ── List items (enriched with received-lot breakdown for the warehouse view) ──
+// Read-only, additive enrichment: each item gets a `lots` array (profile name +
+// quantity in the item's OWN unit). NO cost/valuation fields are exposed here —
+// inventory valuation logic is untouched. Spread (`...item`) avoids mutating the
+// stored objects before save().
+const _normUnit = (u) => {
+  const s = String(u || '').toLowerCase().trim();
+  if (['кг', 'kg', 'kgs'].includes(s)) return 'kg';
+  if (['т', 'тн', 'тонн', 'ton', 'tonne', 'tons'].includes(s)) return 'ton';
+  if (['ш', 'ширхэг', 'piece', 'pcs', 'pc'].includes(s)) return 'piece';
+  if (['м', 'm', 'meter', 'metre'].includes(s)) return 'meter';
+  if (['м²', 'm2', 'sqm'].includes(s)) return 'sqm';
+  return s;
+};
+
 router.get('/inventory', (req, res) => {
   const db = load();
   ensureInventorySeed(db);
   save(db);
-  res.json(db.inventory);
+
+  // Sub-breakdown = received, non-sample import lots, grouped by inventory item.
+  const recvLots = (db.import_lots || []).filter(
+    l => !l.is_sample && l.warehouse_status === 'received' && l.inventory_item_id != null
+  );
+  const enriched = db.inventory.map(item => {
+    const target = _normUnit(item.unit);
+    const lots = recvLots
+      .filter(l => l.inventory_item_id === item.id)
+      .map(l => {
+        const cands = [l.units?.primary, l.units?.secondary].filter(c => c && c.qty != null);
+        const pick = cands.find(c => _normUnit(c.unit) === target);
+        let qty, unit;
+        if (pick) { qty = pick.qty; unit = item.unit || pick.unit; }
+        else if (l.received_qty != null) { qty = l.received_qty; unit = l.received_unit || item.unit; }
+        else if (cands.length) { qty = cands[cands.length - 1].qty; unit = cands[cands.length - 1].unit; }
+        else { qty = 0; unit = item.unit; }
+        return {
+          name: l.product?.name || l.product_code || '—',
+          spec: l.product?.spec || '',
+          qty,
+          unit,
+          status: l.warehouse_status,
+        };
+      });
+    return { ...item, lots };
+  });
+
+  res.json(enriched);
 });
 
 // ── Create item (catalog only — qty always starts at 0) ──

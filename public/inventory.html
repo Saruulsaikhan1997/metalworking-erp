@@ -95,6 +95,34 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
   background: #fee2e2; color: #991b1b; margin-top: 3px;
 }
 
+/* ── Expandable stock card (profile breakdown) ── */
+.stock-item { margin-bottom: 8px; }
+.stock-item .item-card { margin-bottom: 0; }
+.stock-item.expandable .item-card { cursor: pointer; }
+.stock-item.open .item-card { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.expand-caret {
+  display: inline-block; font-size: 10px; color: var(--gray-400);
+  margin-left: 9px; transition: transform .15s ease;
+}
+.stock-item.open .expand-caret { transform: rotate(90deg); }
+.item-sub {
+  border: 1px solid var(--gray-200); border-top: 2px solid var(--brand);
+  border-radius: 0 0 12px 12px; margin-top: -1px; overflow: hidden;
+  background: #fff;
+}
+.sub-title {
+  font-size: 10px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase;
+  color: var(--brand-dark); padding: 8px 16px; background: var(--gray-50);
+}
+.sub-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  padding: 9px 16px; border-top: 1px solid var(--gray-100);
+}
+.sub-name { font-size: 12.5px; font-weight: 500; color: var(--gray-900); }
+.sub-spec { font-size: 10.5px; color: var(--gray-400); margin-top: 2px; }
+.sub-qty { font-size: 13px; font-weight: 800; color: #2e7d32; white-space: nowrap; }
+.sub-qty small { font-size: 10px; font-weight: 500; color: var(--gray-400); margin-left: 2px; }
+
 .source-badge {
   display: inline-block; font-size: 9px; font-weight: 700;
   padding: 2px 6px; border-radius: 4px; margin-left: 6px;
@@ -479,18 +507,40 @@ async function loadStock() {
     el.innerHTML = '<div class="empty">Нөөцийн бүртгэл хараахан байхгүй<br><small style="display:block;margin-top:6px">Бараа ирмэгц орлого бүртгэх ёстой</small></div>';
     return;
   }
+  const fmt = n => (n == null ? '0' : Number(n).toLocaleString('en-US'));
   el.innerHTML = items.filter(i => i.active !== false).map(i => {
     const isLow = i.threshold > 0 && i.qty <= i.threshold;
-    return `<div class="item-card${isLow ? ' low-stock' : ''}">
-    <div class="item-info">
-      ${i.code ? `<span class="item-code">${i.code}</span>` : ''}
-      <div class="item-name">${i.name || '—'}<span class="cat-tag ${i.category || 'raw'}">${CAT_LABEL[i.category] || i.category || ''}</span></div>
-      <div class="item-meta">📍 ${i.location || 'central'}${i.status && i.status !== 'available' ? ' · ' + i.status : ''}</div>
-      ${isLow ? '<div class="low-stock-badge">⚠ Доод хязгаарт</div>' : ''}
+    const lots = Array.isArray(i.lots) ? i.lots : [];
+    const hasLots = lots.length > 0;
+    const sub = hasLots ? `<div class="item-sub" id="sub-${i.id}" style="display:none">
+      <div class="sub-title">Хийцлэлээр задаргаа · ${lots.length}</div>
+      ${lots.map(l => `<div class="sub-row">
+        <div><div class="sub-name">${l.name || '—'}</div>${l.spec ? `<div class="sub-spec">${l.spec}</div>` : ''}</div>
+        <div class="sub-qty">${fmt(l.qty)}<small>${l.unit || i.unit || ''}</small></div>
+      </div>`).join('')}
+    </div>` : '';
+    return `<div class="stock-item${hasLots ? ' expandable' : ''}" id="stock-${i.id}">
+    <div class="item-card${isLow ? ' low-stock' : ''}"${hasLots ? ` onclick="toggleStock(${i.id})"` : ''}>
+      <div class="item-info">
+        ${i.code ? `<span class="item-code">${i.code}</span>` : ''}
+        <div class="item-name">${i.name || '—'}<span class="cat-tag ${i.category || 'raw'}">${CAT_LABEL[i.category] || i.category || ''}</span></div>
+        <div class="item-meta">📍 ${i.location || 'central'}${i.status && i.status !== 'available' ? ' · ' + i.status : ''}</div>
+        ${isLow ? '<div class="low-stock-badge">⚠ Доод хязгаарт</div>' : ''}
+      </div>
+      <div class="item-qty">${fmt(i.qty || 0)}<span class="item-unit">${i.unit || 'ш'}</span>${hasLots ? '<span class="expand-caret">▸</span>' : ''}</div>
     </div>
-    <div class="item-qty">${i.qty || 0}<span class="item-unit">${i.unit || 'ш'}</span></div>
+    ${sub}
   </div>`;
   }).join('');
+}
+
+function toggleStock(id) {
+  const wrap = document.getElementById('stock-' + id);
+  const sub = document.getElementById('sub-' + id);
+  if (!wrap || !sub) return;
+  const open = sub.style.display !== 'none';
+  sub.style.display = open ? 'none' : 'block';
+  wrap.classList.toggle('open', !open);
 }
 
 async function loadHistory() {
