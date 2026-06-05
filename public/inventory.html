@@ -266,6 +266,14 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
     <div class="stock-summary" id="stock-summary">
       📦 Нийт төрөл: <b id="summary-count">0</b> &nbsp;·&nbsp; Нийт үлдэгдэл: <b id="summary-qty">0</b> нэгж
     </div>
+    <!-- ── Категорийн шүүлтүүр ── -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+      <button id="cat-all"         class="tab-pill active" onclick="setStockCat('')">Бүгд</button>
+      <button id="cat-raw"         class="tab-pill" onclick="setStockCat('raw')">🪨 Түүхий</button>
+      <button id="cat-finished"    class="tab-pill" onclick="setStockCat('finished')">✅ Бэлэн</button>
+      <button id="cat-maintenance" class="tab-pill" onclick="setStockCat('maintenance')">🔧 Засварын барaa</button>
+      <button id="cat-assets"      class="tab-pill" onclick="setStockCat('assets')">🪑 Эд хогшил</button>
+    </div>
     <div id="stockList"></div>
   </div>
 
@@ -803,7 +811,15 @@ function showIntakeError(msg) {
   status.textContent = '✗ ' + msg;
 }
 
-const CAT_LABEL = { raw: 'Түүхий', wip: 'Хагас', finished: 'Бэлэн' };
+const CAT_LABEL = { raw: 'Түүхий', wip: 'Хагас', finished: 'Бэлэн', maintenance: 'Засварын барaa', assets: 'Эд хогшил' };
+let stockCatFilter = '';
+
+function setStockCat(cat) {
+  stockCatFilter = cat;
+  document.querySelectorAll('[id^="cat-"]').forEach(b => b.classList.remove('active'));
+  document.getElementById(cat ? 'cat-' + cat : 'cat-all').classList.add('active');
+  loadStock();
+}
 const SOURCE_LABEL = {
   IMPORT_IN: '🚢 Импорт', PRODUCTION_IN: '🏭 Үйлдвэрлэл→',
   PRODUCTION_OUT: '🏭 →Үйлдвэрлэл', SALES_OUT: '🛒 Борлуулалт',
@@ -822,15 +838,25 @@ async function loadStock() {
   }
   const fmt = n => (n == null ? '0' : Number(n).toLocaleString('en-US'));
 
-  // ── Хураангуй мөр тооцоолох ──
+  // ── Хураангуй мөр тооцоолох (шүүлтүүргүй — бүх бараа) ──
   const activeItems = items.filter(i => i.active !== false);
   const totalQty = activeItems.reduce((sum, i) => sum + (Number(i.qty) || 0), 0);
   document.getElementById('summary-count').textContent = activeItems.length;
   document.getElementById('summary-qty').textContent = fmt(totalQty);
   document.getElementById('stock-summary').style.display = 'block';
 
+  // ── Категорийн шүүлтүүр ──
+  const visibleItems = stockCatFilter
+    ? activeItems.filter(i => (i.category || 'raw') === stockCatFilter)
+    : activeItems;
+
+  if (!visibleItems.length) {
+    el.innerHTML = `<div class="empty">${CAT_LABEL[stockCatFilter] || 'Энэ категори'}-д бараа байхгүй байна</div>`;
+    return;
+  }
+
   // ── Жагсаалт render: category-оор бүлэглэсэн хийцлэлтэй ──
-  el.innerHTML = activeItems.map(i => {
+  el.innerHTML = visibleItems.map(i => {
     const isLow = i.threshold > 0 && i.qty <= i.threshold;
     const lots = Array.isArray(i.lots) ? i.lots : [];
     const hasLots = lots.length > 0;
