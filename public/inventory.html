@@ -501,7 +501,7 @@ if (!token) window.location.href = '/';
 if (['admin','warehouse'].includes(user.role)) document.getElementById('adminSection').style.display = '';
 
 // ── Зөвхөн admin үйлдэл хийх эрхтэй ──
-const isAdmin = user.role === 'admin';
+const isAdmin = ['admin', 'manager'].includes(user.role);
 if (!isAdmin) {
   // Хурдан үйлдэл хэсэг нуух
   document.getElementById('quick-actions-section').style.display = 'none';
