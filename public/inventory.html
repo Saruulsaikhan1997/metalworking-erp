@@ -289,17 +289,45 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
         <select id="in-item" onchange="onIntakeItemChange()">
           <option value="">— сонгох —</option>
         </select>
-        <div class="lot-breakdown" id="in-breakdown"></div>
+        <!-- Хийцлэл сонгогч -->
+        <div id="in-lot-selector" style="display:none;margin-top:8px"></div>
       </div>
 
-      <div class="i-row2">
-        <div class="ifield">
-          <label>Тоо хэмжээ <span class="req">*</span></label>
-          <input type="number" id="in-qty" placeholder="0" min="1" step="any">
+      <!-- Нэгж toggle (хийцлэлгүй бараанд) -->
+      <div id="in-unit-toggle" style="display:none;gap:4px;margin-bottom:8px">
+        <button id="in-unit-orig-btn" onclick="setInUnit('orig')"
+          style="padding:3px 12px;border-radius:20px;border:1.5px solid #059669;background:#059669;
+            color:#fff;font-size:11px;font-weight:700;cursor:pointer">кг</button>
+        <button id="in-unit-sh-btn" onclick="setInUnit('ш')"
+          style="padding:3px 12px;border-radius:20px;border:1.5px solid #d1d5db;background:#fff;
+            color:#6b7280;font-size:11px;font-weight:700;cursor:pointer">ширхэг</button>
+      </div>
+
+      <!-- Үндсэн нэгж горим -->
+      <div id="in-kg-mode">
+        <div class="i-row2">
+          <div class="ifield">
+            <label>Тоо хэмжээ <span class="req">*</span></label>
+            <input type="number" id="in-qty" placeholder="0" min="1" step="any">
+          </div>
+          <div class="ifield">
+            <label>Нэгж</label>
+            <input type="text" id="in-unit" readonly placeholder="—">
+          </div>
         </div>
+      </div>
+
+      <!-- Ширхэг горим -->
+      <div id="in-sh-mode" style="display:none">
         <div class="ifield">
-          <label>Нэгж</label>
-          <input type="text" id="in-unit" readonly placeholder="—">
+          <label>Тоо ширхэг <span class="req">*</span></label>
+          <div style="display:flex;align-items:center;gap:10px">
+            <input type="number" id="in-pieces" placeholder="0" min="1" step="1"
+              oninput="document.getElementById('in-qty').value=this.value"
+              style="flex:1;padding:11px 13px;border:1.5px solid #0284c7;border-radius:8px;
+                font-size:16px;font-weight:800;color:#0c4a6e">
+            <span style="font-size:14px;color:#0284c7;font-weight:800">ш</span>
+          </div>
         </div>
       </div>
 
@@ -477,17 +505,146 @@ async function loadIntakeForm() {
   document.getElementById('in-reason').value = '';
   document.getElementById('intakeStatus').className = 'intake-status';
   document.getElementById('intakeStatus').textContent = '';
-  document.getElementById('in-breakdown').style.display = 'none';
+  document.getElementById('in-lot-selector').style.display = 'none';
+  document.getElementById('in-unit-toggle').style.display = 'none';
+  document.getElementById('in-kg-mode').style.display = '';
+  document.getElementById('in-sh-mode').style.display = 'none';
   updateReasonVisibility();
   document.getElementById('in-source').onchange = updateReasonVisibility;
 }
 
 function onIntakeItemChange() {
-  const id = parseInt(document.getElementById('in-item').value);
-  const it = catalogItems.find(x => x.id === id);
-  document.getElementById('in-unit').value = it ? (it.unit || '') : '';
+  const id   = parseInt(document.getElementById('in-item').value);
+  const it   = catalogItems.find(x => x.id === id);
+  const unit = it ? (it.unit || 'кг') : 'кг';
+  document.getElementById('in-unit').value = unit;
   if (it && it.location) document.getElementById('in-location').value = it.location;
-  showLotBreakdown('in-item', 'in-breakdown');
+
+  const hasLots = it && Array.isArray(it.lots) && it.lots.length > 0;
+  if (hasLots) {
+    showInLotList(it);
+    document.getElementById('in-unit-toggle').style.display = 'none';
+    document.getElementById('in-kg-mode').style.display = 'none';
+    document.getElementById('in-sh-mode').style.display = 'none';
+  } else {
+    document.getElementById('in-lot-selector').style.display = 'none';
+    const canPiece = ['кг','м','м²','M²'].includes(unit);
+    document.getElementById('in-unit-toggle').style.display = canPiece ? 'flex' : 'none';
+    const origBtn = document.getElementById('in-unit-orig-btn');
+    if (origBtn) origBtn.textContent = unit;
+    setInUnit('orig');
+  }
+}
+
+// ── Хийцлэлд нэмэх (орлого) ──
+function showInLotList(it) {
+  const container = document.getElementById('in-lot-selector');
+  if (!container) return;
+  const fmt = n => Number(n).toLocaleString('en-US');
+  const baseUnit = it.unit || 'кг';
+  it.lots.forEach((l, idx) => { l._idx = idx; });
+  const grouped = {};
+  it.lots.forEach(l => {
+    const cat = l.category_code || l.malagai_code || (l.spec ? l.spec.split(',')[0] : 'Бусад');
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(l);
+  });
+  container.innerHTML = `
+    <div style="border:1px solid #fed7aa;border-radius:8px;overflow:hidden;margin-bottom:8px">
+      <div style="padding:8px 14px;background:#fff7ed;border-bottom:1px solid #fed7aa;
+        font-size:11px;font-weight:700;color:#92400e;letter-spacing:.5px;text-transform:uppercase">
+        📌 Аль хийцлэлд нэмэхээ сонго
+      </div>
+      ${Object.entries(grouped).map(([cat, lots]) => `
+        <div class="sub-cat-header">${cat}</div>
+        ${lots.map(l => `
+          <div style="display:flex;align-items:flex-start;gap:8px;padding:10px 14px;
+            border-top:1px solid var(--gray-100)" id="in-lot-row-${l._idx}">
+            <input type="checkbox" id="in-lot-chk-${l._idx}"
+              style="width:16px;height:16px;margin-top:3px;accent-color:#059669;cursor:pointer;flex-shrink:0"
+              onchange="toggleInLotInput(${l._idx})">
+            <div style="flex:1">
+              <label for="in-lot-chk-${l._idx}" style="cursor:pointer">
+                <div class="sub-name">${l.name||'—'}</div>
+                ${l.spec ? `<div class="sub-spec">${l.spec}</div>` : ''}
+              </label>
+              <div id="in-lot-input-${l._idx}" style="display:none;margin-top:8px">
+                <div style="display:flex;gap:4px;margin-bottom:8px">
+                  <button id="in-lot-kg-${l._idx}" onclick="setInLotUnit(${l._idx},'${baseUnit}')"
+                    style="padding:3px 12px;border-radius:20px;border:1.5px solid #059669;
+                      background:#059669;color:#fff;font-size:11px;font-weight:700;cursor:pointer">${baseUnit}</button>
+                  <button id="in-lot-sh-${l._idx}" onclick="setInLotUnit(${l._idx},'ш')"
+                    style="padding:3px 12px;border-radius:20px;border:1.5px solid #d1d5db;
+                      background:#fff;color:#6b7280;font-size:11px;font-weight:700;cursor:pointer">ширхэг</button>
+                </div>
+                <div id="in-lot-kg-mode-${l._idx}">
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <input type="number" id="in-lot-qty-${l._idx}" placeholder="0" min="1" step="any"
+                      style="width:90px;padding:6px 10px;border:1.5px solid #059669;border-radius:6px;
+                        font-size:14px;font-weight:700;color:#065f46">
+                    <span style="font-size:12px;color:#6b7280;font-weight:600">${baseUnit}</span>
+                  </div>
+                </div>
+                <div id="in-lot-sh-mode-${l._idx}" style="display:none">
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <input type="number" id="in-lot-pieces-${l._idx}" placeholder="0" min="1" step="1"
+                      oninput="document.getElementById('in-lot-qty-${l._idx}').value=this.value"
+                      style="width:90px;padding:6px 10px;border:1.5px solid #0284c7;border-radius:6px;
+                        font-size:14px;font-weight:700;color:#0c4a6e">
+                    <span style="font-size:12px;color:#0284c7;font-weight:700">ш</span>
+                  </div>
+                  <input type="hidden" id="in-lot-qty-${l._idx}" value="">
+                </div>
+              </div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:10px;color:var(--gray-400)">Үлдэгдэл</div>
+              <div class="sub-qty">${fmt(l.qty)}<small>${l.unit||baseUnit}</small></div>
+            </div>
+          </div>`).join('')}
+      `).join('')}
+    </div>`;
+  container.style.display = 'block';
+}
+
+function toggleInLotInput(idx) {
+  const chk  = document.getElementById('in-lot-chk-' + idx);
+  const wrap = document.getElementById('in-lot-input-' + idx);
+  const row  = document.getElementById('in-lot-row-' + idx);
+  if (chk.checked) {
+    wrap.style.display = 'block';
+    if (row) row.style.background = '#f0fdf4';
+    document.getElementById('in-lot-qty-' + idx)?.focus();
+  } else {
+    wrap.style.display = 'none';
+    if (row) row.style.background = '';
+    const q = document.getElementById('in-lot-qty-' + idx);
+    if (q) q.value = '';
+  }
+}
+
+function setInLotUnit(idx, unit) {
+  const isSh  = unit === 'ш';
+  const kgDiv = document.getElementById('in-lot-kg-mode-' + idx);
+  const shDiv = document.getElementById('in-lot-sh-mode-' + idx);
+  if (kgDiv) kgDiv.style.display = isSh ? 'none' : '';
+  if (shDiv) shDiv.style.display = isSh ? '' : 'none';
+  const kgBtn = document.getElementById('in-lot-kg-' + idx);
+  const shBtn = document.getElementById('in-lot-sh-' + idx);
+  if (kgBtn) { kgBtn.style.background = !isSh ? '#059669' : '#fff'; kgBtn.style.color = !isSh ? '#fff' : '#6b7280'; kgBtn.style.borderColor = !isSh ? '#059669' : '#d1d5db'; }
+  if (shBtn) { shBtn.style.background = isSh ? '#0284c7' : '#fff'; shBtn.style.color = isSh ? '#fff' : '#6b7280'; shBtn.style.borderColor = isSh ? '#0284c7' : '#d1d5db'; }
+  if (isSh) document.getElementById('in-lot-pieces-' + idx)?.focus();
+}
+
+function setInUnit(mode) {
+  const isSh = mode === 'ш';
+  document.getElementById('in-kg-mode').style.display = isSh ? 'none' : '';
+  document.getElementById('in-sh-mode').style.display = isSh ? '' : 'none';
+  const origBtn = document.getElementById('in-unit-orig-btn');
+  const shBtn   = document.getElementById('in-unit-sh-btn');
+  if (origBtn) { origBtn.style.background = !isSh ? '#059669' : '#fff'; origBtn.style.color = !isSh ? '#fff' : '#6b7280'; origBtn.style.borderColor = !isSh ? '#059669' : '#d1d5db'; }
+  if (shBtn)   { shBtn.style.background = isSh ? '#0284c7' : '#fff'; shBtn.style.color = isSh ? '#fff' : '#6b7280'; shBtn.style.borderColor = isSh ? '#0284c7' : '#d1d5db'; }
+  if (isSh) document.getElementById('in-pieces')?.focus();
 }
 
 function updateReasonVisibility() {
@@ -497,57 +654,87 @@ function updateReasonVisibility() {
 }
 
 async function submitIntake() {
-  const srcUi = document.getElementById('in-source').value;
+  const srcUi  = document.getElementById('in-source').value;
   const itemId = parseInt(document.getElementById('in-item').value);
-  const qty    = parseFloat(document.getElementById('in-qty').value);
   const note   = document.getElementById('in-note').value.trim();
   const loc    = document.getElementById('in-location').value;
   const reason = document.getElementById('in-reason').value.trim();
   const status = document.getElementById('intakeStatus');
+  const btn    = document.getElementById('intakeBtn');
 
-  if (!itemId)          { showIntakeError('Материал сонгоно уу'); return; }
-  if (!qty || qty <= 0) { showIntakeError('Тоо хэмжээ оруулна уу'); return; }
+  if (!itemId) { showIntakeError('Материал сонгоно уу'); return; }
 
+  const it = catalogItems.find(x => x.id === itemId);
   const backendSource = srcUi.startsWith('MANUAL_ADJUSTMENT') ? 'MANUAL_ADJUSTMENT' : 'IMPORT_IN';
-  if (backendSource === 'MANUAL_ADJUSTMENT' && !reason) {
-    showIntakeError('Шалтгаан оруулна уу');
-    return;
-  }
+  if (backendSource === 'MANUAL_ADJUSTMENT' && !reason) { showIntakeError('Шалтгаан оруулна уу'); return; }
 
-  const body = {
-    item_id:     itemId,
-    source:      backendSource,
-    qty,
-    location_to: loc,
-    note:        note || (srcUi === 'IMPORT_IN__LOCAL' ? 'Дотоод худалдан авалт' : ''),
-  };
-  if (backendSource === 'MANUAL_ADJUSTMENT') {
-    body.reason    = reason;
-    body.direction = 'in';
-  }
+  const hasLots = it && Array.isArray(it.lots) && it.lots.length > 0;
 
-  const btn = document.getElementById('intakeBtn');
-  btn.disabled = true; btn.textContent = '⏳ Бүртгэж байна...';
+  if (hasLots) {
+    // ── Хийцлэл сонгосон тохиолдол ──
+    const selected = [];
+    for (const lot of it.lots) {
+      const chk = document.getElementById('in-lot-chk-' + lot._idx);
+      const inp = document.getElementById('in-lot-qty-' + lot._idx);
+      if (!chk?.checked) continue;
+      const q = parseFloat(inp?.value);
+      if (!q || q <= 0) { showIntakeError(`"${lot.name}"-д тоо хэмжээ оруулна уу`); return; }
+      selected.push({ lot, qty: q });
+    }
+    if (!selected.length) { showIntakeError('Хийцлэл сонгоод тоо хэмжээ оруулна уу'); return; }
 
-  const r = await api('/inventory/log', { method: 'POST', body: JSON.stringify(body) });
+    btn.disabled = true; btn.textContent = '⏳ Бүртгэж байна...';
 
-  btn.disabled = false; btn.textContent = '📥 Орлого бүртгэх';
+    let lastResult = null;
+    const lotNote = selected.map(s => `${s.lot.name}: ${s.qty}`).join(', ');
+    for (const { lot, qty } of selected) {
+      const body = { item_id: itemId, source: backendSource, qty, location_to: loc,
+        note: note || lotNote, lot_name: lot.name };
+      if (backendSource === 'MANUAL_ADJUSTMENT') { body.reason = reason; body.direction = 'in'; }
+      lastResult = await api('/inventory/log', { method: 'POST', body: JSON.stringify(body) });
+      if (!lastResult.ok) { showIntakeError(lastResult.error || 'Алдаа гарлаа'); btn.disabled = false; btn.textContent = '📥 Орлого бүртгэх'; return; }
+    }
 
-  if (r.ok) {
-    const it = catalogItems.find(x => x.id === itemId);
+    const totalQty = selected.reduce((s, x) => s + x.qty, 0);
+    const fmt = n => Number(n).toLocaleString('en-US');
     status.className = 'intake-status ok';
-    status.innerHTML = `✅ Амжилттай · <b>${it ? it.name : ''}</b> +${qty} ${it ? (it.unit||'') : ''} · Шинэ үлдэгдэл: <b>${r.new_qty}</b>`;
-    document.getElementById('in-item').value = '';
-    document.getElementById('in-qty').value = '';
-    document.getElementById('in-unit').value = '';
-    document.getElementById('in-note').value = '';
-    document.getElementById('in-reason').value = '';
-    document.getElementById('in-breakdown').style.display = 'none';
-    catalogItems = await api('/inventory') || [];
-    window.catalogItems = catalogItems;
+    status.innerHTML = `✅ <b>${it.name}</b> +${fmt(totalQty)} ${it.unit||''} · Шинэ үлдэгдэл: <b>${lastResult.new_qty}</b>`;
+
   } else {
-    showIntakeError(r.error || 'Алдаа гарлаа');
+    // ── Энгийн орлого ──
+    const qty = parseFloat(document.getElementById('in-qty').value);
+    if (!qty || qty <= 0) { showIntakeError('Тоо хэмжээ оруулна уу'); return; }
+
+    const body = { item_id: itemId, source: backendSource, qty, location_to: loc,
+      note: note || (srcUi === 'IMPORT_IN__LOCAL' ? 'Дотоод худалдан авалт' : '') };
+    if (backendSource === 'MANUAL_ADJUSTMENT') { body.reason = reason; body.direction = 'in'; }
+
+    btn.disabled = true; btn.textContent = '⏳ Бүртгэж байна...';
+    const r = await api('/inventory/log', { method: 'POST', body: JSON.stringify(body) });
+
+    if (r.ok) {
+      status.className = 'intake-status ok';
+      status.innerHTML = `✅ Амжилттай · <b>${it ? it.name : ''}</b> +${qty} ${it ? (it.unit||'') : ''} · Шинэ үлдэгдэл: <b>${r.new_qty}</b>`;
+    } else {
+      showIntakeError(r.error || 'Алдаа гарлаа');
+      btn.disabled = false; btn.textContent = '📥 Орлого бүртгэх';
+      return;
+    }
   }
+
+  // ── Форм цэвэрлэх ──
+  btn.disabled = false; btn.textContent = '📥 Орлого бүртгэх';
+  document.getElementById('in-item').value = '';
+  document.getElementById('in-qty').value = '';
+  document.getElementById('in-unit').value = '';
+  document.getElementById('in-note').value = '';
+  document.getElementById('in-reason').value = '';
+  document.getElementById('in-lot-selector').style.display = 'none';
+  document.getElementById('in-unit-toggle').style.display = 'none';
+  document.getElementById('in-kg-mode').style.display = '';
+  document.getElementById('in-sh-mode').style.display = 'none';
+  catalogItems = await api('/inventory') || [];
+  window.catalogItems = catalogItems;
 }
 
 function showIntakeError(msg) {
