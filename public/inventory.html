@@ -383,6 +383,66 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
         Одоогийн үлдэгдэл: <b id="out-stock-qty">0</b> <span id="out-stock-unit"></span>
       </div>
 
+      <!-- ── ШИРХЭГИЙН ТООЦООЛУУР ── -->
+      <div style="background:#eff6ff;border:1.5px solid #bae6fd;border-radius:12px;overflow:hidden;margin-bottom:12px">
+        <div style="padding:9px 14px;background:#dbeafe;display:flex;align-items:center;gap:7px">
+          <span style="font-size:14px">🧮</span>
+          <span style="font-size:11px;font-weight:800;color:#1e40af;text-transform:uppercase;letter-spacing:.7px">Ширхэгийн тооцоолуур</span>
+        </div>
+        <div style="padding:12px 14px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px">Тоо ширхэг <span style="color:#c62828">*</span></div>
+              <input type="number" id="calc-pieces" placeholder="0" min="1" step="1" oninput="updateCalc()"
+                style="width:100%;padding:10px 12px;border:1.5px solid #bae6fd;border-radius:8px;font-size:15px;font-weight:800;color:#1e3a5f;outline:none;background:#fff">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px">Нэг ширхэгийн жин (кг)</div>
+              <input type="number" id="calc-unit-weight" placeholder="0.000" step="any" oninput="updateCalc()"
+                style="width:100%;padding:10px 12px;border:1.5px solid #bae6fd;border-radius:8px;font-size:15px;font-weight:800;color:#1e3a5f;outline:none;background:#fff">
+            </div>
+          </div>
+
+          <div style="border:1px solid #bae6fd;border-radius:8px;overflow:hidden;margin-bottom:10px">
+            <div style="padding:6px 12px;background:#f0f9ff;font-size:10px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:.5px">
+              Хэмжээсийн тооцоо (Ган профиль)
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;padding:10px 12px">
+              <div>
+                <div style="font-size:10px;color:#6b7280;margin-bottom:3px">Өргөн (мм)</div>
+                <input type="number" id="calc-w" placeholder="0" step="any" oninput="calcDimWeight()"
+                  style="width:100%;padding:7px 8px;border:1.5px solid #bae6fd;border-radius:6px;font-size:13px;font-weight:600;outline:none;background:#fff">
+              </div>
+              <div>
+                <div style="font-size:10px;color:#6b7280;margin-bottom:3px">Өндөр (мм)</div>
+                <input type="number" id="calc-h" placeholder="0" step="any" oninput="calcDimWeight()"
+                  style="width:100%;padding:7px 8px;border:1.5px solid #bae6fd;border-radius:6px;font-size:13px;font-weight:600;outline:none;background:#fff">
+              </div>
+              <div>
+                <div style="font-size:10px;color:#6b7280;margin-bottom:3px">Урт (мм)</div>
+                <input type="number" id="calc-l" placeholder="0" step="any" oninput="calcDimWeight()"
+                  style="width:100%;padding:7px 8px;border:1.5px solid #bae6fd;border-radius:6px;font-size:13px;font-weight:600;outline:none;background:#fff">
+              </div>
+              <div>
+                <div style="font-size:10px;color:#6b7280;margin-bottom:3px">Хана (мм)</div>
+                <input type="number" id="calc-t" placeholder="0" step="any" oninput="calcDimWeight()"
+                  style="width:100%;padding:7px 8px;border:1.5px solid #bae6fd;border-radius:6px;font-size:13px;font-weight:600;outline:none;background:#fff">
+              </div>
+            </div>
+          </div>
+
+          <div id="calc-result" style="display:none;padding:9px 13px;border-radius:8px;background:#fff;border:1px solid #bae6fd;margin-bottom:10px;justify-content:space-between;align-items:center">
+            <span id="calc-formula" style="font-size:12px;color:#374151"></span>
+            <span id="calc-total" style="font-size:17px;font-weight:800;color:#0284c7"></span>
+          </div>
+
+          <button onclick="applyCalcToOut()"
+            style="width:100%;padding:12px;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;letter-spacing:.3px">
+            ✓ Энэ утгыг гаралтад ашиглах
+          </button>
+        </div>
+      </div>
+
       <div class="i-row2">
         <div class="ifield">
           <label>Тоо хэмжээ <span class="req">*</span></label>
@@ -1101,6 +1161,42 @@ function showOutError(msg) {
   const status = document.getElementById('outStatus');
   status.className = 'intake-status err';
   status.textContent = '✗ ' + msg;
+}
+
+// ── Ширхэгийн тооцоолуур ──
+function calcDimWeight() {
+  const w = parseFloat(document.getElementById('calc-w').value) || 0;
+  const h = parseFloat(document.getElementById('calc-h').value) || 0;
+  const l = parseFloat(document.getElementById('calc-l').value) || 0;
+  const t = parseFloat(document.getElementById('calc-t').value) || 0;
+  if (w > 0 && h > 0 && l > 0 && t > 0) {
+    // Хана бүхий дөрвөлжин хоолой: 2×(W+H-2t)×t×L×7.85/1,000,000
+    const kg = 2 * (w + h - 2 * t) * t * l * 7.85 / 1e6;
+    document.getElementById('calc-unit-weight').value = kg.toFixed(3);
+    updateCalc();
+  }
+}
+
+function updateCalc() {
+  const pieces = parseFloat(document.getElementById('calc-pieces').value) || 0;
+  const unitW  = parseFloat(document.getElementById('calc-unit-weight').value) || 0;
+  const res    = document.getElementById('calc-result');
+  if (pieces > 0 && unitW > 0) {
+    const total = pieces * unitW;
+    document.getElementById('calc-formula').textContent = `${pieces} ш × ${unitW} кг/ш =`;
+    document.getElementById('calc-total').textContent   = `${total.toFixed(2)} кг`;
+    res.style.display = 'flex';
+  } else {
+    res.style.display = 'none';
+  }
+}
+
+function applyCalcToOut() {
+  const pieces = parseFloat(document.getElementById('calc-pieces').value) || 0;
+  const unitW  = parseFloat(document.getElementById('calc-unit-weight').value) || 0;
+  if (!pieces || !unitW) { alert('Тоо ширхэг болон нэг ширхэгийн жин оруулна уу'); return; }
+  document.getElementById('out-qty').value = +(pieces * unitW).toFixed(2);
+  document.getElementById('out-qty').focus();
 }
 
 loadStock();
