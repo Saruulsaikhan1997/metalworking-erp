@@ -62,6 +62,16 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 .panel { display: none; }
 .panel.active { display: block; }
 
+/* ── Хураангуй мөр ── */
+.stock-summary {
+  display: none;
+  background: #f0f7f3; border: 1px solid #cfe6da;
+  border-left: 4px solid #1a7a4c; border-radius: 8px;
+  padding: 10px 16px; margin-bottom: 12px;
+  font-size: 13px; color: #26433a;
+}
+.stock-summary b { color: #0f5c38; }
+
 /* Items */
 .item-card {
   background: #fff; border-radius: 12px;
@@ -95,7 +105,7 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
   background: #fee2e2; color: #991b1b; margin-top: 3px;
 }
 
-/* ── Expandable stock card (profile breakdown) ── */
+/* ── Expandable stock card ── */
 .stock-item { margin-bottom: 8px; }
 .stock-item .item-card { margin-bottom: 0; }
 .stock-item.expandable .item-card { cursor: pointer; }
@@ -110,6 +120,13 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
   border-radius: 0 0 12px 12px; margin-top: -1px; overflow: hidden;
   background: #fff;
 }
+
+/* ── Category header ── */
+.sub-cat-header {
+  font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase;
+  color: var(--brand-dark); padding: 7px 16px 5px;
+  background: var(--gray-50); border-top: 1px solid var(--gray-100);
+}
 .sub-title {
   font-size: 10px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase;
   color: var(--brand-dark); padding: 8px 16px; background: var(--gray-50);
@@ -122,6 +139,14 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 .sub-spec { font-size: 10.5px; color: var(--gray-400); margin-top: 2px; }
 .sub-qty { font-size: 13px; font-weight: 800; color: #2e7d32; white-space: nowrap; }
 .sub-qty small { font-size: 10px; font-weight: 500; color: var(--gray-400); margin-left: 2px; }
+
+/* ── Form lot breakdown ── */
+.lot-breakdown {
+  display: none;
+  border: 1px solid var(--gray-200); border-top: 2px solid var(--brand);
+  border-radius: 0 0 10px 10px; margin-top: -1px;
+  overflow: hidden; background: #fff; margin-bottom: 12px;
+}
 
 .source-badge {
   display: inline-block; font-size: 9px; font-weight: 700;
@@ -236,7 +261,13 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
     <button class="tab-pill" id="t-hist" onclick="showTab('hist')">Хөдөлгөөний түүх</button>
   </div>
 
-  <div id="panel-stock" class="panel active"><div id="stockList"></div></div>
+  <div id="panel-stock" class="panel active">
+    <!-- ── Хураангуй мөр ── -->
+    <div class="stock-summary" id="stock-summary">
+      📦 Нийт төрөл: <b id="summary-count">0</b> &nbsp;·&nbsp; Нийт үлдэгдэл: <b id="summary-qty">0</b> нэгж
+    </div>
+    <div id="stockList"></div>
+  </div>
 
   <div id="panel-in" class="panel">
     <div class="intake-card">
@@ -258,6 +289,7 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
         <select id="in-item" onchange="onIntakeItemChange()">
           <option value="">— сонгох —</option>
         </select>
+        <div class="lot-breakdown" id="in-breakdown"></div>
       </div>
 
       <div class="i-row2">
@@ -316,6 +348,7 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
         <select id="out-item" onchange="onOutItemChange()">
           <option value="">— сонгох —</option>
         </select>
+        <div class="lot-breakdown" id="out-breakdown"></div>
       </div>
 
       <div id="out-stock-info" style="display:none;margin-bottom:12px;padding:8px 12px;border-radius:8px;background:#f0f9ff;border:1px solid #bae6fd;font-size:12px;color:#0c4a6e">
@@ -363,7 +396,7 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
   </a>
 </div>
 
-<script src="/js/bottom-nav.js"></script>
+<script src="/js/bottom-nav.js" onerror="void 0"></script>
 <script>
 const token = localStorage.getItem('token');
 const user  = JSON.parse(localStorage.getItem('user') || '{}');
@@ -392,11 +425,45 @@ function showTab(name) {
   if (name === 'out')   loadOutForm();
 }
 
+// ── Хийцлэлийн задаргаа харуулах ──
+function showLotBreakdown(selectId, containerId) {
+  const id = parseInt(document.getElementById(selectId).value);
+  const it = (window.catalogItems || []).find(x => x.id === id);
+  const container = document.getElementById(containerId);
+  if (!it || !Array.isArray(it.lots) || !it.lots.length) {
+    container.style.display = 'none';
+    return;
+  }
+  const fmt = n => Number(n).toLocaleString('en-US');
+  const grouped = {};
+  it.lots.forEach(l => {
+    const cat = l.category_code || l.malagai_code || (l.spec ? l.spec.split(',')[0] : 'Бусад');
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(l);
+  });
+  container.innerHTML = Object.entries(grouped).map(([cat, lots]) => `
+    <div class="sub-cat-header">${cat}</div>
+    ${lots.map(l => `
+      <div class="sub-row">
+        <div>
+          <div class="sub-name">${l.name || '—'}</div>
+          ${l.spec ? `<div class="sub-spec">${l.spec}</div>` : ''}
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;color:var(--gray-400)">Үлдэгдэл</div>
+          <div class="sub-qty">${fmt(l.qty)}<small>${l.unit || it.unit || ''}</small></div>
+        </div>
+      </div>`).join('')}
+  `).join('');
+  container.style.display = 'block';
+}
+
 // ── Material Intake (IN) ──
 let catalogItems = [];
 
 async function loadIntakeForm() {
   catalogItems = await api('/inventory') || [];
+  window.catalogItems = catalogItems;
   const sel = document.getElementById('in-item');
   if (!sel) return;
   sel.innerHTML = '<option value="">— сонгох —</option>' +
@@ -404,16 +471,14 @@ async function loadIntakeForm() {
       `<option value="${i.id}">${(i.code ? i.code + ' · ' : '')}${i.name}</option>`
     ).join('');
 
-  // Reset form
   document.getElementById('in-qty').value = '';
   document.getElementById('in-unit').value = '';
   document.getElementById('in-note').value = '';
   document.getElementById('in-reason').value = '';
   document.getElementById('intakeStatus').className = 'intake-status';
   document.getElementById('intakeStatus').textContent = '';
+  document.getElementById('in-breakdown').style.display = 'none';
   updateReasonVisibility();
-
-  // Source change → reason visibility
   document.getElementById('in-source').onchange = updateReasonVisibility;
 }
 
@@ -422,6 +487,7 @@ function onIntakeItemChange() {
   const it = catalogItems.find(x => x.id === id);
   document.getElementById('in-unit').value = it ? (it.unit || '') : '';
   if (it && it.location) document.getElementById('in-location').value = it.location;
+  showLotBreakdown('in-item', 'in-breakdown');
 }
 
 function updateReasonVisibility() {
@@ -439,11 +505,9 @@ async function submitIntake() {
   const reason = document.getElementById('in-reason').value.trim();
   const status = document.getElementById('intakeStatus');
 
-  // Validation
-  if (!itemId)        { showIntakeError('Материал сонгоно уу'); return; }
+  if (!itemId)          { showIntakeError('Материал сонгоно уу'); return; }
   if (!qty || qty <= 0) { showIntakeError('Тоо хэмжээ оруулна уу'); return; }
 
-  // Map UI source → backend code
   const backendSource = srcUi.startsWith('MANUAL_ADJUSTMENT') ? 'MANUAL_ADJUSTMENT' : 'IMPORT_IN';
   if (backendSource === 'MANUAL_ADJUSTMENT' && !reason) {
     showIntakeError('Шалтгаан оруулна уу');
@@ -459,7 +523,7 @@ async function submitIntake() {
   };
   if (backendSource === 'MANUAL_ADJUSTMENT') {
     body.reason    = reason;
-    body.direction = 'in';  // intake = incoming
+    body.direction = 'in';
   }
 
   const btn = document.getElementById('intakeBtn');
@@ -473,14 +537,14 @@ async function submitIntake() {
     const it = catalogItems.find(x => x.id === itemId);
     status.className = 'intake-status ok';
     status.innerHTML = `✅ Амжилттай · <b>${it ? it.name : ''}</b> +${qty} ${it ? (it.unit||'') : ''} · Шинэ үлдэгдэл: <b>${r.new_qty}</b>`;
-    // Reset form (keep source + location for batch entry)
     document.getElementById('in-item').value = '';
     document.getElementById('in-qty').value = '';
     document.getElementById('in-unit').value = '';
     document.getElementById('in-note').value = '';
     document.getElementById('in-reason').value = '';
-    // Refresh catalog cache for accurate qty
+    document.getElementById('in-breakdown').style.display = 'none';
     catalogItems = await api('/inventory') || [];
+    window.catalogItems = catalogItems;
   } else {
     showIntakeError(r.error || 'Алдаа гарлаа');
   }
@@ -501,24 +565,52 @@ const SOURCE_LABEL = {
 
 async function loadStock() {
   const items = await api('/inventory') || [];
-  catalogItems = items; // keep in sync
+  catalogItems = items;
+  window.catalogItems = catalogItems;
   const el = document.getElementById('stockList');
   if (!items.length) {
     el.innerHTML = '<div class="empty">Нөөцийн бүртгэл хараахан байхгүй<br><small style="display:block;margin-top:6px">Бараа ирмэгц орлого бүртгэх ёстой</small></div>';
+    document.getElementById('stock-summary').style.display = 'none';
     return;
   }
   const fmt = n => (n == null ? '0' : Number(n).toLocaleString('en-US'));
-  el.innerHTML = items.filter(i => i.active !== false).map(i => {
+
+  // ── Хураангуй мөр тооцоолох ──
+  const activeItems = items.filter(i => i.active !== false);
+  const totalQty = activeItems.reduce((sum, i) => sum + (Number(i.qty) || 0), 0);
+  document.getElementById('summary-count').textContent = activeItems.length;
+  document.getElementById('summary-qty').textContent = fmt(totalQty);
+  document.getElementById('stock-summary').style.display = 'block';
+
+  // ── Жагсаалт render: category-оор бүлэглэсэн хийцлэлтэй ──
+  el.innerHTML = activeItems.map(i => {
     const isLow = i.threshold > 0 && i.qty <= i.threshold;
     const lots = Array.isArray(i.lots) ? i.lots : [];
     const hasLots = lots.length > 0;
+
+    const grouped = {};
+    lots.forEach(l => {
+      const cat = l.category_code || l.malagai_code || (l.spec ? l.spec.split(',')[0] : 'Бусад');
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(l);
+    });
+
     const sub = hasLots ? `<div class="item-sub" id="sub-${i.id}" style="display:none">
-      <div class="sub-title">Хийцлэлээр задаргаа · ${lots.length}</div>
-      ${lots.map(l => `<div class="sub-row">
-        <div><div class="sub-name">${l.name || '—'}</div>${l.spec ? `<div class="sub-spec">${l.spec}</div>` : ''}</div>
-        <div class="sub-qty">${fmt(l.qty)}<small>${l.unit || i.unit || ''}</small></div>
-      </div>`).join('')}
+      ${Object.entries(grouped).map(([cat, catLots]) => `
+        <div class="sub-cat-header">${cat}</div>
+        ${catLots.map(l => `<div class="sub-row">
+          <div>
+            <div class="sub-name">${l.name || '—'}</div>
+            ${l.spec ? `<div class="sub-spec">${l.spec}</div>` : ''}
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:10px;color:var(--gray-400)">Үлдэгдэл</div>
+            <div class="sub-qty">${fmt(l.qty)}<small>${l.unit || i.unit || ''}</small></div>
+          </div>
+        </div>`).join('')}
+      `).join('')}
     </div>` : '';
+
     return `<div class="stock-item${hasLots ? ' expandable' : ''}" id="stock-${i.id}">
     <div class="item-card${isLow ? ' low-stock' : ''}"${hasLots ? ` onclick="toggleStock(${i.id})"` : ''}>
       <div class="item-info">
@@ -567,18 +659,25 @@ async function loadHistory() {
 }
 
 // ── Material Output (OUT) ──
-function loadOutForm() {
+async function loadOutForm() {
   const sel = document.getElementById('out-item');
   if (!sel) return;
+  // catalogItems хоосон байвал API-аас татна
+  if (!catalogItems.length) {
+    catalogItems = await api('/inventory') || [];
+    window.catalogItems = catalogItems;
+  }
   sel.innerHTML = '<option value="">— сонгох —</option>' +
     catalogItems.filter(i => i.active !== false && i.qty > 0).map(i =>
-      `<option value="${i.id}">${(i.code ? i.code + ' · ' : '')}${i.name} (${i.qty} ${i.unit||''})</option>`
+      `<option value="${i.id}">${(i.code ? i.code + ' · ' : '')}${i.name} (${Number(i.qty).toLocaleString('en-US')} ${i.unit||''})</option>`
     ).join('');
+  document.getElementById('out-qty').closest('.i-row2').style.display = '';
   document.getElementById('out-qty').value = '';
   document.getElementById('out-unit').value = '';
   document.getElementById('out-note').value = '';
   document.getElementById('out-reason').value = '';
   document.getElementById('out-stock-info').style.display = 'none';
+  document.getElementById('out-breakdown').style.display = 'none';
   document.getElementById('outStatus').className = 'intake-status';
   document.getElementById('outStatus').textContent = '';
   updateOutReasonVisibility();
@@ -588,13 +687,113 @@ function onOutItemChange() {
   const id = parseInt(document.getElementById('out-item').value);
   const it = catalogItems.find(x => x.id === id);
   document.getElementById('out-unit').value = it ? (it.unit || '') : '';
+  // Тоо талбарыг дахин харуул
+  document.getElementById('out-qty').closest('.i-row2').style.display = '';
+  document.getElementById('out-qty').value = '';
+  document.getElementById('outStatus').className = 'intake-status';
+  document.getElementById('outStatus').textContent = '';
   if (it) {
+    const fmt = n => Number(n).toLocaleString('en-US');
     document.getElementById('out-stock-info').style.display = '';
-    document.getElementById('out-stock-qty').textContent = it.qty;
+    document.getElementById('out-stock-qty').textContent = fmt(it.qty);
     document.getElementById('out-stock-unit').textContent = it.unit || '';
+    // Хийцлэл байвал сонголттой харуул
+    if (Array.isArray(it.lots) && it.lots.length) {
+      showOutLotSelector(it);
+    } else {
+      document.getElementById('out-breakdown').style.display = 'none';
+    }
   } else {
     document.getElementById('out-stock-info').style.display = 'none';
+    document.getElementById('out-breakdown').style.display = 'none';
   }
+}
+
+// ── Гаралтын хийцлэл сонгох UI ──
+function showOutLotSelector(it) {
+  const container = document.getElementById('out-breakdown');
+  const fmt = n => Number(n).toLocaleString('en-US');
+  it.lots.forEach((l, idx) => { l._idx = idx; });
+  const grouped = {};
+  it.lots.forEach(l => {
+    const cat = l.category_code || l.malagai_code || (l.spec ? l.spec.split(',')[0] : 'Бусад');
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(l);
+  });
+  container.innerHTML = `
+    <div style="padding:8px 14px;background:#fff7ed;border-bottom:1px solid #fed7aa;
+      font-size:11px;font-weight:700;color:#92400e;letter-spacing:.5px;text-transform:uppercase">
+      📌 Аль хийцлэлээс авахаа сонго
+    </div>
+    ${Object.entries(grouped).map(([cat, lots]) => `
+      <div class="sub-cat-header">${cat}</div>
+      ${lots.map(l => `
+        <div class="sub-row" style="align-items:flex-start;gap:8px;padding:10px 14px" id="lot-row-${l._idx}">
+          <input type="checkbox" id="lot-chk-${l._idx}"
+            style="width:16px;height:16px;margin-top:3px;accent-color:#006064;cursor:pointer;flex-shrink:0"
+            onchange="toggleLotInput(${l._idx}, ${l.qty})">
+          <div style="flex:1">
+            <label for="lot-chk-${l._idx}" style="cursor:pointer">
+              <div class="sub-name">${l.name||'—'}</div>
+              ${l.spec ? `<div class="sub-spec">${l.spec}</div>` : ''}
+            </label>
+            <div id="lot-input-${l._idx}" style="display:none;margin-top:6px">
+              <div style="display:flex;align-items:center;gap:6px">
+                <input type="number" id="lot-qty-${l._idx}"
+                  placeholder="0" min="1" max="${l.qty}" step="any"
+                  oninput="updateOutLotTotal('${it.unit||''}')"
+                  style="width:90px;padding:6px 8px;border:1.5px solid #00838f;
+                    border-radius:6px;font-size:13px;font-weight:700;color:#006064">
+                <span style="font-size:11px;color:#6b7280">${l.unit||it.unit||''}</span>
+                <span style="font-size:10px;color:#9ca3af">(max: ${fmt(l.qty)})</span>
+              </div>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:10px;color:var(--gray-400)">Үлдэгдэл</div>
+            <div class="sub-qty">${fmt(l.qty)}<small>${l.unit||it.unit||''}</small></div>
+          </div>
+        </div>`).join('')}
+    `).join('')}
+    <div style="padding:8px 14px;background:#f9fafb;border-top:1px solid #e5e7eb;
+      font-size:12px;color:#374151;display:flex;justify-content:space-between;align-items:center">
+      <span>Нийт сонгосон:</span>
+      <span id="out-lot-total" style="font-weight:700;color:#006064;font-size:14px">0 ${it.unit||''}</span>
+    </div>
+  `;
+  container.style.display = 'block';
+  // Хийцлэлтэй бол тоо талбарыг нуух
+  document.getElementById('out-qty').closest('.i-row2').style.display = 'none';
+}
+
+function toggleLotInput(idx) {
+  const chk  = document.getElementById('lot-chk-' + idx);
+  const wrap = document.getElementById('lot-input-' + idx);
+  const row  = document.getElementById('lot-row-' + idx);
+  const inp  = document.getElementById('lot-qty-' + idx);
+  if (chk.checked) {
+    wrap.style.display = 'block';
+    row.style.background = '#f0f9ff';
+    inp.focus();
+  } else {
+    wrap.style.display = 'none';
+    row.style.background = '';
+    inp.value = '';
+    const unit = document.getElementById('out-unit').value;
+    updateOutLotTotal(unit);
+  }
+}
+
+function updateOutLotTotal(unit) {
+  const it = catalogItems.find(x => x.id === parseInt(document.getElementById('out-item').value));
+  if (!it) return;
+  let total = 0;
+  (it.lots||[]).forEach(l => {
+    const inp = document.getElementById('lot-qty-' + l._idx);
+    if (inp) total += parseFloat(inp.value) || 0;
+  });
+  const el = document.getElementById('out-lot-total');
+  if (el) el.textContent = Number(total).toLocaleString('en-US') + ' ' + (unit||it.unit||'');
 }
 
 function updateOutReasonVisibility() {
@@ -606,44 +805,109 @@ function updateOutReasonVisibility() {
 async function submitOut() {
   const source = document.getElementById('out-source').value;
   const itemId = parseInt(document.getElementById('out-item').value);
-  const qty    = parseFloat(document.getElementById('out-qty').value);
   const note   = document.getElementById('out-note').value.trim();
   const reason = document.getElementById('out-reason').value.trim();
   const status = document.getElementById('outStatus');
+  const btn    = document.getElementById('outBtn');
 
-  if (!itemId)          { showOutError('Материал сонгоно уу'); return; }
-  if (!qty || qty <= 0) { showOutError('Тоо хэмжээ оруулна уу'); return; }
+  if (!itemId) { showOutError('Материал сонгоно уу'); return; }
 
   const it = catalogItems.find(x => x.id === itemId);
-  if (it && qty > it.qty) { showOutError(`Нөөц хүрэлцэхгүй. Одоогийн: ${it.qty} ${it.unit||''}`); return; }
+  const hasLots = Array.isArray(it?.lots) && it.lots.length > 0;
 
   if (source === 'MANUAL_ADJUSTMENT' && !reason) { showOutError('Шалтгаан оруулна уу'); return; }
   if (source === 'TRANSFER' && !reason) { showOutError('Хаашаа шилжүүлж байгаа тайлбар оруулна уу'); return; }
 
-  const body = { item_id: itemId, source, qty, note, direction: 'out' };
-  if (reason) body.reason = reason;
+  if (hasLots) {
+    // ── Сонгосон хийцлэл бүрт тус тусад нь API дуудна ──
+    const selected = [];
+    for (const lot of it.lots) {
+      const chk = document.getElementById('lot-chk-' + lot._idx);
+      const inp = document.getElementById('lot-qty-' + lot._idx);
+      if (!chk?.checked) continue;
+      const q = parseFloat(inp?.value);
+      if (!q || q <= 0) { showOutError(`"${lot.name}"-н тоо хэмжээ оруулна уу`); return; }
+      if (q > lot.qty)  { showOutError(`"${lot.name}": нөөц хүрэлцэхгүй (${q} > ${lot.qty})`); return; }
+      selected.push({ lot, qty: q });
+    }
+    if (!selected.length) { showOutError('Хийцлэл сонгоод тоо хэмжээ оруулна уу'); return; }
 
-  const btn = document.getElementById('outBtn');
-  btn.disabled = true; btn.textContent = '⏳ Бүртгэж байна...';
+    btn.disabled = true; btn.textContent = '⏳ Бүртгэж байна...';
 
-  const r = await api('/inventory/log', { method: 'POST', body: JSON.stringify(body) });
+    // Сонгосон хийцлэл бүрт дарааллан API дуудна
+    let lastResult = null;
+    const lotNote = selected.map(s => `${s.lot.name}: ${s.qty}`).join(', ');
+    for (const { lot, qty } of selected) {
+      const body = {
+        item_id: itemId, source, qty, direction: 'out',
+        note: note || lotNote,
+        lot_name: lot.name
+      };
+      if (reason) body.reason = reason;
+      lastResult = await api('/inventory/log', { method: 'POST', body: JSON.stringify(body) });
+      if (!lastResult.ok) { showOutError(lastResult.error || 'Алдаа гарлаа'); btn.disabled = false; btn.textContent = '📤 Гаралт бүртгэх'; return; }
+    }
 
-  btn.disabled = false; btn.textContent = '📤 Гаралт бүртгэх';
+    const totalQty = selected.reduce((s, x) => s + x.qty, 0);
+    const fmt = n => Number(n).toLocaleString('en-US');
+    const logHtml = selected.map(s => `
+      <div style="display:flex;justify-content:space-between;padding:5px 12px;
+        border-top:1px solid #a7f3d0;font-size:11.5px">
+        <span style="color:#065f46">✓ ${s.lot.name}</span>
+        <span style="font-weight:700;color:#dc2626">−${fmt(s.qty)} ${it.unit||''}</span>
+      </div>`).join('');
 
-  if (r.ok) {
     status.className = 'intake-status ok';
-    status.innerHTML = `✅ Амжилттай · <b>${it ? it.name : ''}</b> −${qty} ${it ? (it.unit||'') : ''} · Шинэ үлдэгдэл: <b>${r.new_qty}</b>`;
-    document.getElementById('out-item').value = '';
-    document.getElementById('out-qty').value = '';
-    document.getElementById('out-unit').value = '';
-    document.getElementById('out-note').value = '';
-    document.getElementById('out-reason').value = '';
-    document.getElementById('out-stock-info').style.display = 'none';
-    catalogItems = await api('/inventory') || [];
-    loadOutForm(); // refresh item list with updated qty
+    status.innerHTML = `
+      <div style="font-weight:700;margin-bottom:5px">
+        ✅ ${it.name} — <span style="color:#dc2626">−${fmt(totalQty)} ${it.unit||''}</span> гарсан
+      </div>
+      <div style="font-size:11.5px;margin-bottom:5px">
+        Шинэ үлдэгдэл: <b>${lastResult.new_qty}</b> ${it.unit||''}
+      </div>
+      <div style="background:#fff;border-radius:6px;border:1px solid #a7f3d0;overflow:hidden">
+        <div style="padding:5px 12px;font-size:10px;font-weight:700;color:#065f46;
+          text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #a7f3d0">
+          Хасагдсан хийцлэл
+        </div>
+        ${logHtml}
+      </div>`;
+
+    btn.disabled = false; btn.textContent = '📤 Гаралт бүртгэх';
+
   } else {
-    showOutError(r.error || 'Алдаа гарлаа');
+    // ── Хийцлэлгүй бараа — энгийн гаралт ──
+    const qty = parseFloat(document.getElementById('out-qty').value);
+    if (!qty || qty <= 0) { showOutError('Тоо хэмжээ оруулна уу'); return; }
+    if (it && qty > it.qty) { showOutError(`Нөөц хүрэлцэхгүй. Одоогийн: ${it.qty} ${it.unit||''}`); return; }
+
+    const body = { item_id: itemId, source, qty, note, direction: 'out' };
+    if (reason) body.reason = reason;
+
+    btn.disabled = true; btn.textContent = '⏳ Бүртгэж байна...';
+    const r = await api('/inventory/log', { method: 'POST', body: JSON.stringify(body) });
+    btn.disabled = false; btn.textContent = '📤 Гаралт бүртгэх';
+
+    if (r.ok) {
+      status.className = 'intake-status ok';
+      status.innerHTML = `✅ Амжилттай · <b>${it?.name||''}</b> −${qty} ${it?.unit||''} · Шинэ үлдэгдэл: <b>${r.new_qty}</b>`;
+    } else {
+      showOutError(r.error || 'Алдаа гарлаа'); return;
+    }
   }
+
+  // ── Форм цэвэрлэх ──
+  document.getElementById('out-item').value = '';
+  document.getElementById('out-qty').closest('.i-row2').style.display = '';
+  document.getElementById('out-qty').value = '';
+  document.getElementById('out-unit').value = '';
+  document.getElementById('out-note').value = '';
+  document.getElementById('out-reason').value = '';
+  document.getElementById('out-stock-info').style.display = 'none';
+  document.getElementById('out-breakdown').style.display = 'none';
+  catalogItems = await api('/inventory') || [];
+  window.catalogItems = catalogItems;
+  loadOutForm();
 }
 
 function showOutError(msg) {
@@ -651,9 +915,6 @@ function showOutError(msg) {
   status.className = 'intake-status err';
   status.textContent = '✗ ' + msg;
 }
-
-// Update showTab to load out form too
-const origShowTab = showTab;
 
 loadStock();
 </script>
