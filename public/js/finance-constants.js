@@ -19,6 +19,7 @@ const FINANCE_CODES = {
   TRN:      { type: 'expense',    color: 'blue',   label: 'Тээвэр/логистик' },
   TRIP:     { type: 'expense',    color: 'blue',   label: 'Томилолт (тийз, орчуулагч, өдрийн зардал)' },
   EQP:      { type: 'expense',    color: 'blue',   label: 'Тоног төхөөрөмж' },
+  ASSET:    { type: 'expense',    color: 'blue',   label: 'Компани эд хөрөнгө' },
   TAX:      { type: 'expense',    color: 'blue',   label: 'Татвар/даатгал' },
   OFF:      { type: 'expense',    color: 'blue',   label: 'Оффисын зардал' },
   UTIL:     { type: 'expense',    color: 'blue',   label: 'Тогтмол төлбөр' },
@@ -33,14 +34,14 @@ const FINANCE_CODES = {
 // Grouped for review screens
 const CODE_GROUPS = [
   { label: '\u{1F7E2} Орлого',  codes: ['SALE','REC','ADV','INV'], cls: 'income' },
-  { label: '\u{1F535} Зарлага', codes: ['IMP','SAL','TRN','TRIP','EQP','TAX','OFF','UTIL','MAT','MAR','SUB','FEE'], cls: 'expense' },
+  { label: '\u{1F535} Зарлага', codes: ['IMP','SAL','TRN','TRIP','EQP','ASSET','TAX','OFF','UTIL','MAT','MAR','SUB','FEE'], cls: 'expense' },
   { label: '\u{1F504} Зээл',   codes: ['LOAN_IN','LOAN_OUT'], cls: 'loan' },
   { label: '⚪ Тусгай',     codes: ['TRF','OTHER'], cls: 'gray' },
 ];
 
 // Derived arrays
 const INCOME_CODES  = ['SALE','REC','ADV','INV'];
-const EXPENSE_CODES = ['IMP','SAL','TRN','TRIP','EQP','TAX','OFF','UTIL','MAT','MAR','SUB','FEE','OTHER'];
+const EXPENSE_CODES = ['IMP','SAL','TRN','TRIP','EQP','ASSET','TAX','OFF','UTIL','MAT','MAR','SUB','FEE','OTHER'];
 const LOAN_CODES    = ['LOAN_IN','LOAN_OUT'];
 const SALES_CODES   = ['SALE','REC','ADV'];
 const ALL_CODES     = Object.keys(FINANCE_CODES);
@@ -55,6 +56,7 @@ const CAT_LABELS = {
   TRN:      '\u{1F69A} Тээвэр',
   TRIP:     '✈️ Томилолт',
   EQP:      '\u{1F527} Тоног төхөөрөмж',
+  ASSET:    '\u{1F3E2} Компани эд хөрөнгө',
   TAX:      '\u{1F3DB} Татвар',
   OFF:      '\u{1F5C2} Оффис',
   UTIL:     '\u{1F4A1} Тогтмол',
@@ -79,6 +81,7 @@ const CODE_EXAMPLES = {
   TRN:      'TRN: Эрээн УБ тээвэр',
   TRIP:     'TRIP: Хятад томилолт',
   EQP:      'EQP: CNC засвар',
+  ASSET:    'ASSET: офисын тавилга',
   TAX:      'TAX: НДШ',
   OFF:      'OFF: принтер цаас',
   UTIL:     'UTIL: цахилгаан',
