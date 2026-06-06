@@ -100,6 +100,53 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
     }
   }
 
+  // 2c. Fix duplicated "Аюурзана түр зээл" (2026-05-21).
+  //     1,000,000₮ зээл OUT (TDB→Касс) хоёр удаа бичигдсэн — нэг нь буруугаар
+  //     орлого (credit) болж TDB тэнцлийг эвдсэн. Зөв (debit) нэгийг үлдээж,
+  //     үлдсэнийг архивлана. Идэмпотент: 1-ээс олон идэвхтэй байж л ажиллана.
+  {
+    const ayur = txs.filter(t => !t.archived
+      && t.date === '2026-05-21'
+      && t.amount === 1000000
+      && /аюурзана/i.test((t.description || '') + ' ' + (t.raw_memo || '')));
+    if (ayur.length > 1) {
+      const keep = ayur.find(t => t.direction === 'debit') || ayur[0];
+      for (const t of ayur) {
+        if (t === keep) continue;
+        t.archived = true;
+        t.archived_at = new Date().toISOString();
+        t.archived_by = 'system-migration';
+        t.archive_reason = 'Давхардсан Аюурзана зээл (буруу чиглэл/давхардал) — автомат засвар';
+        changed++;
+      }
+      if (keep.direction !== 'debit') { keep.direction = 'debit'; changed++; }
+      if (keep.code !== 'LOAN_OUT') { keep.code = 'LOAN_OUT'; keep.needs_review = false; changed++; }
+    }
+  }
+
+  // 2d. Direction integrity (ерөнхий хамгаалалт): balance_after нь банкны үнэн эх
+  //     сурвалж. Гүйлгээний чиглэл балансын өөрчлөлттэй зөрвөл засна. ЗӨВХӨН баланс
+  //     тодорхой нотолсон үед эргүүлнэ (таамаглахгүй) → аюулгүй. Дараагийн rehash (3)
+  //     зөв id-г тооцож, үүссэн давхардлыг архивлана. Энэ нь буруу чиглэлтэй
+  //     гүйлгээ дахин үүсэхээс сэргийлнэ.
+  {
+    const accts = [...new Set(txs.filter(t => !t.archived).map(t => t.account))];
+    for (const acc of accts) {
+      const chain = txs.filter(t => t.account === acc && !t.archived).sort((a, b) =>
+        a.date !== b.date ? a.date.localeCompare(b.date)
+        : (a.time || '') !== (b.time || '') ? (a.time || '').localeCompare(b.time || '')
+        : (a.seq || 0) - (b.seq || 0));
+      for (let i = 1; i < chain.length; i++) {
+        const prev = chain[i - 1], curr = chain[i];
+        if (prev.balance_after == null || curr.balance_after == null) continue;
+        const isCredit = Math.abs((prev.balance_after + curr.amount) - curr.balance_after) < 0.01;
+        const isDebit  = Math.abs((prev.balance_after - curr.amount) - curr.balance_after) < 0.01;
+        if (isCredit && !isDebit && curr.direction !== 'credit') { curr.direction = 'credit'; changed++; }
+        else if (isDebit && !isCredit && curr.direction !== 'debit') { curr.direction = 'debit'; changed++; }
+      }
+    }
+  }
+
   // 3. Rehash txIds and remove duplicates caused by time format change
   function computeId(t) {
     const key = `${t.account}_${t.date}_${t.time}_${t.direction}_${t.amount}_${t.balance_after}`;
