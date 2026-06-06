@@ -778,6 +778,7 @@ function renderTxRow(t) {
       ${t.counterparty ? `<span class="meta-item">#${t.counterparty}</span>` : ''}
       ${t.balance_after != null ? `<span class="meta-item" style="margin-left:auto">Үлд: ${fmt(t.balance_after)}₮</span>` : ''}
     </div>
+    ${user.role === 'admin' ? `<div style="margin-top:9px;text-align:right"><button onclick="archiveTx('${t.id}')" style="font-size:11px;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:7px;padding:5px 11px;font-weight:700;cursor:pointer">🗑 Архивлах</button></div>` : ''}
   </div>`;
 }
 
@@ -824,6 +825,32 @@ async function setCode(id, code) {
     const badge = document.getElementById('reviewBadge');
     if (reviewCount > 0) { badge.textContent = reviewCount; badge.style.display = ''; }
     else badge.style.display = 'none';
+  }
+}
+
+// ── Архивлах (давхардсан / буруу оруулсан гүйлгээ) ──────────
+async function archiveTx(id) {
+  if (user.role !== 'admin') { alert('Зөвхөн admin архивлах боломжтой'); return; }
+  const t = transactions.find(x => x.id === id);
+  if (!t) return;
+  const sign = (t.direction === 'credit') ? '+' : '−';
+  const reason = prompt(
+    `Энэ гүйлгээг архивлах уу? (давхардсан / буруу оруулга)\n\n` +
+    `${t.date}${t.time ? ' ' + t.time : ''} · ${t.description || '—'}\n` +
+    `${sign}${fmt(t.amount)}₮ · ${(t.account_label || '')}\n` +
+    `Үлдэгдэл: ${t.balance_after != null ? fmt(t.balance_after) + '₮' : '—'}\n\n` +
+    `⚠️ Архивласан гүйлгээ тэнцэл болон дүнгээс хасагдана.\nШалтгаан:`,
+    'Давхардсан гүйлгээ'
+  );
+  if (reason === null) return;
+  const r = await api('/finance/transactions/' + id + '/archive', { method: 'PUT', body: JSON.stringify({ reason }) });
+  if (r && r.ok) {
+    const idx = transactions.findIndex(x => x.id === id);
+    if (idx >= 0) transactions.splice(idx, 1);
+    renderTx();
+    alert('✅ Архивлагдлаа. Санхүү хуудас руу буцаж тэнцэл нийлсэнийг шалгаарай.');
+  } else {
+    alert('Алдаа: ' + ((r && r.error) || 'Тодорхойгүй'));
   }
 }
 
