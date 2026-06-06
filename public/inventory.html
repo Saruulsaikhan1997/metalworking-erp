@@ -213,6 +213,50 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 .intake-status { margin-top: 12px; padding: 10px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; display: none; }
 .intake-status.ok { background: #d1fae5; color: #065f46; display: block; }
 .intake-status.err { background: #fee2e2; color: #991b1b; display: block; }
+
+.dim-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.branch-cards-wrap {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 480px) {
+  .id-bar { padding: 14px 14px; border-radius: 0 0 16px 16px; }
+  .id-title { font-size: 15px; }
+  .id-sub { font-size: 10px; }
+  .section { padding: 14px 12px 0; }
+  .section-label { font-size: 10px; }
+  .qa-card { min-height: 76px; padding: 11px 10px; border-radius: 12px; }
+  .qa-icon { font-size: 22px; }
+  .qa-title { font-size: 12px; }
+  .qa-sub { font-size: 9.5px; }
+  .tab-pill { padding: 7px 11px; font-size: 11.5px; border-radius: 18px; }
+  .item-card { padding: 10px 12px; border-radius: 10px; }
+  .item-name { font-size: 12.5px; }
+  .item-qty { font-size: 14px; }
+  .item-meta { font-size: 10px; }
+  .intake-card { padding: 14px 14px; border-radius: 12px; }
+  .intake-title { font-size: 14px; }
+  .intake-sub { font-size: 10.5px; margin-bottom: 12px; }
+  .ifield input, .ifield select { padding: 10px 11px; font-size: 15px; border-radius: 7px; }
+  .ifield label { font-size: 10px; }
+  .intake-btn { font-size: 13px; padding: 12px; border-radius: 10px; }
+  .dim-grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .dim-grid-4 input { padding: 8px 9px !important; font-size: 13px !important; }
+  .branch-cards-wrap > div { min-width: 100px !important; padding: 10px !important; border-radius: 10px !important; }
+  .branch-cards-wrap > div > div:first-child { font-size: 11px !important; }
+  .sub-row { padding: 8px 12px; }
+  .sub-name { font-size: 11.5px; }
+  .sub-spec { font-size: 9.5px; }
+  .sub-qty { font-size: 12px; }
+  .stock-summary { font-size: 12px; padding: 9px 12px; }
+}
 </style>
 </head>
 <body>
@@ -267,7 +311,7 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
       📦 Нийт төрөл: <b id="summary-count">0</b> &nbsp;·&nbsp; Нийт үлдэгдэл: <b id="summary-qty">0</b> нэгж
     </div>
     <!-- ── Салбар складууд ── -->
-    <div id="branch-cards" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"></div>
+    <div id="branch-cards" class="branch-cards-wrap"></div>
     <!-- ── Категорийн шүүлтүүр ── -->
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
       <button id="cat-all"         class="tab-pill active" onclick="setStockCat('')">Бүгд</button>
@@ -434,7 +478,7 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
             <div style="padding:6px 12px;background:#f0f9ff;font-size:10px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:.5px">
               Хэмжээсийн тооцоо (Ган профиль)
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;padding:10px 12px">
+            <div class="dim-grid-4" style="padding:10px 12px">
               <div>
                 <div style="font-size:10px;color:#6b7280;margin-bottom:3px">Өргөн (мм)</div>
                 <input type="number" id="calc-w" placeholder="0" step="any" oninput="calcDimWeight()"
@@ -1048,6 +1092,8 @@ function onOutItemChange() {
       showOutLotSelector(it);
     } else {
       document.getElementById('out-breakdown').style.display = 'none';
+      const dims = parseDims(it.name, it.spec || '');
+      if (dims) autofillCalc(dims);
     }
   } else {
     document.getElementById('out-stock-info').style.display = 'none';
@@ -1121,6 +1167,17 @@ function toggleLotInput(idx) {
     wrap.style.display = 'block';
     row.style.background = '#f0f9ff';
     inp.focus();
+    // Spec задлан тооцоолуурт авто оруулах
+    let foundLot = null;
+    for (const item of (window.catalogItems || [])) {
+      if (!Array.isArray(item.lots)) continue;
+      const lot = item.lots.find(l => l._idx === idx);
+      if (lot) { foundLot = lot; break; }
+    }
+    if (foundLot) {
+      const dims = parseDims(foundLot.name, foundLot.spec);
+      if (dims) autofillCalc(dims);
+    }
   } else {
     wrap.style.display = 'none';
     row.style.background = '';
@@ -1267,6 +1324,34 @@ function showOutError(msg) {
   const status = document.getElementById('outStatus');
   status.className = 'intake-status err';
   status.textContent = '✗ ' + msg;
+}
+
+// ── Хэмжээс задлан авто дүүргэх ──
+function parseDims(name, spec) {
+  const str = (name || '') + ' ' + (spec || '');
+  const d = {};
+  const diam = str.match(/[Ø∅](\d+)\s*м?м/i);
+  if (diam) { d.a = +diam[1]; d.b = +diam[1]; }
+  const rect = str.match(/(\d+)\s*[×xх]\s*(\d+)/);
+  if (rect && !diam) { d.a = +rect[1]; d.b = +rect[2]; }
+  const len = str.match(/L\s*=\s*([\d.]+)\s*(мм|м)?/i);
+  if (len) d.l = (len[2] === 'мм') ? +len[1] : +len[1] * 1000;
+  const thick = str.match(/t\s*=\s*([\d.]+)\s*мм/i);
+  if (thick) d.t = +thick[1];
+  return (d.a && d.l && d.t) ? d : null;
+}
+
+function autofillCalc(dims) {
+  const map = { a: 'calc-w', b: 'calc-h', l: 'calc-l', t: 'calc-t' };
+  ['a','b','l','t'].forEach(k => {
+    const el = document.getElementById(map[k]);
+    if (!el || !dims[k]) return;
+    el.value = dims[k];
+    el.style.transition = 'border-color .3s';
+    el.style.borderColor = '#0284c7';
+    setTimeout(() => { el.style.borderColor = ''; }, 1800);
+  });
+  calcDimWeight();
 }
 
 // ── Ширхэгийн тооцоолуур ──
