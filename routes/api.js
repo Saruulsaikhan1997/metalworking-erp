@@ -332,18 +332,24 @@ router.post('/finance/import/preview', adminOnly, upload.single('file'), async (
 
     const parsed = await parsePDF(req.file.buffer);
     const db = load();
-    const existingTxs = new Map((db.transactions || []).map(t => [t.id, t]));
+    const allTxs = db.transactions || [];
+    // Direction-independent "soft key": catches the same bank transaction re-imported
+    // with a flipped/mis-parsed direction (balance_after already encodes direction).
+    const softKey = (t) => `${t.account}|${t.date}|${t.amount}|${t.balance_after}`;
+    const existingIds = new Set(allTxs.map(t => t.id));        // incl. archived → no resurrection
+    const existingSoftKeys = new Set(allTxs.map(softKey));     // incl. archived
+    const activeById = new Map(allTxs.filter(t => !t.archived).map(t => [t.id, t])); // for saved code
 
     // Enrich each transaction with metadata for review
     const enriched = parsed.transactions.map(tx => {
       const id = txId(tx);
       const detected = detectCategory(tx);
-      const existingTx = existingTxs.get(id);    // already in DB (carries saved code)
+      const codeSrc = activeById.get(id);        // surface saved code for active exact matches
       return {
         ...tx,
         _temp_id:       id,                      // for review screen
-        _is_duplicate:  !!existingTx,            // already in DB
-        _existing_code: existingTx ? (existingTx.code || null) : null, // code assigned in an earlier import/review
+        _is_duplicate:  existingIds.has(id) || existingSoftKeys.has(softKey(tx)), // exact OR soft dup
+        _existing_code: codeSrc ? (codeSrc.code || null) : null, // code assigned in an earlier import/review
         _auto_code:     detected.code,           // parser's guess
         _needs_review:  detected.needs_review,
         _is_foreign:    isForeignTx(tx.description),
@@ -397,7 +403,9 @@ router.post('/finance/import/confirm', adminOnly, (req, res) => {
 
   const db = load();
   if (!db.transactions) db.transactions = [];
+  const softKey = (t) => `${t.account}|${t.date}|${t.amount}|${t.balance_after}`;
   const existing = new Set(db.transactions.map(t => t.id));
+  const existingSoft = new Set(db.transactions.map(softKey)); // direction-independent dup guard
   const now = new Date().toISOString();
 
   let added = 0, skipped = 0, rejected = 0;
@@ -406,7 +414,7 @@ router.post('/finance/import/confirm', adminOnly, (req, res) => {
     if (tx._rejected) { rejected++; continue; }
 
     const id = tx._temp_id || txId(tx);
-    if (existing.has(id)) { skipped++; continue; }
+    if (existing.has(id) || existingSoft.has(softKey(tx))) { skipped++; continue; }
 
     // Clean up temp fields and persist
     const code = tx.code || tx._auto_code || null;
@@ -436,6 +444,7 @@ router.post('/finance/import/confirm', adminOnly, (req, res) => {
     };
     db.transactions.push(record);
     existing.add(id);
+    existingSoft.add(softKey(record));
     added++;
   }
 
