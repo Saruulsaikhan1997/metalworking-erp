@@ -388,12 +388,12 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
       <div class="ifield">
         <label>Байршил</label>
         <select id="in-location">
-          <option value="central">🏢 Төв агуулах</option>
+          <option value="central">🏢 Төв склад</option>
           <option value="factory">🏭 Үйлдвэр</option>
-          <option value="plastic-center">🏪 Plastic Center</option>
-          <option value="warehouse-4">📦 Склад 4</option>
-          <option value="warehouse-5">📦 Склад 5</option>
-          <option value="exhibition">🖼 Үзүүлэнд</option>
+          <option value="plastic-center">🏪 Склад 1</option>
+          <option value="warehouse-4">📦 Склад 2</option>
+          <option value="warehouse-5">📦 Склад 3</option>
+          <option value="exhibition">🖼 Үзүүлэн</option>
         </select>
       </div>
 
@@ -433,12 +433,12 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
         <label>Очих байршил <span class="req">*</span></label>
         <select id="out-destination">
           <option value="customer">🛒 Хэрэглэгч (борлуулалт)</option>
-          <option value="central">🏢 Төв агуулах</option>
+          <option value="central">🏢 Төв склад</option>
           <option value="factory">🏭 Үйлдвэр</option>
-          <option value="plastic-center">🏪 Plastic Center</option>
-          <option value="warehouse-4">📦 Склад 4</option>
-          <option value="warehouse-5">📦 Склад 5</option>
-          <option value="exhibition">🖼 Үзүүлэнд</option>
+          <option value="plastic-center">🏪 Склад 1</option>
+          <option value="warehouse-4">📦 Склад 2</option>
+          <option value="warehouse-5">📦 Склад 3</option>
+          <option value="exhibition">🖼 Үзүүлэн</option>
         </select>
       </div>
 
@@ -888,7 +888,7 @@ function showIntakeError(msg) {
 }
 
 const CAT_LABEL = { raw: 'Түүхий', wip: 'Хагас', finished: 'Бэлэн', maintenance: 'Засварын барaa', assets: 'Эд хогшил' };
-const LOC_LABEL  = { central: '🏢 Төв агуулах', factory: '🏭 Үйлдвэр', 'plastic-center': '🏪 Plastic Center', 'warehouse-4': '📦 Склад 4', 'warehouse-5': '📦 Склад 5', exhibition: '🖼 Үзүүлэнд' };
+const LOC_LABEL  = { central: '🏢 Төв склад', factory: '🏭 Үйлдвэр', 'plastic-center': '🏪 Склад 1', 'warehouse-4': '📦 Склад 2', 'warehouse-5': '📦 Склад 3', exhibition: '🖼 Үзүүлэн' };
 
 let stockCatFilter = '';
 let stockLocFilter = '';
