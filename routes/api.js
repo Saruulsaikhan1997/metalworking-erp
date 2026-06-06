@@ -332,20 +332,22 @@ router.post('/finance/import/preview', adminOnly, upload.single('file'), async (
 
     const parsed = await parsePDF(req.file.buffer);
     const db = load();
-    const existing = new Set((db.transactions || []).map(t => t.id));
+    const existingTxs = new Map((db.transactions || []).map(t => [t.id, t]));
 
     // Enrich each transaction with metadata for review
     const enriched = parsed.transactions.map(tx => {
       const id = txId(tx);
       const detected = detectCategory(tx);
+      const existingTx = existingTxs.get(id);    // already in DB (carries saved code)
       return {
         ...tx,
-        _temp_id:      id,                       // for review screen
-        _is_duplicate: existing.has(id),         // already in DB
-        _auto_code:    detected.code,            // parser's guess
-        _needs_review: detected.needs_review,
-        _is_foreign:   isForeignTx(tx.description),
-        _raw_memo:     tx.description,
+        _temp_id:       id,                      // for review screen
+        _is_duplicate:  !!existingTx,            // already in DB
+        _existing_code: existingTx ? (existingTx.code || null) : null, // code assigned in an earlier import/review
+        _auto_code:     detected.code,           // parser's guess
+        _needs_review:  detected.needs_review,
+        _is_foreign:    isForeignTx(tx.description),
+        _raw_memo:      tx.description,
       };
     });
 

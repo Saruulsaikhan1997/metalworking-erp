@@ -264,13 +264,18 @@ async function load() {
       box.style.display = 'block';
     } else {
       const totalGaps = recon.accounts.reduce((s,a) => s + a.gaps.length, 0);
-      const gapDetails = recon.accounts.filter(a => !a.ok).map(a =>
-        `${a.label}: ${a.gaps.length} зөрүү`
-      ).join(' · ');
+      const fmtSigned = (n) => (n > 0 ? '+' : '−') + Math.round(Math.abs(n)).toLocaleString('en-US');
+      const gapDetails = recon.accounts.filter(a => !a.ok).map(a => {
+        const rows = a.gaps.map(g => {
+          const desc = (g.description || '—').replace(/^EB\s*-?\s*/i, '').trim().slice(0, 38);
+          return `&nbsp;&nbsp;• ${g.date} · ${desc} · зөрүү <b>${fmtSigned(g.diff)}₮</b>`;
+        }).join('<br>');
+        return `<u>${a.label}</u> — ${a.gaps.length} зөрүү:<br>${rows}`;
+      }).join('<br>');
       box.style.background = '#fee2e2';
       box.style.color = '#991b1b';
       box.style.border = '1px solid #fca5a5';
-      box.innerHTML = `🔴 <b>Тэнцэл зөрсөн</b> · ${totalGaps} зөрүү илэрсэн<br><span style="font-weight:400;font-size:10.5px;opacity:0.9">${gapDetails}</span>`;
+      box.innerHTML = `🔴 <b>Тэнцэл зөрсөн</b> · ${totalGaps} зөрүү илэрсэн<br><span style="font-weight:400;font-size:10.5px;opacity:0.92;line-height:1.7">${gapDetails}</span>`;
       box.style.display = 'block';
     }
   }
