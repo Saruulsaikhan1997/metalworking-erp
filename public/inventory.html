@@ -214,6 +214,31 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 .intake-status.ok { background: #d1fae5; color: #065f46; display: block; }
 .intake-status.err { background: #fee2e2; color: #991b1b; display: block; }
 
+/* ── Категорийн accordion ── */
+.cat-accordion {
+  margin-bottom: 8px; border-radius: 12px; overflow: hidden;
+  border: 1px solid var(--gray-200);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.cat-acc-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 16px; background: #fff; cursor: pointer;
+  user-select: none;
+}
+.cat-acc-header:active { background: var(--gray-50); }
+.cat-acc-icon { font-size: 18px; line-height: 1; }
+.cat-acc-name { flex: 1; font-size: 14px; font-weight: 700; color: var(--gray-900); }
+.cat-acc-count { font-size: 11px; color: var(--gray-400); font-weight: 500; white-space: nowrap; }
+.cat-acc-caret {
+  font-size: 11px; color: var(--gray-400);
+  transition: transform .18s ease; margin-left: 4px;
+}
+.cat-accordion.open .cat-acc-header { border-bottom: 1px solid var(--gray-100); }
+.cat-accordion.open .cat-acc-caret { transform: rotate(90deg); }
+.cat-acc-body { background: var(--gray-50); padding: 6px 8px; }
+.cat-acc-body .stock-item { margin-bottom: 6px; }
+.cat-acc-body .stock-item:last-child { margin-bottom: 0; }
+
 .dim-grid-4 {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -312,14 +337,6 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
     </div>
     <!-- ── Салбар складууд ── -->
     <div id="branch-cards" class="branch-cards-wrap"></div>
-    <!-- ── Категорийн шүүлтүүр ── -->
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
-      <button id="cat-all"         class="tab-pill active" onclick="setStockCat('')">Бүгд</button>
-      <button id="cat-raw"         class="tab-pill" onclick="setStockCat('raw')">🪨 Түүхий</button>
-      <button id="cat-finished"    class="tab-pill" onclick="setStockCat('finished')">✅ Бэлэн</button>
-      <button id="cat-maintenance" class="tab-pill" onclick="setStockCat('maintenance')">🔧 Засварын барaa</button>
-      <button id="cat-assets"      class="tab-pill" onclick="setStockCat('assets')">🪑 Эд хогшил</button>
-    </div>
     <div id="stockList"></div>
   </div>
 
@@ -967,28 +984,26 @@ async function loadStock() {
   if (stockCatFilter) visibleItems = visibleItems.filter(i => (i.category || 'raw') === stockCatFilter);
 
   if (!visibleItems.length) {
-    const msg = [LOC_LABEL[stockLocFilter], CAT_LABEL[stockCatFilter]].filter(Boolean).join(' · ');
-    el.innerHTML = `<div class="empty">${msg || 'Энэ'}-д бараа байхгүй байна</div>`;
+    const msg = LOC_LABEL[stockLocFilter] || '';
+    el.innerHTML = `<div class="empty">${msg || 'Энэ байршил'}-д бараа байхгүй байна</div>`;
     return;
   }
 
-  // ── Жагсаалт render: category-оор бүлэглэсэн хийцлэлтэй ──
-  el.innerHTML = visibleItems.map(i => {
+  // ── Item card render (хийцлэлтэй) ──
+  function renderItemCard(i) {
     const isLow = i.threshold > 0 && i.qty <= i.threshold;
     const lots = Array.isArray(i.lots) ? i.lots : [];
     const hasLots = lots.length > 0;
-
     const grouped = {};
     lots.forEach(l => {
-      const cat = l.category_code || l.malagai_code || (l.spec ? l.spec.split(',')[0] : 'Бусад');
-      if (!grouped[cat]) grouped[cat] = [];
-      grouped[cat].push(l);
+      const c = l.category_code || l.malagai_code || (l.spec ? l.spec.split(',')[0] : 'Бусад');
+      if (!grouped[c]) grouped[c] = [];
+      grouped[c].push(l);
     });
-
     const sub = hasLots ? `<div class="item-sub" id="sub-${i.id}" style="display:none">
-      ${Object.entries(grouped).map(([cat, catLots]) => `
-        <div class="sub-cat-header">${cat}</div>
-        ${catLots.map(l => `<div class="sub-row">
+      ${Object.entries(grouped).map(([c, cLots]) => `
+        <div class="sub-cat-header">${c}</div>
+        ${cLots.map(l => `<div class="sub-row">
           <div>
             <div class="sub-name">${l.name || '—'}</div>
             ${l.spec ? `<div class="sub-spec">${l.spec}</div>` : ''}
@@ -1000,20 +1015,55 @@ async function loadStock() {
         </div>`).join('')}
       `).join('')}
     </div>` : '';
-
     return `<div class="stock-item${hasLots ? ' expandable' : ''}" id="stock-${i.id}">
-    <div class="item-card${isLow ? ' low-stock' : ''}"${hasLots ? ` onclick="toggleStock(${i.id})"` : ''}>
-      <div class="item-info">
-        ${i.code ? `<span class="item-code">${i.code}</span>` : ''}
-        <div class="item-name">${i.name || '—'}<span class="cat-tag ${i.category || 'raw'}">${CAT_LABEL[i.category] || i.category || ''}</span></div>
-        <div class="item-meta">📍 ${i.location || 'central'}${i.status && i.status !== 'available' ? ' · ' + i.status : ''}</div>
-        ${isLow ? '<div class="low-stock-badge">⚠ Доод хязгаарт</div>' : ''}
+      <div class="item-card${isLow ? ' low-stock' : ''}"${hasLots ? ` onclick="toggleStock(${i.id})"` : ''}>
+        <div class="item-info">
+          ${i.code ? `<span class="item-code">${i.code}</span>` : ''}
+          <div class="item-name">${i.name || '—'}</div>
+          <div class="item-meta">📍 ${LOC_LABEL[i.location] || i.location || 'Төв склад'}${i.status && i.status !== 'available' ? ' · ' + i.status : ''}</div>
+          ${isLow ? '<div class="low-stock-badge">⚠ Доод хязгаарт</div>' : ''}
+        </div>
+        <div class="item-qty">${fmt(i.qty || 0)}<span class="item-unit">${i.unit || 'ш'}</span>${hasLots ? '<span class="expand-caret">▸</span>' : ''}</div>
       </div>
-      <div class="item-qty">${fmt(i.qty || 0)}<span class="item-unit">${i.unit || 'ш'}</span>${hasLots ? '<span class="expand-caret">▸</span>' : ''}</div>
-    </div>
-    ${sub}
-  </div>`;
+      ${sub}
+    </div>`;
+  }
+
+  // ── Категориор бүлэглэж accordion render ──
+  const CAT_ICON  = { raw: '🪨', finished: '✅', wip: '🔄', maintenance: '🔧', assets: '🪑' };
+  const CAT_ORDER = ['raw', 'wip', 'finished', 'maintenance', 'assets'];
+  const catGroups = {};
+  visibleItems.forEach(i => {
+    const c = i.category || 'raw';
+    if (!catGroups[c]) catGroups[c] = [];
+    catGroups[c].push(i);
+  });
+  // Бусад ангилал байвал нэмнэ
+  Object.keys(catGroups).forEach(c => { if (!CAT_ORDER.includes(c)) CAT_ORDER.push(c); });
+
+  el.innerHTML = CAT_ORDER.filter(c => catGroups[c]?.length).map(cat => {
+    const catItems = catGroups[cat];
+    return `<div class="cat-accordion" id="cat-acc-${cat}">
+      <div class="cat-acc-header" onclick="toggleCatAcc('${cat}')">
+        <span class="cat-acc-icon">${CAT_ICON[cat] || '📦'}</span>
+        <span class="cat-acc-name">${CAT_LABEL[cat] || cat}</span>
+        <span class="cat-acc-count">${catItems.length} бараа</span>
+        <span class="cat-acc-caret">▸</span>
+      </div>
+      <div class="cat-acc-body" id="cat-body-${cat}" style="display:none">
+        ${catItems.map(i => renderItemCard(i)).join('')}
+      </div>
+    </div>`;
   }).join('');
+}
+
+function toggleCatAcc(cat) {
+  const acc  = document.getElementById('cat-acc-' + cat);
+  const body = document.getElementById('cat-body-' + cat);
+  if (!acc || !body) return;
+  const isOpen = acc.classList.contains('open');
+  acc.classList.toggle('open', !isOpen);
+  body.style.display = isOpen ? 'none' : 'block';
 }
 
 function toggleStock(id) {
