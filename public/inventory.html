@@ -989,43 +989,61 @@ async function loadStock() {
     return;
   }
 
-  // ── Item card render (хийцлэлтэй) ──
+  // ── Item card render ──
   function renderItemCard(i) {
-    const isLow = i.threshold > 0 && i.qty <= i.threshold;
-    const lots = Array.isArray(i.lots) ? i.lots : [];
+    const isLow  = i.threshold > 0 && i.qty <= i.threshold;
+    const lots   = Array.isArray(i.lots) ? i.lots : [];
     const hasLots = lots.length > 0;
-    const grouped = {};
-    lots.forEach(l => {
-      const c = l.category_code || l.malagai_code || (l.spec ? l.spec.split(',')[0] : 'Бусад');
-      if (!grouped[c]) grouped[c] = [];
-      grouped[c].push(l);
-    });
-    const sub = hasLots ? `<div class="item-sub" id="sub-${i.id}" style="display:none">
-      ${Object.entries(grouped).map(([c, cLots]) => `
-        <div class="sub-cat-header">${c}</div>
-        ${cLots.map(l => `<div class="sub-row">
-          <div>
-            <div class="sub-name">${l.name || '—'}</div>
-            ${l.spec ? `<div class="sub-spec">${l.spec}</div>` : ''}
+
+    if (hasLots) {
+      const grouped = {};
+      lots.forEach(l => {
+        const c = l.category_code || l.malagai_code || (l.spec ? l.spec.split(',')[0] : 'Бусад');
+        if (!grouped[c]) grouped[c] = [];
+        grouped[c].push(l);
+      });
+      return `<div class="cat-accordion" id="stock-${i.id}">
+        <div class="cat-acc-header" onclick="toggleStock(${i.id})" style="padding:12px 14px">
+          <div style="flex:1;min-width:0">
+            ${i.code ? `<div style="font-family:monospace;font-size:10px;font-weight:800;color:var(--gray-400);margin-bottom:2px">${i.code}</div>` : ''}
+            <div class="item-name" style="font-size:13px">${i.name || '—'}</div>
+            <div class="item-meta" style="margin-top:2px">📍 ${LOC_LABEL[i.location] || i.location || 'Төв склад'}</div>
+            ${isLow ? '<div class="low-stock-badge">⚠ Доод хязгаарт</div>' : ''}
           </div>
-          <div style="text-align:right">
-            <div style="font-size:10px;color:var(--gray-400)">Үлдэгдэл</div>
-            <div class="sub-qty">${fmt(l.qty)}<small>${l.unit || i.unit || ''}</small></div>
+          <div style="text-align:right;flex-shrink:0;margin-right:6px">
+            <div class="item-qty" style="font-size:15px">${fmt(i.qty || 0)}<span class="item-unit">${i.unit || 'ш'}</span></div>
+            <div style="font-size:10px;color:var(--gray-400);margin-top:2px">${lots.length} хийцлэл</div>
           </div>
-        </div>`).join('')}
-      `).join('')}
-    </div>` : '';
-    return `<div class="stock-item${hasLots ? ' expandable' : ''}" id="stock-${i.id}">
-      <div class="item-card${isLow ? ' low-stock' : ''}"${hasLots ? ` onclick="toggleStock(${i.id})"` : ''}>
+          <span class="cat-acc-caret">▸</span>
+        </div>
+        <div class="cat-acc-body" id="sub-${i.id}" style="display:none;padding:4px 8px">
+          ${Object.entries(grouped).map(([c, cLots]) => `
+            <div class="sub-cat-header">${c}</div>
+            ${cLots.map(l => `<div class="sub-row">
+              <div>
+                <div class="sub-name">${l.name || '—'}</div>
+                ${l.spec ? `<div class="sub-spec">${l.spec}</div>` : ''}
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:10px;color:var(--gray-400)">Үлдэгдэл</div>
+                <div class="sub-qty">${fmt(l.qty)}<small>${l.unit || i.unit || ''}</small></div>
+              </div>
+            </div>`).join('')}
+          `).join('')}
+        </div>
+      </div>`;
+    }
+
+    return `<div class="stock-item" id="stock-${i.id}">
+      <div class="item-card${isLow ? ' low-stock' : ''}">
         <div class="item-info">
           ${i.code ? `<span class="item-code">${i.code}</span>` : ''}
           <div class="item-name">${i.name || '—'}</div>
-          <div class="item-meta">📍 ${LOC_LABEL[i.location] || i.location || 'Төв склад'}${i.status && i.status !== 'available' ? ' · ' + i.status : ''}</div>
+          <div class="item-meta">📍 ${LOC_LABEL[i.location] || i.location || 'Төв склад'}</div>
           ${isLow ? '<div class="low-stock-badge">⚠ Доод хязгаарт</div>' : ''}
         </div>
-        <div class="item-qty">${fmt(i.qty || 0)}<span class="item-unit">${i.unit || 'ш'}</span>${hasLots ? '<span class="expand-caret">▸</span>' : ''}</div>
+        <div class="item-qty">${fmt(i.qty || 0)}<span class="item-unit">${i.unit || 'ш'}</span></div>
       </div>
-      ${sub}
     </div>`;
   }
 
@@ -1070,9 +1088,9 @@ function toggleStock(id) {
   const wrap = document.getElementById('stock-' + id);
   const sub = document.getElementById('sub-' + id);
   if (!wrap || !sub) return;
-  const open = sub.style.display !== 'none';
-  sub.style.display = open ? 'none' : 'block';
-  wrap.classList.toggle('open', !open);
+  const isOpen = wrap.classList.contains('open');
+  wrap.classList.toggle('open', !isOpen);
+  sub.style.display = isOpen ? 'none' : 'block';
 }
 
 async function loadHistory() {
