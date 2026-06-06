@@ -376,11 +376,25 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 
       <div class="ifield">
         <label>Шалтгаан <span class="req">*</span></label>
-        <select id="out-source" onchange="updateOutReasonVisibility()">
+        <select id="out-source" onchange="onOutSourceChange()">
           <option value="SALES_OUT">🛒 Борлуулалт</option>
           <option value="PRODUCTION_OUT">🏭 Үйлдвэрлэлд</option>
           <option value="TRANSFER">🔄 Шилжүүлэг</option>
           <option value="MANUAL_ADJUSTMENT">⚠️ Гар тохируулга (хасах)</option>
+        </select>
+      </div>
+
+      <!-- ── Очих байршил ── -->
+      <div class="ifield" id="out-dest-wrap">
+        <label>Очих байршил <span class="req">*</span></label>
+        <select id="out-destination">
+          <option value="customer">🛒 Хэрэглэгч (борлуулалт)</option>
+          <option value="central">🏢 Төв агуулах</option>
+          <option value="factory">🏭 Үйлдвэр</option>
+          <option value="plastic-center">🏪 Plastic Center</option>
+          <option value="warehouse-4">📦 Склад 4</option>
+          <option value="warehouse-5">📦 Склад 5</option>
+          <option value="exhibition">🖼 Үзүүлэнд</option>
         </select>
       </div>
 
@@ -1128,11 +1142,18 @@ function updateOutLotTotal(unit) {
   if (el) el.textContent = Number(total).toLocaleString('en-US') + ' ' + (unit||it.unit||'');
 }
 
-function updateOutReasonVisibility() {
-  const src = document.getElementById('out-source').value;
-  const wrap = document.getElementById('out-reason-wrap');
-  wrap.style.display = (src === 'MANUAL_ADJUSTMENT' || src === 'TRANSFER') ? '' : 'none';
+function onOutSourceChange() {
+  const src  = document.getElementById('out-source').value;
+  const dest = document.getElementById('out-destination');
+  const wrap = document.getElementById('out-dest-wrap');
+  if (src === 'SALES_OUT')           { dest.value = 'customer'; wrap.style.display = ''; }
+  else if (src === 'PRODUCTION_OUT') { dest.value = 'factory';  wrap.style.display = ''; }
+  else if (src === 'TRANSFER')       { dest.value = '';         wrap.style.display = ''; }
+  else                               { wrap.style.display = 'none'; }
+  document.getElementById('out-reason-wrap').style.display =
+    (src === 'MANUAL_ADJUSTMENT' || src === 'TRANSFER') ? '' : 'none';
 }
+function updateOutReasonVisibility() { onOutSourceChange(); }
 
 async function submitOut() {
   const source = document.getElementById('out-source').value;
