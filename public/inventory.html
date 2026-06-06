@@ -266,6 +266,8 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
     <div class="stock-summary" id="stock-summary">
       📦 Нийт төрөл: <b id="summary-count">0</b> &nbsp;·&nbsp; Нийт үлдэгдэл: <b id="summary-qty">0</b> нэгж
     </div>
+    <!-- ── Салбар складууд ── -->
+    <div id="branch-cards" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"></div>
     <!-- ── Категорийн шүүлтүүр ── -->
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
       <button id="cat-all"         class="tab-pill active" onclick="setStockCat('')">Бүгд</button>
@@ -342,9 +344,12 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
       <div class="ifield">
         <label>Байршил</label>
         <select id="in-location">
-          <option value="central">Central warehouse</option>
-          <option value="factory">Factory</option>
-          <option value="plastic-center">Plastic Center</option>
+          <option value="central">🏢 Төв агуулах</option>
+          <option value="factory">🏭 Үйлдвэр</option>
+          <option value="plastic-center">🏪 Plastic Center</option>
+          <option value="warehouse-4">📦 Склад 4</option>
+          <option value="warehouse-5">📦 Склад 5</option>
+          <option value="exhibition">🖼 Үзүүлэнд</option>
         </select>
       </div>
 
@@ -825,13 +830,50 @@ function showIntakeError(msg) {
 }
 
 const CAT_LABEL = { raw: 'Түүхий', wip: 'Хагас', finished: 'Бэлэн', maintenance: 'Засварын барaa', assets: 'Эд хогшил' };
+const LOC_LABEL  = { central: '🏢 Төв агуулах', factory: '🏭 Үйлдвэр', 'plastic-center': '🏪 Plastic Center', 'warehouse-4': '📦 Склад 4', 'warehouse-5': '📦 Склад 5', exhibition: '🖼 Үзүүлэнд' };
+
 let stockCatFilter = '';
+let stockLocFilter = '';
 
 function setStockCat(cat) {
   stockCatFilter = cat;
   document.querySelectorAll('[id^="cat-"]').forEach(b => b.classList.remove('active'));
   document.getElementById(cat ? 'cat-' + cat : 'cat-all').classList.add('active');
   loadStock();
+}
+
+function setLocFilter(loc) {
+  stockLocFilter = (stockLocFilter === loc) ? '' : loc;
+  loadStock();
+}
+
+function renderBranchCards(items) {
+  const branches = {};
+  items.forEach(i => {
+    const loc = i.location || 'central';
+    if (!branches[loc]) branches[loc] = { count: 0, qty: 0 };
+    branches[loc].count++;
+    branches[loc].qty += Number(i.qty) || 0;
+  });
+  // Бүх 5 байршлыг харуул (өгөгдөлгүй ч гэсэн)
+  Object.keys(LOC_LABEL).forEach(loc => { if (!branches[loc]) branches[loc] = { count: 0, qty: 0 }; });
+  const fmt = n => Number(n).toLocaleString('en-US');
+  const el = document.getElementById('branch-cards');
+  if (!el) return;
+  el.innerHTML = Object.entries(LOC_LABEL).map(([loc, label]) => {
+    const d = branches[loc] || { count: 0, qty: 0 };
+    const isActive = stockLocFilter === loc;
+    return `<div onclick="setLocFilter('${loc}')"
+      style="flex:1;min-width:130px;background:${isActive?'#e0f2f1':'#fff'};
+        border:1.5px solid ${isActive?'#00838f':'#e5e7eb'};
+        border-top:3px solid ${isActive?'#00838f':'#d1d5db'};
+        border-radius:12px;padding:12px 14px;cursor:pointer;
+        box-shadow:${isActive?'0 2px 8px rgba(0,131,143,0.15)':'0 1px 3px rgba(0,0,0,0.05)'}">
+      <div style="font-size:12px;font-weight:800;color:${isActive?'#006064':'#111827'};margin-bottom:5px">${label}</div>
+      <div style="font-size:11px;color:#6b7280"><b style="color:${isActive?'#006064':'#374151'}">${d.count}</b> төрөл</div>
+      <div style="font-size:13px;font-weight:800;color:${isActive?'#006064':'#00838f'};margin-top:2px">${fmt(d.qty)} нэгж</div>
+    </div>`;
+  }).join('');
 }
 const SOURCE_LABEL = {
   IMPORT_IN: '🚢 Импорт', PRODUCTION_IN: '🏭 Үйлдвэрлэл→',
@@ -858,13 +900,17 @@ async function loadStock() {
   document.getElementById('summary-qty').textContent = fmt(totalQty);
   document.getElementById('stock-summary').style.display = 'block';
 
-  // ── Категорийн шүүлтүүр ──
-  const visibleItems = stockCatFilter
-    ? activeItems.filter(i => (i.category || 'raw') === stockCatFilter)
-    : activeItems;
+  // ── Салбар карт ──
+  renderBranchCards(activeItems);
+
+  // ── Салбар + категори шүүлтүүр ──
+  let visibleItems = activeItems;
+  if (stockLocFilter) visibleItems = visibleItems.filter(i => (i.location || 'central') === stockLocFilter);
+  if (stockCatFilter) visibleItems = visibleItems.filter(i => (i.category || 'raw') === stockCatFilter);
 
   if (!visibleItems.length) {
-    el.innerHTML = `<div class="empty">${CAT_LABEL[stockCatFilter] || 'Энэ категори'}-д бараа байхгүй байна</div>`;
+    const msg = [LOC_LABEL[stockLocFilter], CAT_LABEL[stockCatFilter]].filter(Boolean).join(' · ');
+    el.innerHTML = `<div class="empty">${msg || 'Энэ'}-д бараа байхгүй байна</div>`;
     return;
   }
 
