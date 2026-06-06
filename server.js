@@ -85,6 +85,21 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
     if (t.id === 'c3d904c0a0c4c9e0' && t.direction === 'credit') { t.direction = 'debit'; changed++; }
   }
 
+  // 2b. Recode old computer purchases EQP→ASSET (компани эд хөрөнгө).
+  //     ASSET код байхаас өмнө MacBook болон Толгой компьютер EQP-ээр бүртгэгдсэн.
+  //     Идэмпотент: нэг удаа ASSET болсон бол дахин ажиллахгүй (EQP шүүлтүүр).
+  for (const t of txs) {
+    if (t.code !== 'EQP' || t.archived) continue;
+    const text = (t.description || '') + ' ' + (t.raw_memo || '');
+    const isMac = t.amount === 4350000 && /macbook/i.test(text);
+    const isPc  = t.amount === 1000000 && /толгой\s+компьютер/i.test(text);
+    if (isMac || isPc) {
+      t.code = 'ASSET';
+      t.needs_review = false;
+      changed++;
+    }
+  }
+
   // 3. Rehash txIds and remove duplicates caused by time format change
   function computeId(t) {
     const key = `${t.account}_${t.date}_${t.time}_${t.direction}_${t.amount}_${t.balance_after}`;
