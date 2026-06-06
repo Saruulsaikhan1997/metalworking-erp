@@ -591,7 +591,7 @@ function showTab(name) {
   document.getElementById('panel-' + name).classList.add('active');
   const tab = document.getElementById('t-' + name);
   if (tab) tab.classList.add('active');
-  if (name === 'stock') loadStock();
+  if (name === 'stock') { if (stockCatFilter === 'assets') loadAssets(); else loadStock(); }
   if (name === 'hist')  loadHistory();
   if (name === 'in')    loadIntakeForm();
   if (name === 'out')   loadOutForm();
@@ -897,7 +897,79 @@ function setStockCat(cat) {
   stockCatFilter = cat;
   document.querySelectorAll('[id^="cat-"]').forEach(b => b.classList.remove('active'));
   document.getElementById(cat ? 'cat-' + cat : 'cat-all').classList.add('active');
-  loadStock();
+  if (cat === 'assets') loadAssets();   // Эд хөрөнгө — санхүүгийн ASSET зарлагаас
+  else loadStock();
+}
+
+// ════════════════════════════════════════════════════════════
+// ── ЭД ХӨРӨНГӨ (Эд хогшил) — санхүүгийн ASSET зарлагаас автомат ──
+// Өгөгдөл /api/finance/assets-аас ирнэ. Складад давхар бичигдэхгүй.
+// Менежер/склад хариуцагч тохируулна; дүнг зөвхөн санхүү (CEO/эзэд) харна.
+// ════════════════════════════════════════════════════════════
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+
+async function loadAssets() {
+  // Складын хураангуй/салбар картыг нуух — эд хөрөнгө санхүүгээс ирдэг
+  const sum = document.getElementById('stock-summary'); if (sum) sum.style.display = 'none';
+  const bc = document.getElementById('branch-cards'); if (bc) bc.innerHTML = '';
+  const el = document.getElementById('stockList');
+  el.innerHTML = '<div class="empty">Ачааллаж байна…</div>';
+
+  const resp = await api('/finance/assets');
+  const assets = (resp && resp.assets) || [];
+  const seesMoney = !!(resp && resp.sees_money);
+
+  if (!assets.length) {
+    el.innerHTML = '<div class="empty">Эд хөрөнгө бүртгэгдээгүй байна'
+      + '<br><small style="display:block;margin-top:6px">Санхүү дээр гүйлгээг '
+      + '<b>ASSET:</b> кодоор тэмдэглэхэд (компьютер, тавилга, тоног төхөөрөмж) '
+      + 'энд автоматаар орж ирнэ</small></div>';
+    return;
+  }
+
+  const fmt = n => Number(n || 0).toLocaleString('en-US');
+  el.innerHTML = assets.map(a => {
+    const owner = a.responsible_owner
+      ? `<b style="color:#006064">${escapeHtml(a.responsible_owner)}</b>`
+      : '<span style="color:#9ca3af">— хариуцагч заагаагүй —</span>';
+    const loc = a.location ? ` · 📍 ${escapeHtml(a.location)}` : '';
+    const money = (seesMoney && a.amount != null)
+      ? `<div style="font-size:13px;font-weight:800;color:#00838f">${fmt(a.amount)}₮</div>` : '';
+    const note = a.note ? `<div style="font-size:11px;color:#6b7280;margin-top:3px">${escapeHtml(a.note)}</div>` : '';
+    return `<div style="background:#fff;border:1.5px solid #e5e7eb;border-left:4px solid #00838f;
+        border-radius:12px;padding:12px 14px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:800;color:#111827">🪑 ${escapeHtml(a.name)}</div>
+          <div style="font-size:12px;color:#374151;margin-top:4px">Хариуцагч: ${owner}${loc}</div>
+          ${note}
+          <div style="font-size:10px;color:#9ca3af;margin-top:3px">📅 ${escapeHtml(a.date)} · санхүүгээс</div>
+        </div>
+        <div style="text-align:right;white-space:nowrap">
+          ${money}
+          <button onclick="setAssetOwner('${a.tx_id}', this)" data-owner="${escapeHtml(a.responsible_owner || '')}"
+            style="margin-top:6px;padding:5px 10px;border-radius:18px;border:1.5px solid #00838f;
+              background:#e0f2f1;color:#006064;font-size:11px;font-weight:700;cursor:pointer">
+            ✏️ Хариуцагч</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function setAssetOwner(txId, btn) {
+  const current = (btn && btn.getAttribute('data-owner')) || '';
+  const owner = prompt('Хариуцагчийн нэр:', current);
+  if (owner === null) return;   // Цуцалсан
+  const r = await api('/finance/assets/' + encodeURIComponent(txId), {
+    method: 'PUT',
+    body: JSON.stringify({ responsible_owner: owner.trim() }),
+  });
+  if (r && r.ok) loadAssets();
+  else alert('Хадгалж чадсангүй' + (r && r.error ? ': ' + r.error : ''));
 }
 
 function setLocFilter(loc) {

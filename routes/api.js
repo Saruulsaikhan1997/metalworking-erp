@@ -255,6 +255,70 @@ router.get('/finance/summary', (req, res) => {
   });
 });
 
+// ════════════════════════════════════════════════════════════
+// ── ЭД ХӨРӨНГӨ (Company assets) — finance-derived view ──
+// ASSET зарлагын гүйлгээ бүр = нэг эд хөрөнгө. Өгөгдөл санхүүгээс
+// гарна (single source of truth), складад давхар бичигдэхгүй.
+// Хариуцагч/байршлын мэдээлэл db.asset_meta[tx_id]-д хадгалагдана
+// (гүйлгээний бичлэгийг өөрчлөхгүй).
+// ════════════════════════════════════════════════════════════
+
+function cleanAssetName(desc) {
+  let s = (desc || '').trim();
+  s = s.replace(/^EB\s*-\s*/i, '');               // "EB -" угтвар
+  s = s.replace(/^[A-Z][A-Z_]{1,9}\s*:\s*/, '');  // "CODE:" угтвар (EQP:, ASSET: г.м)
+  return s.trim() || 'Нэргүй хөрөнгө';
+}
+
+// Хэн мөнгөн дүн харах вэ: зөвхөн санхүү (admin/shareholder).
+// Менежер/склад эд хөрөнгийн жагсаалт + хариуцагчийг харна, дүнг харахгүй.
+const ASSET_VIEW_ROLES = ['admin', 'shareholder', 'warehouse', 'manager'];
+const ASSET_EDIT_ROLES = ['admin', 'manager', 'warehouse'];
+
+router.get('/finance/assets', (req, res) => {
+  if (!ASSET_VIEW_ROLES.includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
+  const seesMoney = ['admin', 'shareholder'].includes(req.user.role);
+  const db = load();
+  const meta = db.asset_meta || {};
+  const assets = (db.transactions || [])
+    .filter(t => !t.archived && t.code === 'ASSET')
+    .map(t => {
+      const m = meta[t.id] || {};
+      const a = {
+        tx_id: t.id,
+        date: t.date,
+        name: cleanAssetName(t.description),
+        responsible_owner: m.responsible_owner || null,
+        location: m.location || null,
+        note: m.note || null,
+        source: 'finance',
+      };
+      if (seesMoney) a.amount = t.amount;
+      return a;
+    })
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  res.json({ assets, sees_money: seesMoney });
+});
+
+router.put('/finance/assets/:tx_id', (req, res) => {
+  if (!ASSET_EDIT_ROLES.includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
+  const db = load();
+  const tx = (db.transactions || []).find(t => t.id === req.params.tx_id && !t.archived && t.code === 'ASSET');
+  if (!tx) return res.status(404).json({ error: 'Эд хөрөнгө олдсонгүй' });
+
+  const clip = (v) => (typeof v === 'string' ? v.trim().slice(0, 200) : '');
+  db.asset_meta = db.asset_meta || {};
+  db.asset_meta[tx.id] = {
+    responsible_owner: clip(req.body.responsible_owner),
+    location: clip(req.body.location),
+    note: clip(req.body.note),
+    updated_at: new Date().toISOString(),
+    updated_by: req.user.username || req.user.role,
+  };
+  save(db);
+  res.json({ ok: true, tx_id: tx.id, meta: db.asset_meta[tx.id] });
+});
+
 // ── 2-STEP IMPORT: Preview (parse PDF but don't save) ──
 router.post('/finance/import/preview', adminOnly, upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Файл хавсаргана уу' });
