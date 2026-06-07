@@ -168,6 +168,21 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
     if (toRefund.length) console.log(`Migration 2e: ${toRefund.length} борлуулалт→REFUND (зардлын буцаалт).`);
   }
 
+  // 2f. MAT кодыг MAT_WH/MAT_PROD болгон задлав. Хуучин MAT гүйлгээг default-аар
+  //     MAT_WH (склад) болгож дахин кодлоно — Warehouse Manager хожим шаардлагатайг
+  //     нь MAT_PROD руу засна. Нэг удаа ажиллана (флаг). Код txId hash-д ороогүй тул
+  //     rehash/dedup (3)-д нөлөөлөхгүй. Тодорхой бус ангиллыг автоматаар таамаглахгүй
+  //     — зөвхөн аюулгүй default тавьж, эзэн өөрөө нарийвчилна.
+  if (!db._migrated_mat_split) {
+    let matCount = 0;
+    for (const t of txs) {
+      if (!t.archived && t.code === 'MAT') { t.code = 'MAT_WH'; t.needs_review = false; matCount++; changed++; }
+    }
+    db._migrated_mat_split = true;
+    changed++;
+    if (matCount) console.log(`Migration 2f: ${matCount} MAT→MAT_WH (склад default).`);
+  }
+
   // 3. Rehash txIds and remove duplicates caused by time format change
   function computeId(t) {
     const key = `${t.account}_${t.date}_${t.time}_${t.direction}_${t.amount}_${t.balance_after}`;
