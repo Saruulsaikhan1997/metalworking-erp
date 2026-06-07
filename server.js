@@ -59,6 +59,7 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
 (function runMigrations() {
   const { load, save } = require('./database');
   const crypto = require('crypto');
+  const { syncInternalPurchases } = require('./lib/internal_purchases');
   const db = load();
   const txs = db.transactions || [];
   let changed = 0;
@@ -204,6 +205,20 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
       changed++;
     } else {
       seen.add(t.id);
+    }
+  }
+
+  // 2g. Phase B: Дотоод худалдан авалт (internal_purchases) intake-уудыг одоо
+  //     байгаа MAT_WH/MAT_PROD гүйлгээнээс автоматаар үүсгэх (backfill). Бас
+  //     архивлагдсан/өөр код руу засагдсан гүйлгээний pending intake-ийг цуцална.
+  //     syncInternalPurchases нь идемпотент бүрэн тооцоо тул migration 2f-д MAT_WH
+  //     болсон гүйлгээнүүдийг ч хамруулна. Rehash/dedup (3)-ийн ДАРАА ажиллана —
+  //     source_tx_id эцсийн (rehash хийгдсэн) id-г заана.
+  {
+    const ipChanges = syncInternalPurchases(db);
+    if (ipChanges > 0) {
+      changed += ipChanges;
+      console.log(`Migration 2g: ${ipChanges} дотоод худалдан авалтын intake шинэчлэв.`);
     }
   }
 
