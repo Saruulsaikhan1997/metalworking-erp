@@ -22,6 +22,22 @@ app.use(express.static(path.join(__dirname, 'public')));
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, 'public', 'uploads');
 app.use('/uploads', express.static(UPLOAD_DIR));
 
+// ── Зөвхөн унших өгөгдлийн snapshot (API-key) — автомат шинжилгээнд зориулсан ──
+// Зорилго: Claude/скрипт live өгөгдлийг ӨӨРӨӨ татаж шинжлэх боломж. Нэвтрэх нууц
+// үг хөндөхгүй — тусдаа EXPORT_API_KEY-ээр л ажиллана. `users` (нууц үгийн hash)
+// БҮРЭН хасагдана. authMiddleware-ийн ӨМНӨ mount хийсэн тул cookie/JWT шаардахгүй.
+// Идэвхгүй (key тохируулаагүй) бол 503 буцаана. Гүйлгээ зөвхөн унших — өөрчлөхгүй.
+app.get('/api/admin/snapshot', (req, res) => {
+  const KEY = process.env.EXPORT_API_KEY;
+  if (!KEY) return res.status(503).json({ error: 'snapshot идэвхгүй: EXPORT_API_KEY тохируулаагүй' });
+  const provided = req.headers['x-api-key'] || req.query.key;
+  if (provided !== KEY) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
+  const { load } = require('./database');
+  const { users, ...safe } = load() || {}; // нууц үгийн hash хэзээ ч экспортлохгүй
+  res.setHeader('Cache-Control', 'no-store');
+  res.json(safe);
+});
+
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/import', require('./routes/import'));
 app.use('/api', require('./routes/api'));
