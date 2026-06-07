@@ -88,7 +88,7 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
     <a class="id-back" href="/finance">‹</a>
     <div style="flex:1">
       <div class="id-title">🔵 Нийт зарлага</div>
-      <div class="id-sub">Зарлага + олгосон зээл</div>
+      <div class="id-sub">Компанийн бодит зарлага</div>
     </div>
   </div>
   <div class="id-hero">
@@ -131,13 +131,11 @@ async function api(path) {
 }
 function fmt(n) { return Number(n||0).toLocaleString('mn-MN'); }
 
-// EXPENSE_CODES, LOAN_CODES and CAT_LABELS from finance-constants.js
-const ALL_OUT_CODES = [...EXPENSE_CODES, 'LOAN_OUT'];
+// EXPENSE_CODES, CAT_LABELS from finance-constants.js
+// ⚠️ Олгосон зээл (LOAN_OUT) энд ОРОХГҮЙ — тэр нь зарлага биш, авлага. /loans хуудсыг үз.
 
 const CATEGORIES = [
-  { key: 'all', label: 'Бүгд', codes: ALL_OUT_CODES },
-  { key: 'expenses', label: '💸 Зарлага', codes: EXPENSE_CODES },
-  { key: 'LOAN_OUT', label: '📤 Олгосон зээл', codes: ['LOAN_OUT'] },
+  { key: 'all', label: 'Бүгд', codes: EXPENSE_CODES },
   ...EXPENSE_CODES.map(c => ({ key: c, label: CAT_LABELS[c], codes: [c] })),
 ];
 
@@ -168,32 +166,9 @@ function setDate(key) {
   render();
 }
 
-// Build set of returned LOAN_OUT tx ids by matching counterparty with LOAN_IN
-function buildReturnedSet(txs) {
-  const key = cp => (cp || '').slice(-10);
-  // Sum LOAN_IN per counterparty
-  const pool = {};
-  txs.filter(t => t.code === 'LOAN_IN').forEach(t => {
-    const k = key(t.counterparty);
-    if (k) pool[k] = (pool[k] || 0) + t.amount;
-  });
-  // Walk LOAN_OUT oldest-first, deduct from pool
-  const returned = new Set();
-  const outs = txs.filter(t => t.code === 'LOAN_OUT').sort((a,b) => a.date.localeCompare(b.date) || (a.time||'').localeCompare(b.time||''));
-  for (const t of outs) {
-    const k = key(t.counterparty);
-    if (k && (pool[k] || 0) >= t.amount) {
-      pool[k] -= t.amount;
-      returned.add(t.id);
-    }
-  }
-  return returned;
-}
-
 function render() {
-  const returnedLoans = buildReturnedSet(allTx);
   const dateFiltered = allTx.filter(isInDate);
-  const expenseTx = dateFiltered.filter(t => ALL_OUT_CODES.includes(t.code));
+  const expenseTx = dateFiltered.filter(t => EXPENSE_CODES.includes(t.code));
 
   // Counts per category (only show categories with >0 in current date range)
   const counts = {};
@@ -213,11 +188,7 @@ function render() {
 
   const total = filtered.reduce((s,t) => s + (t.amount || 0), 0);
   document.getElementById('filterTotal').textContent = fmt(total) + ' ₮';
-  const expOnly = filtered.filter(t => EXPENSE_CODES.includes(t.code)).reduce((s,t)=>s+t.amount,0);
-  const loanOnly = filtered.filter(t => t.code === 'LOAN_OUT').reduce((s,t)=>s+t.amount,0);
-  const parts = [filtered.length + ' гүйлгээ'];
-  if (loanOnly > 0 && expOnly > 0) parts.push(`Зарлага ${fmt(expOnly)} + Зээл ${fmt(loanOnly)}`);
-  document.getElementById('filterTotalSub').textContent = parts.join(' · ');
+  document.getElementById('filterTotalSub').textContent = filtered.length + ' гүйлгээ';
 
   // Breakdown chart
   const byCode = {};
@@ -246,15 +217,11 @@ function render() {
   if (!filtered.length) { el.innerHTML = '<div class="empty">Гүйлгээ байхгүй</div>'; return; }
   el.innerHTML = filtered.map(t => {
     const acctShort = (t.account_label || '').replace(' (Касс)','').replace(' (Компани)','');
-    const isLoan = t.code === 'LOAN_OUT';
-    const isReturned = isLoan && returnedLoans.has(t.id);
-    const borderColor = isReturned ? '#059669' : isLoan ? '#f59e0b' : '';
-    const codeStyle = isReturned ? 'background:#d1fae5;color:#065f46' : isLoan ? 'background:#fef3c7;color:#92400e' : '';
-    const codeLabel = t.needs_review ? '⚠️ REVIEW' : isReturned ? '✅ БУЦСАН' : (t.code || '—');
-    return `<div class="tx-card" ${borderColor ? `style="border-left-color:${borderColor}"` : ''}>
+    const codeLabel = t.needs_review ? '⚠️ REVIEW' : (t.code || '—');
+    return `<div class="tx-card">
       <div class="tx-top">
-        <span class="tx-code ${t.needs_review ? 'review' : ''}" ${codeStyle ? `style="${codeStyle}"` : ''}>${codeLabel}</span>
-        <div class="tx-amt" ${isReturned ? 'style="color:#059669;text-decoration:line-through"' : ''}>−${fmt(t.amount)} ₮</div>
+        <span class="tx-code ${t.needs_review ? 'review' : ''}">${codeLabel}</span>
+        <div class="tx-amt">−${fmt(t.amount)} ₮</div>
       </div>
       <div class="tx-desc">${t.description || '—'}</div>
       <div class="tx-meta">
