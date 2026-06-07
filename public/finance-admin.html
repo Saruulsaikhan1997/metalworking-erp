@@ -85,6 +85,7 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 .tag.code     { background: #ede9fe; color: #5b21b6; font-family: monospace; }
 .tag.income   { background: #d1fae5; color: #065f46; }
 .tag.expense  { background: #dbeafe; color: #1e40af; }
+.tag.refund   { background: #fef3c7; color: #92400e; }
 .tag.special  { background: var(--gray-100); color: var(--gray-600); }
 
 .act-btn {
@@ -555,6 +556,7 @@ const CODE_DESC = {
   UTIL: { label: 'Тогтмол төлбөр', type: 'expense' },
   LOAN_OUT: { label: 'Зээл олгох', type: 'expense' },
   FEE:  { label: 'Банкны шимтгэл (auto)', type: 'expense' },
+  REFUND: { label: 'Зардлын буцаалт (илүү төлсөн буцсан)', type: 'refund' },
   TRF:  { label: 'Данс хооронд', type: 'special' },
   OTHER:{ label: 'Бусад', type: 'special' },
 };
@@ -566,7 +568,7 @@ function loadCodes() {
       <div class="lr-main">
         <div class="lr-name" style="font-size:12.5px">${escHtml(info.label)}</div>
       </div>
-      <span class="tag ${info.type}">${info.type === 'income' ? 'Орлого' : info.type === 'expense' ? 'Зарлага' : 'Тусгай'}</span>
+      <span class="tag ${info.type}">${info.type === 'income' ? 'Орлого' : info.type === 'expense' ? 'Зарлага' : info.type === 'refund' ? 'Буцаалт' : 'Тусгай'}</span>
     </div>`).join('');
 }
 

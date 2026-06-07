@@ -147,6 +147,27 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
     }
   }
 
+  // 2e. Recode pre-REFUND "борлуулалт" credit(s) as REFUND (зардлын буцаалт).
+  //     Жинхэнэ борлуулалт хараахан эхлээгүй (хэрэглэгч баталгаажуулсан), гэтэл
+  //     илүү төлсөн зардал дансанд буцаж орж ирээд SALE/REC/ADV-аар (борлуулалт)
+  //     кодлогдсоноос "Борлуулалт" карт 315,000₮-ийг хуурамчаар харуулж байсан.
+  //     REFUND болгоход борлуулалт/орлогоос хасагдаж, цэвэр зардлыг бууруулна.
+  //     Нэг удаа ажиллана (флаг) → ирээдүйн ЖИНХЭНЭ борлуулалтыг хөндөхгүй.
+  //     Код нь txId hash-д ороогүй тул rehash/dedup (3)-д нөлөөлөхгүй.
+  if (!db._migrated_refund_315k) {
+    const toRefund = txs.filter(t => !t.archived
+      && ['SALE', 'REC', 'ADV'].includes(t.code)
+      && t.direction === 'credit');
+    for (const t of toRefund) {
+      t.code = 'REFUND';
+      t.needs_review = false;
+      changed++;
+    }
+    db._migrated_refund_315k = true;
+    changed++;
+    if (toRefund.length) console.log(`Migration 2e: ${toRefund.length} борлуулалт→REFUND (зардлын буцаалт).`);
+  }
+
   // 3. Rehash txIds and remove duplicates caused by time format change
   function computeId(t) {
     const key = `${t.account}_${t.date}_${t.time}_${t.direction}_${t.amount}_${t.balance_after}`;
