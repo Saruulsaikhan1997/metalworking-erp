@@ -504,11 +504,15 @@ function renderDash() {
   document.getElementById('pTodaySales').textContent = fmt(todaySalesAmt) + ' ₮';
   document.getElementById('pTodaySalesSub').textContent = todaySales.length + ' гүйлгээ · ' + today;
 
-  // Total Expenses (this month, all expense codes)
+  // Total Expenses (this month, all expense codes; буцаалтыг хасна — contra-expense)
   const monthTx = transactions.filter(t => t.date.slice(0,7) === mon);
   const expense = monthTx.filter(t => isExpense(t.code));
-  document.getElementById('pTotalExp').textContent = fmt(expense.reduce((s,t) => s + t.amount, 0)) + ' ₮';
-  document.getElementById('pTotalExpSub').textContent = expense.length + ' гүйлгээ · ' + mon;
+  const monthRefund = monthTx.filter(t => REFUND_CODES.includes(t.code)).reduce((s,t) => s + t.amount, 0);
+  const grossMonthExp = expense.reduce((s,t) => s + t.amount, 0);
+  document.getElementById('pTotalExp').textContent = fmt(grossMonthExp - monthRefund) + ' ₮';
+  document.getElementById('pTotalExpSub').textContent = monthRefund > 0
+    ? `${expense.length} гүйлгээ − буцаалт ${fmt(monthRefund)} · ${mon}`
+    : expense.length + ' гүйлгээ · ' + mon;
 
   // Funding (lifetime INV)
   const allInv = transactions.filter(t => isCapital(t.code));

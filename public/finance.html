@@ -300,14 +300,18 @@ async function load() {
   const sales   = allTx.filter(t => SALES_CODES.includes(t.code));
 
   const incomeSum    = income.reduce((s,t)=>s+t.amount,0);
-  const expenseSum   = expense.reduce((s,t)=>s+t.amount,0);
+  const grossExpense = expense.reduce((s,t)=>s+t.amount,0);
+  const refundSum    = allTx.filter(t => REFUND_CODES.includes(t.code)).reduce((s,t)=>s+t.amount,0);
+  const expenseSum   = grossExpense - refundSum; // буцаалт зардлыг бууруулна (contra-expense)
   const loanOutAll   = allTx.filter(t => t.code === 'LOAN_OUT').reduce((s,t)=>s+t.amount,0);
   const totalOut     = expenseSum + loanOutAll;
 
   document.getElementById('totalIncome').textContent  = fmt(incomeSum) + ' ₮';
   document.getElementById('totalIncomeSub').textContent = income.length + ' гүйлгээ';
   document.getElementById('totalExpense').textContent = fmt(totalOut) + ' ₮';
-  document.getElementById('totalExpenseSub').textContent = `Зарлага ${fmt(expenseSum)} + Зээл ${fmt(loanOutAll)}`;
+  document.getElementById('totalExpenseSub').textContent = refundSum > 0
+    ? `Зарлага ${fmt(grossExpense)} − Буцаалт ${fmt(refundSum)} + Зээл ${fmt(loanOutAll)}`
+    : `Зарлага ${fmt(grossExpense)} + Зээл ${fmt(loanOutAll)}`;
   document.getElementById('totalSales').textContent  = fmt(sales.reduce((s,t)=>s+t.amount,0)) + ' ₮';
   document.getElementById('totalSalesSub').textContent = sales.length + ' гүйлгээ';
 

@@ -27,6 +27,7 @@ const FINANCE_CODES = {
   MAR:      { type: 'expense',    color: 'purple', label: 'Маркетинг (контент, борлуулалтын комисс)' },
   SUB:      { type: 'expense',    color: 'teal',   label: 'Захиалгат үйлчилгээ (Claude, GitHub, интернет)' },
   FEE:      { type: 'expense',    color: 'blue',   label: 'Банкны шимтгэл' },
+  REFUND:   { type: 'refund',     color: 'amber',  label: 'Зардлын буцаалт (илүү төлсөн мөнгө буцсан)' },
   TRF:      { type: 'transfer',   color: 'gray',   label: 'Данс хооронд (дүнд орохгүй)' },
   OTHER:    { type: 'unknown',    color: 'blue',   label: 'Бусад' },
 };
@@ -35,6 +36,7 @@ const FINANCE_CODES = {
 const CODE_GROUPS = [
   { label: '\u{1F7E2} Орлого',  codes: ['SALE','REC','ADV','INV'], cls: 'income' },
   { label: '\u{1F535} Зарлага', codes: ['IMP','SAL','TRN','TRIP','EQP','ASSET','TAX','OFF','UTIL','MAT','MAR','SUB','FEE'], cls: 'expense' },
+  { label: '↩️ Буцаалт',   codes: ['REFUND'], cls: 'refund' },
   { label: '\u{1F504} Зээл',   codes: ['LOAN_IN','LOAN_OUT'], cls: 'loan' },
   { label: '⚪ Тусгай',     codes: ['TRF','OTHER'], cls: 'gray' },
 ];
@@ -44,10 +46,11 @@ const INCOME_CODES  = ['SALE','REC','ADV','INV'];
 const EXPENSE_CODES = ['IMP','SAL','TRN','TRIP','EQP','ASSET','TAX','OFF','UTIL','MAT','MAR','SUB','FEE','OTHER'];
 const LOAN_CODES    = ['LOAN_IN','LOAN_OUT'];
 const SALES_CODES   = ['SALE','REC','ADV'];
+const REFUND_CODES  = ['REFUND'];
 const ALL_CODES     = Object.keys(FINANCE_CODES);
 
 // Sorted for dropdowns/buttons (review UX order)
-const SORTED_CODES  = [...INCOME_CODES, ...EXPENSE_CODES.filter(c => c !== 'OTHER'), 'TRF', 'OTHER'];
+const SORTED_CODES  = [...INCOME_CODES, ...EXPENSE_CODES.filter(c => c !== 'OTHER'), 'REFUND', 'TRF', 'OTHER'];
 
 // Category labels for expense page
 const CAT_LABELS = {
@@ -64,6 +67,7 @@ const CAT_LABELS = {
   MAR:      '\u{1F4E3} Маркетинг',
   SUB:      '\u{1F4BB} Захиалгат',
   FEE:      '\u{1F3E6} Шимтгэл',
+  REFUND:   '↩️ Зардлын буцаалт',
   LOAN_OUT: '\u{1F4E4} Зээл өгсөн',
   OTHER:    '\u{1F4E6} Бусад',
 };
@@ -90,6 +94,7 @@ const CODE_EXAMPLES = {
   SUB:      'SUB: Claude AI, GitHub',
   TRF:      'TRF: Касс руу',
   FEE:      'FEE (автомат)',
+  REFUND:   'REFUND: илүү төлсөн буцаалт',
   OTHER:    'OTHER: бусад',
 };
 
@@ -98,6 +103,7 @@ function isExpenseCode(code) { return EXPENSE_CODES.includes(code); }
 function isIncomeCode(code)  { return INCOME_CODES.includes(code); }
 function isRevenueCode(code) { return ['SALE','REC'].includes(code); }
 function isSalesCode(code)   { return SALES_CODES.includes(code); }
+function isRefundCode(code)  { return code === 'REFUND'; }
 function isAdvCode(code)     { return code === 'ADV'; }
 function isTrfCode(code)     { return code === 'TRF'; }
 function isCapitalCode(code) { return code === 'INV'; }
