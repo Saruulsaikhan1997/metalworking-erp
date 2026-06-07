@@ -23,7 +23,9 @@ const FINANCE_CODES = {
   TAX:      { type: 'expense',    color: 'blue',   label: 'Татвар/даатгал' },
   OFF:      { type: 'expense',    color: 'blue',   label: 'Оффисын зардал' },
   UTIL:     { type: 'expense',    color: 'blue',   label: 'Тогтмол төлбөр' },
-  MAT:      { type: 'expense',    color: 'blue',   label: 'Дотоод материал худалдан авалт' },
+  MAT:      { type: 'expense',    color: 'blue',   label: 'Дотоод материал (хуучин — MAT_WH/MAT_PROD ашиглана уу)' },
+  MAT_WH:   { type: 'expense',    color: 'blue',   label: 'Складын материал (дотоод худалдан авалт)',       module: 'warehouse' },
+  MAT_PROD: { type: 'expense',    color: 'blue',   label: 'Үйлдвэрлэлийн материал (дотоод худалдан авалт)',  module: 'production' },
   MAR:      { type: 'expense',    color: 'purple', label: 'Маркетинг (контент, борлуулалтын комисс)' },
   SUB:      { type: 'expense',    color: 'teal',   label: 'Захиалгат үйлчилгээ (Claude, GitHub, интернет)' },
   FEE:      { type: 'expense',    color: 'blue',   label: 'Банкны шимтгэл' },
@@ -35,7 +37,7 @@ const FINANCE_CODES = {
 // Grouped for review screens
 const CODE_GROUPS = [
   { label: '\u{1F7E2} Орлого',  codes: ['SALE','REC','ADV','INV'], cls: 'income' },
-  { label: '\u{1F535} Зарлага', codes: ['IMP','SAL','TRN','TRIP','EQP','ASSET','TAX','OFF','UTIL','MAT','MAR','SUB','FEE'], cls: 'expense' },
+  { label: '\u{1F535} Зарлага', codes: ['IMP','SAL','TRN','TRIP','EQP','ASSET','TAX','OFF','UTIL','MAT_WH','MAT_PROD','MAR','SUB','FEE'], cls: 'expense' },
   { label: '↩️ Буцаалт',   codes: ['REFUND'], cls: 'refund' },
   { label: '\u{1F504} Зээл',   codes: ['LOAN_IN','LOAN_OUT'], cls: 'loan' },
   { label: '⚪ Тусгай',     codes: ['TRF','OTHER'], cls: 'gray' },
@@ -43,14 +45,15 @@ const CODE_GROUPS = [
 
 // Derived arrays
 const INCOME_CODES  = ['SALE','REC','ADV','INV'];
-const EXPENSE_CODES = ['IMP','SAL','TRN','TRIP','EQP','ASSET','TAX','OFF','UTIL','MAT','MAR','SUB','FEE','OTHER'];
+const EXPENSE_CODES = ['IMP','SAL','TRN','TRIP','EQP','ASSET','TAX','OFF','UTIL','MAT','MAT_WH','MAT_PROD','MAR','SUB','FEE','OTHER'];
 const LOAN_CODES    = ['LOAN_IN','LOAN_OUT'];
 const SALES_CODES   = ['SALE','REC','ADV'];
 const REFUND_CODES  = ['REFUND'];
 const ALL_CODES     = Object.keys(FINANCE_CODES);
 
 // Sorted for dropdowns/buttons (review UX order)
-const SORTED_CODES  = [...INCOME_CODES, ...EXPENSE_CODES.filter(c => c !== 'OTHER'), 'REFUND', 'TRF', 'OTHER'];
+// Хуучин MAT-г picker-ээс хасна (зөвхөн legacy харуулалт/нэгтгэлд үлдэнэ) — шинэ бүртгэл MAT_WH/MAT_PROD сонгоно
+const SORTED_CODES  = [...INCOME_CODES, ...EXPENSE_CODES.filter(c => c !== 'OTHER' && c !== 'MAT'), 'REFUND', 'TRF', 'OTHER'];
 
 // Category labels for expense page
 const CAT_LABELS = {
@@ -63,7 +66,9 @@ const CAT_LABELS = {
   TAX:      '\u{1F3DB} Татвар',
   OFF:      '\u{1F5C2} Оффис',
   UTIL:     '\u{1F4A1} Тогтмол',
-  MAT:      '\u{1F9F1} Материал',
+  MAT:      '\u{1F9F1} Материал (хуучин)',
+  MAT_WH:   '\u{1F9F1} Материал → Склад',
+  MAT_PROD: '\u{1F3ED} Материал → Үйлдвэр',
   MAR:      '\u{1F4E3} Маркетинг',
   SUB:      '\u{1F4BB} Захиалгат',
   FEE:      '\u{1F3E6} Шимтгэл',
@@ -89,7 +94,9 @@ const CODE_EXAMPLES = {
   TAX:      'TAX: НДШ',
   OFF:      'OFF: принтер цаас',
   UTIL:     'UTIL: цахилгаан',
-  MAT:      'MAT: remen, шкив',
+  MAT:      'MAT: (хуучин) remen, шкив',
+  MAT_WH:   'MAT_WH: складад хадгалах материал',
+  MAT_PROD: 'MAT_PROD: үйлдвэрт шууд хэрэглэх материал',
   MAR:      'MAR: Пластик Центр маркетинг',
   SUB:      'SUB: Claude AI, GitHub',
   TRF:      'TRF: Касс руу',
@@ -110,3 +117,4 @@ function isCapitalCode(code) { return code === 'INV'; }
 function isLoanInCode(code)  { return code === 'LOAN_IN'; }
 function codeColor(code)     { return FINANCE_CODES[code]?.color || 'red'; }
 function codeLabel(code)     { return FINANCE_CODES[code]?.label || code; }
+function codeModule(code)    { return FINANCE_CODES[code]?.module || null; } // Phase B: код→модуль routing
