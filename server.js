@@ -38,6 +38,44 @@ app.get('/api/admin/snapshot', (req, res) => {
   res.json(safe);
 });
 
+// ── Гүйлгээний код засах (recode-only, API-key) — автомат залруулга ──
+// ЗӨВХӨН гүйлгээний `code` талбарыг солино (+needs_review шинэчилнэ, intake-ийг
+// дагуулна). Устгах / дүн / огноо / counterparty / users-ийг ХЭЗЭЭ Ч хөндөхгүй.
+// Буруу (MEMO_CODES-д байхгүй) код өгвөл тухайн мөрийг алгасна. Зөвхөн
+// EXPORT_API_KEY-ээр ажиллана. Body: { items:[{id,code},...] } эсвэл { id, code }.
+app.post('/api/admin/recode', (req, res) => {
+  const KEY = process.env.EXPORT_API_KEY;
+  if (!KEY) return res.status(503).json({ error: 'recode идэвхгүй: EXPORT_API_KEY тохируулаагүй' });
+  if ((req.headers['x-api-key'] || req.query.key) !== KEY) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
+
+  const { load, save } = require('./database');
+  const { syncInternalPurchases } = require('./lib/internal_purchases');
+  const { MEMO_CODES } = require('./lib/pdf_parser');
+
+  const items = Array.isArray(req.body && req.body.items) ? req.body.items
+              : (req.body && req.body.id ? [{ id: req.body.id, code: req.body.code }] : null);
+  if (!items || !items.length) return res.status(400).json({ error: 'items хоосон' });
+
+  const db = load();
+  const allTx = db.transactions || [];
+  const results = [];
+  let changed = 0;
+  for (const it of items) {
+    // ⚠️ Давхардсан id байж болзошгүй (идэвхтэй + архивласан ижил id). ЗӨВХӨН
+    // идэвхтэй (archived биш) мөрийг зорино — архивласан хуулбарыг хэзээ ч хөндөхгүй.
+    const tx = allTx.find(t => t.id === (it && it.id) && !t.archived);
+    if (!tx) { results.push({ id: it && it.id, ok: false, error: 'идэвхтэй гүйлгээ олдсонгүй' }); continue; }
+    if (!it.code || !MEMO_CODES[it.code]) { results.push({ id: it.id, ok: false, error: 'буруу код: ' + it.code }); continue; }
+    const from = tx.code;
+    tx.code = it.code;          // ЗӨВХӨН код
+    tx.needs_review = false;    // хүчинтэй код тул шалгалт шаардахгүй
+    results.push({ id: it.id, ok: true, from, to: it.code, desc: tx.description || tx.raw_memo || '' });
+    changed++;
+  }
+  if (changed > 0) { syncInternalPurchases(db); save(db); }
+  res.json({ ok: true, changed, results });
+});
+
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/import', require('./routes/import'));
 app.use('/api', require('./routes/api'));
