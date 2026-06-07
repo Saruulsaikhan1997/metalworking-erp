@@ -5,6 +5,7 @@ const path    = require('path');
 const { load, save, saveCritical } = require('../database');
 const { authMiddleware, adminOnly } = require('../middleware/auth');
 const { parsePDF, detectCategory, txId, MEMO_CODES, isForeignTx } = require('../lib/pdf_parser');
+const { syncInternalPurchases } = require('../lib/internal_purchases');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -454,6 +455,7 @@ router.post('/finance/import/confirm', adminOnly, (req, res) => {
     return (a.seq || 0) - (b.seq || 0);
   });
 
+  syncInternalPurchases(db); // Phase B: MAT_WH/MAT_PROD → дотоод худалдан авалт руу чиглүүлэх
   save(db);
   res.json({ ok: true, added, skipped, rejected });
 });
@@ -498,6 +500,7 @@ router.post('/finance/import', adminOnly, upload.single('file'), async (req, res
       return (a.seq || 0) - (b.seq || 0);
     });
 
+    syncInternalPurchases(db); // Phase B: MAT_WH/MAT_PROD → дотоод худалдан авалт руу чиглүүлэх
     save(db);
     res.json({ ok: true, bank: parsed.bank, account: parsed.account, added, skipped, total_in_pdf: parsed.transactions.length });
   } catch (e) {
@@ -558,6 +561,7 @@ router.post('/finance/auto-import', adminOnly, async (req, res) => {
     return (a.time || '').localeCompare(b.time || '');
   });
 
+  syncInternalPurchases(db); // Phase B: MAT_WH/MAT_PROD → дотоод худалдан авалт руу чиглүүлэх
   save(db);
   res.json({ ok: true, files_processed: filesProcessed, added: totalAdded, skipped: totalSkipped, errors });
 });
@@ -572,6 +576,7 @@ router.put('/finance/transactions/:id', adminOnly, (req, res) => {
     tx.needs_review = !req.body.code || !MEMO_CODES[req.body.code];
   }
   if ('note' in req.body) tx.note = req.body.note;
+  syncInternalPurchases(db); // Phase B: код өөрчлөгдөхөд intake-ийг дагуулж шинэчлэх/цуцлах/сэргээх
   save(db);
   res.json({ ok: true, code: tx.code, needs_review: tx.needs_review });
 });
@@ -585,6 +590,7 @@ router.put('/finance/transactions/:id/archive', adminOnly, (req, res) => {
   tx.archived_at = new Date().toISOString();
   tx.archived_by = req.user.name;
   tx.archive_reason = req.body.reason || '';
+  syncInternalPurchases(db); // Phase B: гүйлгээ архивлахад холбогдох pending intake-ийг цуцлах
   save(db);
   res.json({ ok: true, id: tx.id, archived: true });
 });
@@ -592,6 +598,23 @@ router.put('/finance/transactions/:id/archive', adminOnly, (req, res) => {
 // Get memo codes spec
 router.get('/finance/codes', (req, res) => {
   res.json(MEMO_CODES);
+});
+
+// ── Phase B: Дотоод худалдан авалт (Finance → Module routing) ──
+// Зөвхөн УНШИХ. Санхүүгийн MAT_WH/MAT_PROD гүйлгээнээс автоматаар үүссэн
+// "хүлээгдэж буй дотоод худалдан авалт"-уудыг буцаана. Module хуудсууд
+// (Склад/Үйлдвэр) энэ мэдээллийг харна. ?module=warehouse|production,
+// ?status=pending(default)|cancelled|all шүүлтүүр.
+router.get('/internal-purchases', (req, res) => {
+  const db = load();
+  const status = req.query.status || 'pending';
+  let list = db.internal_purchases || [];
+  if (status !== 'all') list = list.filter(p => p.status === status);
+  if (req.query.module) list = list.filter(p => p.module === req.query.module);
+  list.sort((a, b) =>
+    (b.date || '').localeCompare(a.date || '') ||
+    (b.created_at || '').localeCompare(a.created_at || ''));
+  res.json(list);
 });
 
 // ── RECONCILIATION: balance chain math check ──

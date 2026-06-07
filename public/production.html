@@ -75,6 +75,16 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 
 .empty { text-align: center; color: var(--gray-400); padding: 40px 20px; font-size: 13px; }
 
+/* Phase B: Дотоод худалдан авалт (Finance → Production routing) — зөвхөн унших */
+.ip-note { font-size: 11px; color: var(--gray-600); background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 8px 10px; margin-bottom: 10px; line-height: 1.5; }
+.ip-card { background: #fff; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); border: 1px solid var(--gray-200); border-left: 4px solid var(--brand); }
+.ip-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.ip-code { display: inline-block; font-family: monospace; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 5px; background: #fed7aa; color: #92400e; }
+.ip-amt { font-size: 14px; font-weight: 800; color: var(--brand-dark); white-space: nowrap; }
+.ip-desc { font-size: 13px; font-weight: 600; color: var(--gray-900); margin-top: 6px; line-height: 1.4; }
+.ip-meta { font-size: 10.5px; color: var(--gray-400); margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--gray-100); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.ip-badge { display: inline-block; font-size: 10px; font-weight: 700; color: #92400e; background: #fef3c7; padding: 1px 7px; border-radius: 8px; }
+
 .settings-link {
   display: block; text-align: center;
   margin: 24px 16px 0; padding: 10px;
@@ -94,6 +104,13 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
       <div class="id-sub">Төлөвлөгөө, гүйцэтгэл, гаралт</div>
     </div>
   </div>
+</div>
+
+<!-- Phase B: Санхүүгээс чиглүүлсэн дотоод худалдан авалт (зөвхөн унших). Хоосон бол нуугдана. -->
+<div class="section" id="ipSection" style="display:none">
+  <div class="section-label">🛒 Хүлээгдэж буй дотоод худалдан авалт</div>
+  <div class="ip-note">Санхүүд <b>MAT_PROD</b> (үйлдвэрлэлийн материал) гэж бүртгэсэн худалдан авалтууд автоматаар энд харагдана. Зөвхөн мэдээлэл — хүлээн авах/баталгаажуулах үйлдэл дараагийн шатанд нэмэгдэнэ.</div>
+  <div id="ipList"></div>
 </div>
 
 <div class="section">
@@ -154,6 +171,31 @@ async function api(path) {
   if (r.status === 401) { localStorage.clear(); window.location.href = '/'; }
   return r.json();
 }
+function fmt(n) { return Number(n||0).toLocaleString('mn-MN'); }
+
+// Phase B: Санхүүгээс чиглүүлсэн дотоод худалдан авалт (module='production'). Зөвхөн унших.
+async function loadInternalPurchases() {
+  const items = await api('/internal-purchases?module=production') || [];
+  const sec = document.getElementById('ipSection');
+  const el  = document.getElementById('ipList');
+  if (!Array.isArray(items) || !items.length) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  el.innerHTML = items.map(p => {
+    const acct = (p.account_label || '').replace(' (Касс)','').replace(' (Компани)','');
+    return `<div class="ip-card">
+      <div class="ip-top">
+        <span class="ip-code">${p.code || '—'}</span>
+        <div class="ip-amt">${fmt(p.amount)} ₮</div>
+      </div>
+      <div class="ip-desc">${p.description || '—'}</div>
+      <div class="ip-meta">
+        <span>📅 ${p.date || '—'}</span>
+        ${acct ? `<span>🏦 ${acct}</span>` : ''}
+        <span class="ip-badge">⏳ Хүлээгдэж буй</span>
+      </div>
+    </div>`;
+  }).join('');
+}
 
 function showTab(name) {
   document.querySelectorAll('.panel').forEach(el => el.classList.remove('active'));
@@ -182,6 +224,8 @@ async function loadExec() {
     ${p.note ? `<div class="exec-note">${p.note}</div>` : ''}
   </div>`).join('');
 }
+
+loadInternalPurchases();
 </script>
 </body>
 </html>
