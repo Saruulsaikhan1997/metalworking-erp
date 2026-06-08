@@ -19,7 +19,7 @@ router.post('/login', (req, res) => {
 
   const token = jwt.sign({ id: user.id, name: user.name, username: user.username, role: user.role }, SECRET, { expiresIn: '7d' });
   res.cookie('token', token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
-  res.json({ token, user: { name: user.name, role: user.role } });
+  res.json({ token, user: { id: user.id, name: user.name, username: user.username, role: user.role } });
 });
 
 router.post('/logout', (req, res) => {

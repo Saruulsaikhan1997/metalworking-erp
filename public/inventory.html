@@ -671,8 +671,13 @@ if (!isAdmin) {
 }
 
 // ── Тэнцүүр таб: зөвхөн эзэн (admin, mnk9) харна ──
-const BAL_ALLOWED = ['admin', 'mnk9'];
-if (BAL_ALLOWED.includes(user.username)) {
+// username байвал түүгээр, (хуучин session-д) байхгүй бол role-оор шалгана.
+const BAL_ALLOWED_USERS = ['admin', 'mnk9'];
+const BAL_ALLOWED_ROLES = ['admin', 'manager'];
+const balOk = user.username
+  ? BAL_ALLOWED_USERS.includes(user.username)
+  : BAL_ALLOWED_ROLES.includes(user.role);
+if (balOk) {
   const tBal = document.getElementById('t-balance');
   if (tBal) tBal.style.display = '';
 }
