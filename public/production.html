@@ -84,6 +84,16 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 .ip-desc { font-size: 13px; font-weight: 600; color: var(--gray-900); margin-top: 6px; line-height: 1.4; }
 .ip-meta { font-size: 10.5px; color: var(--gray-400); margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--gray-100); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .ip-badge { display: inline-block; font-size: 10px; font-weight: 700; color: #92400e; background: #fef3c7; padding: 1px 7px; border-radius: 8px; }
+/* Шилжүүлэх чиглэл сонгох мөр */
+.ip-dest { display: flex; gap: 6px; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--gray-200); flex-wrap: wrap; }
+.ip-dest-label { font-size: 10.5px; color: var(--gray-500); font-weight: 700; }
+.ip-dest-btn { font-size: 11px; font-weight: 700; padding: 5px 11px; border-radius: 8px; border: 1.5px solid var(--gray-200); background: #fff; color: var(--gray-700); cursor: pointer; transition: all .15s; }
+.ip-dest-btn:hover { border-color: var(--brand); }
+.ip-dest-btn.active { color: #fff; border-color: transparent; }
+.ip-dest-btn.active.dest-assets     { background: #7c3aed; }
+.ip-dest-btn.active.dest-production { background: #ea580c; }
+.ip-dest-btn.active.dest-repair     { background: #16a34a; }
+.ip-dest-note { font-size: 10.5px; font-weight: 700; color: #16a34a; margin-left: 2px; }
 
 .settings-link {
   display: block; text-align: center;
@@ -182,6 +192,9 @@ async function loadInternalPurchases() {
   sec.style.display = '';
   el.innerHTML = items.map(p => {
     const acct = (p.account_label || '').replace(' (Касс)','').replace(' (Компани)','');
+    const d = p.destination || '';
+    const db = (key, icon, label) =>
+      `<button class="ip-dest-btn dest-${key}${d===key?' active':''}" onclick="setDest('${p.id}','${key}',this)">${icon} ${label}</button>`;
     return `<div class="ip-card">
       <div class="ip-top">
         <span class="ip-code">${p.code || '—'}</span>
@@ -193,8 +206,68 @@ async function loadInternalPurchases() {
         ${acct ? `<span>🏦 ${acct}</span>` : ''}
         <span class="ip-badge">⏳ Хүлээгдэж буй</span>
       </div>
+      <div class="ip-dest">
+        <span class="ip-dest-label">Шилжүүлэх:</span>
+        ${db('assets','🪑','Эд хогшил')}
+        ${db('production','🏭','Үйлдвэрлэл')}
+        ${db('repair','🔧','Засвар')}
+        <span class="ip-dest-note" id="ipnote-${p.id}"></span>
+      </div>
     </div>`;
   }).join('');
+}
+
+// Шилжих чиглэл сонгоод хадгалах (Эд хогшил/Засвар → склад руу бараа болж орно)
+const DEST_MSG = {
+  assets:     '✓ Складын “Эд хогшил”-д нэмэгдлээ',
+  repair:     '✓ Складын “Засварын бараа”-д нэмэгдлээ',
+  production: '→ Үйлдвэрлэлд тэмдэглэгдлээ',
+};
+async function setDest(id, dest, btn) {
+  const row  = btn.parentElement;
+  const card = btn.closest('.ip-card');
+  const note = document.getElementById('ipnote-' + id);
+  row.querySelectorAll('.ip-dest-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (note) { note.style.color = '#94a3b8'; note.textContent = '⏳ хадгалж байна...'; }
+  try {
+    const r = await fetch('/api/internal-purchase/' + encodeURIComponent(id) + '/route', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ destination: dest })
+    });
+    const data = await r.json().catch(() => ({}));
+    if (data.ok) {
+      if (note) { note.style.color = '#16a34a'; note.textContent = DEST_MSG[dest] || '✓ Хадгаллаа'; }
+      // Зөвхөн склад руу орвол (Эд хогшил/Засвар) энэ хуудаснаас арилгана.
+      // Үйлдвэрлэл бол энэ хуудсанд үлдэнэ.
+      if (data.category && card) {
+        row.querySelectorAll('.ip-dest-btn').forEach(b => b.disabled = true);
+        setTimeout(() => removeCard(card), 750);
+      }
+    } else if (note) {
+      note.style.color = '#dc2626'; note.textContent = data.error || 'Алдаа гарлаа';
+    }
+  } catch (e) { if (note) { note.style.color = '#dc2626'; note.textContent = 'Сүлжээний алдаа'; } }
+}
+
+function removeCard(card) {
+  card.style.overflow = 'hidden';
+  card.style.maxHeight = card.offsetHeight + 'px';
+  card.style.transition = 'opacity .35s ease, transform .35s ease, max-height .35s ease, margin .35s ease, padding .35s ease';
+  requestAnimationFrame(() => {
+    card.style.opacity = '0';
+    card.style.transform = 'translateX(24px)';
+    card.style.maxHeight = '0';
+    card.style.marginBottom = '0';
+    card.style.paddingTop = '0';
+    card.style.paddingBottom = '0';
+  });
+  setTimeout(() => {
+    card.remove();
+    const list = document.getElementById('ipList');
+    if (list && !list.querySelector('.ip-card')) document.getElementById('ipSection').style.display = 'none';
+  }, 380);
 }
 
 function showTab(name) {
