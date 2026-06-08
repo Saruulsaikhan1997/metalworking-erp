@@ -157,6 +157,63 @@ router.get('/inventory', (req, res) => {
   res.json(enriched);
 });
 
+// ── Дотоод худалдан авалтыг шилжүүлэх (Эд хогшил/Үйлдвэрлэл/Засвар) ──
+// Эд хогшил → склад дахь 'assets' категори, Засвар → 'maintenance' категорьт
+// бараа болж шууд орно. Үйлдвэрлэл → зөвхөн тэмдэглэгээ (склад бараа үүсгэхгүй).
+const IP_DESTINATIONS  = ['assets', 'production', 'repair'];
+const IP_DEST_CATEGORY = { assets: 'assets', repair: 'maintenance' };
+router.post('/internal-purchase/:id/route', (req, res) => {
+  if (!['admin','warehouse','manager'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
+  const { destination } = req.body;
+  if (!IP_DESTINATIONS.includes(destination)) return res.status(400).json({ error: 'Чиглэл буруу' });
+  const db = load();
+  if (!db.inventory) db.inventory = [];
+  const p = (db.internal_purchases || []).find(x => String(x.id) === String(req.params.id));
+  if (!p) return res.status(404).json({ error: 'Худалдан авалт олдсонгүй' });
+
+  p.destination    = destination;
+  p.destination_by = req.user.name;
+  p.destination_at = new Date().toISOString();
+
+  const cat = IP_DEST_CATEGORY[destination]; // 'assets' | 'maintenance' | undefined
+  const cleanName = (p.description || '').replace(/^(EQP|MAT_PROD|MAT)\s*:\s*/i, '').trim() || (p.description || '—');
+
+  if (cat) {
+    // Эд хогшил / Засвар → склад руу орсон тул pending жагсаалтаас гарна
+    p.status = 'routed';
+    let item = p.inventory_item_id ? db.inventory.find(i => i.id === p.inventory_item_id) : null;
+    if (item) {
+      item.category = cat;
+      item.active   = true;
+    } else {
+      const id = Math.max(0, ...db.inventory.map(i => i.id || 0)) + 1;
+      item = {
+        id, code: '', name: cleanName, category: cat,
+        status: 'available', unit: 'ш', location: 'central',
+        qty: 1, threshold: 0,
+        cost_per_unit: p.amount || 0, total_value: p.amount || 0,
+        active: true, has_manual_adjustment: false,
+        created_at: new Date().toISOString(),
+        created_by: 'Дотоод худалдан авалт (' + req.user.name + ')',
+        source_ip_id: p.id,
+      };
+      db.inventory.push(item);
+      p.inventory_item_id = id;
+    }
+  } else {
+    // Үйлдвэрлэл → энэ хуудсанд үлдэнэ (pending хэвээр). Өмнө склад руу орсон
+    // байсан бол тэр барааг нуух.
+    p.status = 'pending';
+    if (p.inventory_item_id) {
+      const item = db.inventory.find(i => i.id === p.inventory_item_id);
+      if (item) item.active = false;
+    }
+  }
+
+  save(db);
+  res.json({ ok: true, destination, category: cat || null });
+});
+
 // ── Create item (catalog only — qty always starts at 0) ──
 router.post('/inventory/item', (req, res) => {
   if (!['admin','warehouse','manager'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
