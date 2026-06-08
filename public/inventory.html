@@ -1243,9 +1243,11 @@ async function loadStock() {
   });
   // Бусад ангилал байвал нэмнэ
   Object.keys(catGroups).forEach(c => { if (!CAT_ORDER.includes(c)) CAT_ORDER.push(c); });
+  // Хоосон ч гэсэн үргэлж харагдах категориуд (шүүлтүүргүй үед)
+  const ALWAYS_SHOW = ['raw', 'finished', 'maintenance', 'assets'];
 
-  el.innerHTML = CAT_ORDER.filter(c => catGroups[c]?.length).map(cat => {
-    const catItems = catGroups[cat];
+  el.innerHTML = CAT_ORDER.filter(c => (!stockCatFilter && ALWAYS_SHOW.includes(c)) || catGroups[c]?.length).map(cat => {
+    const catItems = catGroups[cat] || [];
     return `<div class="cat-accordion" id="cat-acc-${cat}">
       <div class="cat-acc-header" onclick="toggleCatAcc('${cat}')">
         <span class="cat-acc-icon">${CAT_ICON[cat] || '📦'}</span>
@@ -1254,7 +1256,7 @@ async function loadStock() {
         <span class="cat-acc-caret">▸</span>
       </div>
       <div class="cat-acc-body" id="cat-body-${cat}" style="display:none">
-        ${catItems.map(i => renderItemCard(i)).join('')}
+        ${catItems.length ? catItems.map(i => renderItemCard(i)).join('') : '<div style="padding:14px 16px;color:#94a3b8;font-size:13px">Бараа байхгүй</div>'}
       </div>
     </div>`;
   }).join('');
