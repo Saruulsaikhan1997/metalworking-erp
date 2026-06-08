@@ -328,6 +328,7 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
     <button class="tab-pill" id="t-in" onclick="showTab('in')">Орлого</button>
     <button class="tab-pill" id="t-out" onclick="showTab('out')">Гаралт</button>
     <button class="tab-pill" id="t-hist" onclick="showTab('hist')">Хөдөлгөөний түүх</button>
+    <button class="tab-pill" id="t-balance" onclick="showTab('balance')" style="display:none">⚖️ Тэнцүүр</button>
   </div>
 
   <div id="panel-stock" class="panel active">
@@ -559,6 +560,82 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
   </div>
 
   <div id="panel-hist" class="panel"><div id="historyList"></div></div>
+
+  <!-- ══════════ ⚖️ ҮЙЛДВЭРЛЭЛИЙН ТЭНЦҮҮР (зөвхөн эзэн) ══════════ -->
+  <style>
+    #panel-balance .bal-lock { background:#1e293b; color:#fff; font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; }
+    #panel-balance .bal-sub { color:#64748b; font-size:13px; margin:6px 0 16px; }
+    #panel-balance .bal-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px; margin-bottom:16px; box-shadow:0 1px 3px rgba(0,0,0,.04); }
+    #panel-balance .bal-ctitle { font-size:14px; font-weight:700; color:#0f172a; margin:0 0 12px; display:flex; align-items:center; gap:6px; }
+    #panel-balance .bal-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+    #panel-balance .bal-pbtn { border:2px solid #e2e8f0; background:#fff; border-radius:10px; padding:12px 8px; cursor:pointer; text-align:center; transition:all .15s; font-size:13px; font-weight:600; color:#334155; }
+    #panel-balance .bal-pbtn:hover { border-color:#cbd5e1; }
+    #panel-balance .bal-pbtn.active { border-color:#0284c7; background:#f0f9ff; color:#0369a1; }
+    #panel-balance .bal-pbtn .em { display:block; font-size:24px; margin-bottom:4px; }
+    #panel-balance table { width:100%; border-collapse:collapse; font-size:13px; }
+    #panel-balance th, #panel-balance td { text-align:left; padding:9px 6px; border-bottom:1px solid #f1f5f9; }
+    #panel-balance th { color:#64748b; font-weight:600; font-size:11px; text-transform:uppercase; }
+    #panel-balance td.num, #panel-balance th.num { text-align:right; font-variant-numeric:tabular-nums; }
+    #panel-balance tr:last-child td { border-bottom:none; }
+    #panel-balance .bal-mini { width:90px; padding:7px 9px; border:2px solid #cbd5e1; border-radius:7px; font-size:14px; text-align:center; font-variant-numeric:tabular-nums; }
+    #panel-balance .bal-mini:focus { outline:none; border-color:#0284c7; }
+    #panel-balance .bal-big { width:120px; padding:11px 12px; border:2px solid #cbd5e1; border-radius:9px; font-size:20px; text-align:center; font-weight:700; }
+    #panel-balance .bal-big:focus { outline:none; border-color:#0284c7; }
+    #panel-balance .bal-expect { background:#f0f9ff; border:1px solid #bae6fd; border-radius:10px; padding:16px; text-align:center; }
+    #panel-balance .bal-expect .n { font-size:40px; font-weight:800; color:#0369a1; line-height:1; }
+    #panel-balance .bal-expect .lbl { font-size:13px; color:#0c4a6e; margin-top:4px; }
+    #panel-balance .bal-expect .bind { font-size:12px; color:#64748b; margin-top:8px; }
+    #panel-balance .bal-left { margin-top:10px; font-size:12px; color:#475569; text-align:center; }
+    #panel-balance .bal-left .tag { display:inline-block; background:#f1f5f9; border-radius:6px; padding:2px 8px; margin:2px 3px; font-variant-numeric:tabular-nums; }
+    #panel-balance .bal-verdict { margin-top:6px; padding:14px 16px; border-radius:10px; font-size:15px; font-weight:700; display:flex; align-items:center; gap:10px; }
+    #panel-balance .bal-verdict.ok { background:#dcfce7; color:#166534; }
+    #panel-balance .bal-verdict.bad { background:#fee2e2; color:#991b1b; }
+    #panel-balance .bal-verdict.over { background:#fef3c7; color:#92400e; }
+    #panel-balance .bal-verdict small { display:block; font-weight:500; font-size:12px; margin-top:2px; opacity:.85; }
+    #panel-balance .bal-muted { color:#94a3b8; }
+    #panel-balance .bal-hint { color:#64748b; font-size:12px; margin-top:8px; }
+    @media (max-width:480px){ #panel-balance .bal-grid { grid-template-columns:repeat(2,1fr); } #panel-balance .bal-mini { width:74px; } }
+  </style>
+  <div id="panel-balance" class="panel">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <h2 style="font-size:18px;margin:8px 0 0">⚖️ Үйлдвэрлэлийн тэнцүүр</h2>
+      <span class="bal-lock">🔒 Зөвхөн эзэн</span>
+    </div>
+    <div class="bal-sub">Үйлдвэрт гаргасан материалаар ёстой хэдэн бүтээгдэхүүн гарахыг тооцоод, бодит гарч ирсэнтэй тэнцүүлж шалгана.</div>
+
+    <div class="bal-card">
+      <div class="bal-ctitle">1️⃣ Аль бүтээгдэхүүн хийх вэ</div>
+      <div class="bal-grid" id="balGrid"></div>
+    </div>
+
+    <div class="bal-card" id="balIssueCard" style="display:none">
+      <div class="bal-ctitle">2️⃣ Үйлдвэрт гаргасан материал (гаралт)</div>
+      <table>
+        <thead><tr><th>Түүхий материал</th><th class="num">1 ш-д</th><th class="num">Гаргасан</th></tr></thead>
+        <tbody id="balIssueBody"></tbody>
+      </table>
+      <div class="bal-hint">↑ Гаралтын бүртгэлээс үйлдвэрт гарсан хэмжээг оруулна.</div>
+    </div>
+
+    <div class="bal-card" id="balExpectCard" style="display:none">
+      <div class="bal-ctitle">3️⃣ Энэ материалаар ёстой гарах бүтээгдэхүүн</div>
+      <div class="bal-expect">
+        <div class="n" id="balExpectN">0</div>
+        <div class="lbl">ширхэг гарах ёстой</div>
+        <div class="bind" id="balBindNote"></div>
+      </div>
+      <div class="bal-left" id="balLeftover"></div>
+    </div>
+
+    <div class="bal-card" id="balActualCard" style="display:none">
+      <div class="bal-ctitle">4️⃣ Үйлдвэрээс бодит гарч ирсэн</div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <input type="number" min="0" value="0" class="bal-big" id="balActualN" oninput="balRecalc()">
+        <span>ширхэг</span>
+      </div>
+      <div id="balVerdict" style="margin-top:14px"></div>
+    </div>
+  </div>
 </div>
 
 <div id="adminSection" style="display:none;padding:18px 16px 0">
@@ -593,6 +670,12 @@ if (!isAdmin) {
   if (tIn) tIn.style.display = 'none';
 }
 
+// ── Тэнцүүр таб: зөвхөн эзэн (admin) харна ──
+if (user.username === 'admin') {
+  const tBal = document.getElementById('t-balance');
+  if (tBal) tBal.style.display = '';
+}
+
 async function api(path, opts = {}) {
   const r = await fetch('/api' + path, {
     ...opts,
@@ -612,6 +695,102 @@ function showTab(name) {
   if (name === 'hist')  loadHistory();
   if (name === 'in')    loadIntakeForm();
   if (name === 'out')   loadOutForm();
+  if (name === 'balance') balInit();
+}
+
+// ══════════ ⚖️ Үйлдвэрлэлийн тэнцүүр (зөвхөн эзэн = admin) ══════════
+const BAL_MATS = {
+  p8080: { name: "Хоолой 80×80×1.2×6м", unit: "ш" },
+  p4040: { name: "Хоолой 40×40×1×6м",   unit: "ш" },
+  p4020: { name: "Хоолой 40×20×1×6м",   unit: "ш" },
+  upvc:  { name: "UPVC хавтан",          unit: "м²" },
+};
+// Орц — 1 ш бүтээгдэхүүнд зарцуулах материал (ТУРШИЛТЫН тоо — бодит тоогоор солино)
+const BAL_PRODUCTS = {
+  haalga:   { emoji:"🚪", name:"Хашааны хаалга", bom:{ p4040:2, p4020:1,   upvc:2 } },
+  huree:    { emoji:"🪟", name:"Цонхны хүрээ",    bom:{ p4020:1, upvc:1.5 } },
+  haasaa:   { emoji:"🧱", name:"Хашаа (1 хэсэг)", bom:{ p8080:1, p4020:0.5 } },
+  shat:     { emoji:"🪜", name:"Ган шат",         bom:{ p4040:3, p8080:1 } },
+  shiree:   { emoji:"🪑", name:"Металл ширээ",    bom:{ p4040:1, p4020:0.5, upvc:0.8 } },
+  hashlaga: { emoji:"🛡", name:"Хашлага",         bom:{ p4020:1, p4040:0.5 } },
+};
+let balSelected = null, balReady = false;
+
+function balInit() {
+  if (balReady) return;
+  const grid = document.getElementById('balGrid');
+  grid.innerHTML = '';
+  Object.entries(BAL_PRODUCTS).forEach(([k,p]) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'bal-pbtn'; b.id = 'bal-pb-'+k;
+    b.innerHTML = `<span class="em">${p.emoji}</span>${p.name}`;
+    b.onclick = () => balSelectProduct(k);
+    grid.appendChild(b);
+  });
+  balReady = true;
+  balSelectProduct('haalga');
+}
+
+function balSelectProduct(k) {
+  balSelected = k;
+  document.querySelectorAll('.bal-pbtn').forEach(el => el.classList.remove('active'));
+  document.getElementById('bal-pb-'+k).classList.add('active');
+  const p = BAL_PRODUCTS[k];
+  document.getElementById('balIssueBody').innerHTML = Object.entries(p.bom).map(([mk, per]) => {
+    const m = BAL_MATS[mk];
+    return `<tr>
+      <td>${m.name}</td>
+      <td class="num bal-muted">${per} ${m.unit}</td>
+      <td class="num"><input type="number" min="0" value="0" class="bal-mini" id="bal-iss-${mk}" oninput="balRecalc()"> <span class="bal-muted" style="font-size:12px">${m.unit}</span></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('balIssueCard').style.display = '';
+  document.getElementById('balExpectCard').style.display = 'none';
+  document.getElementById('balActualCard').style.display = 'none';
+  document.getElementById('balActualN').value = 0;
+}
+
+function balRecalc() {
+  if (!balSelected) return;
+  const p = BAL_PRODUCTS[balSelected];
+  let expect = Infinity, bindKey = null, anyIssue = false;
+  const issued = {};
+  Object.entries(p.bom).forEach(([mk, per]) => {
+    const v = +document.getElementById('bal-iss-'+mk).value || 0;
+    issued[mk] = v;
+    if (v > 0) anyIssue = true;
+    const canMake = Math.floor(v / per);
+    if (canMake < expect) { expect = canMake; bindKey = mk; }
+  });
+  if (!anyIssue || expect === Infinity) expect = 0;
+
+  document.getElementById('balExpectN').textContent = expect.toLocaleString();
+  document.getElementById('balBindNote').innerHTML = (anyIssue && bindKey)
+    ? `Хязгаарлагч материал: <b>${BAL_MATS[bindKey].name}</b>` : '';
+  document.getElementById('balLeftover').innerHTML = anyIssue
+    ? 'Үлдэх материал: ' + Object.entries(p.bom).map(([mk, per]) => {
+        const left = issued[mk] - expect * per;
+        return `<span class="tag">${BAL_MATS[mk].name}: ${(+left.toFixed(2)).toLocaleString()} ${BAL_MATS[mk].unit}</span>`;
+      }).join('') : '';
+
+  document.getElementById('balExpectCard').style.display = anyIssue ? '' : 'none';
+  document.getElementById('balActualCard').style.display = anyIssue ? '' : 'none';
+
+  const actual = +document.getElementById('balActualN').value || 0;
+  const v = document.getElementById('balVerdict');
+  if (!anyIssue) { v.className=''; v.innerHTML=''; return; }
+  if (actual === 0) { v.className=''; v.innerHTML='<span class="bal-muted" style="font-size:13px">Бодит гарч ирсэн тоог оруулна уу.</span>'; return; }
+  const diff = actual - expect;
+  if (diff === 0) {
+    v.className = 'bal-verdict ok';
+    v.innerHTML = `✅ Таарсан — ${expect} ш материалаар яг ${actual} ш гарсан.`;
+  } else if (diff < 0) {
+    v.className = 'bal-verdict bad';
+    v.innerHTML = `⚠️ Дутуу — ${-diff} ш дутаж байна. <small>Материалаар ${expect} ш гарах ёстой байсан ч ${actual} ш гарчээ. Алдагдал, хаягдал их, эсвэл бүртгэлийн зөрүүг шалгана уу.</small>`;
+  } else {
+    v.className = 'bal-verdict over';
+    v.innerHTML = `❓ Илүү гарсан — ${diff} ш илүү. <small>Тооцоолсноос олон бүтээгдэхүүн гарчээ. Бүртгэлгүй материал орсон эсэхийг шалгана уу.</small>`;
+  }
 }
 
 // ── Хийцлэлийн задаргаа харуулах ──
