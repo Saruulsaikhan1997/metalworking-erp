@@ -670,8 +670,9 @@ if (!isAdmin) {
   if (tIn) tIn.style.display = 'none';
 }
 
-// ── Тэнцүүр таб: зөвхөн эзэн (admin) харна ──
-if (user.username === 'admin') {
+// ── Тэнцүүр таб: зөвхөн эзэн (admin, mnk9) харна ──
+const BAL_ALLOWED = ['admin', 'mnk9'];
+if (BAL_ALLOWED.includes(user.username)) {
   const tBal = document.getElementById('t-balance');
   if (tBal) tBal.style.display = '';
 }
