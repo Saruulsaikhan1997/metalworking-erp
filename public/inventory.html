@@ -1333,12 +1333,21 @@ async function loadStock() {
       </div>`;
     }
 
+    const isToolCat = i.category === 'maintenance' || i.category === 'assets';
+    const unitPrice = (i.cost_per_unit != null && i.cost_per_unit > 0) ? i.cost_per_unit : null;
+    const totalVal  = i.total_value != null ? i.total_value : (unitPrice != null ? unitPrice * (i.qty || 0) : null);
+    const priceLine = unitPrice != null
+      ? `<div class="item-meta">💵 ${fmt(unitPrice)}₮/${i.unit || 'ш'}${(i.qty || 0) > 1 ? ` · нийт ${fmt(totalVal)}₮` : ''}</div>`
+      : '';
+    const locLine = isToolCat ? '' : `<div class="item-meta">📍 ${LOC_LABEL[i.location] || i.location || 'Төв склад'}</div>`;
+
     return `<div class="stock-item" id="stock-${i.id}">
       <div class="item-card${isLow ? ' low-stock' : ''}">
         <div class="item-info">
           ${i.code ? `<span class="item-code">${i.code}</span>` : ''}
           <div class="item-name">${i.name || '—'}</div>
-          <div class="item-meta">📍 ${LOC_LABEL[i.location] || i.location || 'Төв склад'}</div>
+          ${locLine}
+          ${priceLine}
           ${isLow ? '<div class="low-stock-badge">⚠ Доод хязгаарт</div>' : ''}
         </div>
         <div class="item-qty">${fmt(i.qty || 0)}<span class="item-unit">${i.unit || 'ш'}</span></div>

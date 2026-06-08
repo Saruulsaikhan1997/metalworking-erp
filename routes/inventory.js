@@ -55,6 +55,57 @@ function ensureInventorySeed(db) {
   }
 }
 
+// ── Migration: Зарлагын баримт (БМ-3)-аас засвар/эд хогшил бараа нэмэх ──
+// Нэг удаа ажиллана (import_receipt_items_v1 флагаар хамгаалсан). data.json-д
+// шууд бичдэг тул API-ийн категори шалгалтыг тойрно (maintenance/assets).
+const RECEIPT_ITEMS = [
+  // 🔧 Засварын бараа (maintenance)
+  { code: 'SILICONE-GUN',       name: 'Силиконы гар (буу)',         category: 'maintenance', unit: 'ш', qty: 1,  cost_per_unit: 7000 },
+  { code: 'SILICONE-WHITE',     name: 'Силикон цагаан',             category: 'maintenance', unit: 'ш', qty: 1,  cost_per_unit: 12000 },
+  { code: 'METAL-SCREW',        name: 'Төмрийн шуруп',              category: 'maintenance', unit: 'ш', qty: 1,  cost_per_unit: 5000 },
+  { code: 'BLADE-YELLOW-BIG',   name: 'Төмрийн шар ир том',         category: 'maintenance', unit: 'ш', qty: 5,  cost_per_unit: 20000 },
+  { code: 'CHARGER-DIFF-2-4AH', name: '2Ah-4Ah цэнэглэгч зөрүү',    category: 'maintenance', unit: 'ш', qty: 1,  cost_per_unit: 40000 },
+  { code: 'BLADE-125MM',        name: 'Төмрийн ир 125mm',           category: 'maintenance', unit: 'ш', qty: 50, cost_per_unit: 2000 },
+  // 🪑 Эд хогшил (assets)
+  { code: 'RB-4-SET',           name: 'RB-4 set',                   category: 'assets', unit: 'ш', qty: 1, cost_per_unit: 2000000 },
+  { code: 'WELDER-220-280',     name: 'Гагнуурын аппарат 220w-280w', category: 'assets', unit: 'ш', qty: 1, cost_per_unit: 450000 },
+  { code: 'BATTERY-DIFF-40-80', name: '4.0Ah-8.0Ah зөрүү',          category: 'assets', unit: 'ш', qty: 1, cost_per_unit: 110000 },
+  { code: 'CUTTER-9925',        name: 'Кэн таслагч 9925 (том)',     category: 'assets', unit: 'ш', qty: 1, cost_per_unit: 220000 },
+  { code: 'CUTTER-SMALL',       name: 'Кэн жижиг таслагч',          category: 'assets', unit: 'ш', qty: 1, cost_per_unit: 85000 },
+  { code: 'CUTTER-MORI',        name: 'Кэн мори таслагч',           category: 'assets', unit: 'ш', qty: 1, cost_per_unit: 320000 },
+  { code: 'WRENCH-SET-142',     name: 'Түлхүүр комплект 142ш',      category: 'assets', unit: 'ш', qty: 1, cost_per_unit: 380000 },
+];
+
+function ensureReceiptItems(db) {
+  if (db.import_receipt_items_v1) return false;
+  if (!db.inventory) db.inventory = [];
+  let added = 0;
+  for (const it of RECEIPT_ITEMS) {
+    if (db.inventory.some(x => x.code === it.code)) continue; // давхардлаас сэргийлэх
+    const id = Math.max(0, ...db.inventory.map(i => i.id || 0)) + 1;
+    db.inventory.push({
+      id,
+      code:          it.code,
+      name:          it.name,
+      category:      it.category,
+      status:        'available',
+      unit:          it.unit,
+      location:      'central',
+      qty:           it.qty,
+      threshold:     0,
+      cost_per_unit: it.cost_per_unit,
+      total_value:   it.qty * it.cost_per_unit,
+      active:        true,
+      has_manual_adjustment: false,
+      created_at:    new Date().toISOString(),
+      created_by:    'migration (Зарлагын баримт БМ-3)',
+    });
+    added++;
+  }
+  db.import_receipt_items_v1 = true;
+  return added > 0;
+}
+
 // ── List items (enriched with received-lot breakdown for the warehouse view) ──
 // Read-only, additive enrichment: each item gets a `lots` array (profile name +
 // quantity in the item's OWN unit). NO cost/valuation fields are exposed here —
@@ -73,6 +124,7 @@ const _normUnit = (u) => {
 router.get('/inventory', (req, res) => {
   const db = load();
   ensureInventorySeed(db);
+  ensureReceiptItems(db);
   save(db);
 
   // Sub-breakdown = received, non-sample import lots, grouped by inventory item.
