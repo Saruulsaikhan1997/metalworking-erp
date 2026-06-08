@@ -21,11 +21,6 @@ const DEFAULT = {
     { id: 4, name: 'Склад менежер',       username: 'warehouse', password: bcrypt.hashSync(SEED_PW, 10), role: 'warehouse' },
     { id: 5, name: 'Борлуулагч',          username: 'sales',     password: bcrypt.hashSync(SEED_PW, 10), role: 'sales' },
   ],
-  finance: {
-    tdb_balance:  116252300,
-    kass_balance: 36989900,
-    updated_at:   '2026-05-20'
-  },
   products: [
     { id: 'toilet_cabin',   name: 'Жорлон бүхээг',        price: 850000, active: true },
     { id: 'fence_m1',       name: 'Хашаа М-1',             price: 120000, active: true },

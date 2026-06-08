@@ -47,18 +47,11 @@ const newsUpload = multer({
 router.get('/dashboard', (req, res) => {
   const db = load();
   res.json({
-    finance:     db.finance,
     imports:     db.imports,
     alerts:      db.alerts.filter(a => !a.resolved),
     receivables: db.receivables.filter(r => !r.resolved),
     payables:    db.payables.filter(p => !p.resolved),
   });
-});
-
-router.put('/finance', adminOnly, (req, res) => {
-  const db = load();
-  db.finance = { ...db.finance, ...req.body, updated_at: new Date().toISOString().slice(0,10) };
-  save(db); res.json({ ok: true });
 });
 
 // ── PRODUCTS ──
@@ -569,7 +562,7 @@ router.post('/finance/auto-import', adminOnly, async (req, res) => {
 // Update transaction code/note (admin marks reviewed)
 router.put('/finance/transactions/:id', adminOnly, (req, res) => {
   const db = load();
-  const tx = (db.transactions || []).find(t => t.id === req.params.id);
+  const tx = (db.transactions || []).find(t => t.id === req.params.id && !t.archived);
   if (!tx) return res.status(404).json({ error: 'Олдсонгүй' });
   if ('code' in req.body) {
     tx.code = req.body.code;
@@ -584,7 +577,7 @@ router.put('/finance/transactions/:id', adminOnly, (req, res) => {
 // Archive a transaction (for phantom/duplicate entries)
 router.put('/finance/transactions/:id/archive', adminOnly, (req, res) => {
   const db = load();
-  const tx = (db.transactions || []).find(t => t.id === req.params.id);
+  const tx = (db.transactions || []).find(t => t.id === req.params.id && !t.archived);
   if (!tx) return res.status(404).json({ error: 'Олдсонгүй' });
   tx.archived = true;
   tx.archived_at = new Date().toISOString();
