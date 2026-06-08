@@ -249,17 +249,53 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
     const newId = computeId(t);
     if (newId !== t.id) { t.id = newId; changed++; }
   }
-  // Now find and archive duplicates (same id = same data)
+  // Now find and archive duplicates (same id = same data).
+  // ⚠️ Архивлахдаа цор ганц ШИНЭ id өгнө (orig_id-д хадгална) — эс бөгөөс архив
+  //    хуулбар идэвхтэй мөртэй ИЖИЛ id-тай үлдэж, id-аар хайдаг код (UI засах/архивлах)
+  //    буруу мөрийг оноход хүргэдэг (өмнөх давхардсан-id алдааны үндэс).
   const seen = new Set();
   for (const t of txs) {
     if (t.archived) continue;
     if (seen.has(t.id)) {
+      t.orig_id = t.id;
+      t.id = 'arch-' + crypto.randomBytes(8).toString('hex');
       t.archived = true; t.archived_at = new Date().toISOString();
       t.archived_by = 'system-dedup'; t.archive_reason = 'Duplicate after txId rehash';
       changed++;
     } else {
       seen.add(t.id);
     }
+  }
+
+  // 2h. Давхардсан-id ЦЭВЭРЛЭГЭЭ (backfill): өмнөх dedup архивласан хуулбарт ИЖИЛ id
+  //     үлдээснээс нэг id-д идэвхтэй+архив 2 мөр оногдсон (2026-05-31-ний dedup).
+  //     Идэвхтэй мөртэй ИЖИЛ id-тай архивлагдсан мөрүүдэд цор ганц шинэ id өгнө
+  //     (orig_id-д хадгална). Идэвхтэй мөрийн id ХЭВЭЭР. ЗӨВХӨН идэвхтэй мөртэй
+  //     мөргөлдсөн архивыг хөнддөг тул UI-аар хууль ёсоор архивласан (хос байхгүй)
+  //     мөрүүд хэвээр. Step 3-ийн ДАРАА. Идемпотент (флаг + дахин мөргөлдөөн үлдэхгүй).
+  if (!db._migrated_dupe_archived_ids) {
+    const activeIds = new Set(txs.filter(t => !t.archived).map(t => t.id));
+    let reidCount = 0;
+    for (const t of txs) {
+      if (t.archived && activeIds.has(t.id)) {
+        t.orig_id = t.id;
+        t.id = 'arch-' + crypto.randomBytes(8).toString('hex');
+        reidCount++; changed++;
+      }
+    }
+    db._migrated_dupe_archived_ids = true;
+    changed++;
+    if (reidCount) console.log(`Migration 2h: ${reidCount} архивлагдсан давхардлын id шинэчлэв.`);
+  }
+
+  // 2i. Хуучирсан finance объектыг устгах. Энэ нь зөвхөн 2026-05-20-ний seed утга
+  //     (tdb 116M + kass 37M = 153 сая₮) байсан бөгөөд аль ч хуудас харуулдаггүй
+  //     (dashboard үлдэгдлийг гүйлгээний balance_after-аас шууд тооцдог) тул DB-д
+  //     үлдээх нь зөвхөн төөрөгдөл. Идемпотент (байхгүй бол алгасна).
+  if (db.finance !== undefined) {
+    delete db.finance;
+    changed++;
+    console.log('Migration 2i: хуучирсан finance объект устгав.');
   }
 
   // 2g. Phase B: Дотоод худалдан авалт (internal_purchases) intake-уудыг одоо
