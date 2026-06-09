@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+<title>Импортын бараа — Метал Воркинг Центр</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --brand: #1565c0; --brand-dark: #0d47a1;
+  --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+  --gray-400: #9ca3af; --gray-500: #6b7280; --gray-600: #4b5563; --gray-900: #111827;
+  --green: #059669; --green-bg: #d1fae5; --amber: #d97706; --blue: #2563eb; --red: #dc2626;
+}
+body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; background: var(--gray-50); color: var(--gray-900); padding-bottom: 90px; -webkit-font-smoothing: antialiased; }
+
+/* Header */
+.hdr { background: linear-gradient(135deg, #0d47a1 0%, #1565c0 100%); color: #fff; padding: 18px 20px 16px; border-radius: 0 0 20px 20px; box-shadow: 0 4px 12px rgba(13,71,161,0.18); }
+.hdr-top { display: flex; align-items: center; gap: 12px; }
+.hdr-back { font-size: 22px; color: #fff; text-decoration: none; padding: 4px 8px; }
+.hdr-title { font-size: 17px; font-weight: 700; flex: 1; }
+.hdr-sub { font-size: 11px; opacity: 0.85; margin-top: 3px; }
+.hdr-detail { display:inline-block; margin-top:10px; font-size:11px; font-weight:600; color:#fff; background:rgba(255,255,255,0.16); padding:5px 12px; border-radius:20px; text-decoration:none; }
+
+/* Stats */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 14px 16px 0; }
+.st { background: #fff; border-radius: 12px; padding: 12px 6px; text-align: center; border: 1px solid var(--gray-200); }
+.st-v { font-size: 22px; font-weight: 900; }
+.st-l { font-size: 9.5px; color: var(--gray-400); font-weight: 600; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.4px; }
+.st.active .st-v { color: var(--amber); }
+.st.done .st-v { color: var(--green); }
+.st.unas .st-v { color: var(--red); }
+
+/* Unassigned inbox */
+.sec { padding: 16px 16px 0; }
+.sec-lbl { font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display:flex; justify-content:space-between; align-items:center; }
+.inbox { background:#fff7ed; border:1px solid #fed7aa; border-radius:14px; padding:12px 14px; }
+.inbox-hd { font-size:12.5px; font-weight:800; color:#9a3412; margin-bottom:8px; }
+.upay { display:flex; align-items:center; gap:8px; padding:9px 0; border-top:1px dashed #fed7aa; }
+.upay:first-of-type { border-top:none; }
+.upay-main { flex:1; min-width:0; }
+.upay-top { display:flex; align-items:baseline; gap:8px; }
+.upay-amt { font-size:14px; font-weight:800; color:#9a3412; white-space:nowrap; }
+.upay-date { font-size:10px; color:var(--gray-500); }
+.upay-memo { font-size:10.5px; color:var(--gray-600); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.btn-assign { flex-shrink:0; font-size:11px; font-weight:700; color:#fff; background:var(--amber); border:none; border-radius:9px; padding:8px 12px; cursor:pointer; }
+
+/* Tabs */
+.tabs { display:flex; gap:8px; padding:16px 16px 0; }
+.tab { flex:1; text-align:center; padding:10px 6px; border-radius:11px; background:#fff; border:1.5px solid var(--gray-200); font-size:12.5px; font-weight:700; color:var(--gray-500); cursor:pointer; }
+.tab.on { background:var(--brand-dark); border-color:var(--brand-dark); color:#fff; }
+.tab .cnt { display:inline-block; margin-left:5px; padding:1px 7px; background:rgba(0,0,0,0.08); border-radius:9px; font-size:10px; }
+.tab.on .cnt { background:rgba(255,255,255,0.22); }
+
+/* Order card */
+.card { background:#fff; border-radius:14px; padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 4px rgba(0,0,0,0.05); border:1px solid var(--gray-200); border-left:4px solid var(--amber); }
+.card.done { border-left-color:var(--green); }
+.c-top { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+.c-name { font-size:14.5px; font-weight:800; line-height:1.3; }
+.c-supplier { font-size:11px; color:var(--gray-600); margin-top:2px; }
+.c-code { font-size:9.5px; color:var(--gray-400); font-family:monospace; margin-top:2px; }
+.c-right { text-align:right; flex-shrink:0; }
+.c-cur { font-size:9px; font-weight:700; color:var(--gray-500); background:var(--gray-100); padding:2px 7px; border-radius:7px; }
+.c-paid { font-size:14px; font-weight:800; color:var(--brand-dark); margin-top:5px; white-space:nowrap; }
+.c-paid-l { font-size:8.5px; color:var(--gray-400); font-weight:600; text-transform:uppercase; }
+.c-meta { display:flex; gap:10px; flex-wrap:wrap; font-size:10.5px; color:var(--gray-500); margin-top:9px; }
+.badge-done { display:inline-block; font-size:10px; font-weight:800; padding:3px 9px; border-radius:10px; background:var(--green-bg); color:#065f46; }
+
+/* expand + payments */
+.exp-btn { font-size:11px; color:var(--brand); font-weight:700; cursor:pointer; margin-top:10px; padding-top:9px; border-top:1px solid var(--gray-100); }
+.pays { display:none; margin-top:8px; }
+.pays.open { display:block; }
+.pay { display:flex; align-items:flex-start; gap:8px; padding:9px 0; border-top:1px solid var(--gray-100); }
+.pay.final { background:linear-gradient(90deg,#ecfdf5,transparent); border-radius:8px; padding:9px 8px; border-top:1px solid var(--green-bg); }
+.pay-l { flex:1; min-width:0; }
+.pay-row1 { display:flex; align-items:baseline; gap:8px; }
+.pay-amt { font-size:13px; font-weight:800; }
+.pay-date { font-size:10px; color:var(--gray-500); }
+.acct { font-size:9px; font-weight:700; padding:2px 6px; border-radius:6px; background:#dbeafe; color:#1e40af; }
+.acct.kass { background:#fef3c7; color:#92400e; }
+.pay-memo { font-size:10px; color:var(--gray-500); margin-top:3px; line-height:1.35; }
+.final-tag { font-size:9px; font-weight:800; color:#065f46; }
+.pay-act { display:flex; flex-direction:column; gap:5px; flex-shrink:0; }
+.mini { font-size:10px; font-weight:700; border:1px solid var(--gray-200); background:#fff; border-radius:8px; padding:5px 8px; cursor:pointer; white-space:nowrap; }
+.mini.star { color:var(--amber); }
+.mini.star.on { background:var(--green); border-color:var(--green); color:#fff; }
+.mini.rm { color:var(--red); }
+.pays-empty { font-size:11px; color:var(--gray-400); padding:10px 0; text-align:center; }
+
+.empty { text-align:center; color:var(--gray-400); padding:46px 20px; font-size:13px; }
+
+/* Modal */
+.overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:50; align-items:flex-end; }
+.overlay.open { display:flex; }
+.modal { background:#fff; width:100%; border-radius:20px 20px 0 0; padding:20px 18px calc(20px + env(safe-area-inset-bottom)); max-height:86vh; overflow-y:auto; }
+.modal h3 { font-size:16px; font-weight:800; margin-bottom:4px; }
+.modal .sub { font-size:11px; color:var(--gray-500); margin-bottom:14px; }
+.fld { margin-bottom:12px; }
+.fld label { display:block; font-size:11px; font-weight:700; color:var(--gray-600); margin-bottom:5px; }
+.fld select, .fld input { width:100%; font-size:14px; padding:11px 12px; border:1.5px solid var(--gray-200); border-radius:11px; background:#fff; -webkit-appearance:none; }
+.chk { display:flex; align-items:center; gap:9px; background:#ecfdf5; border:1px solid var(--green-bg); border-radius:11px; padding:11px 12px; cursor:pointer; }
+.chk input { width:18px; height:18px; }
+.chk-txt { font-size:12.5px; font-weight:700; color:#065f46; }
+.chk-sub { font-size:10px; color:#047857; font-weight:500; }
+.newg { display:none; border-top:1px dashed var(--gray-200); margin-top:10px; padding-top:12px; }
+.newg.open { display:block; }
+.link-new { font-size:11.5px; color:var(--brand); font-weight:700; cursor:pointer; margin:2px 0 12px; display:inline-block; }
+.m-pay { background:var(--gray-50); border:1px solid var(--gray-200); border-radius:11px; padding:10px 12px; margin-bottom:14px; }
+.m-pay-amt { font-size:15px; font-weight:800; }
+.m-pay-meta { font-size:10.5px; color:var(--gray-500); margin-top:2px; }
+.btns { display:flex; gap:10px; margin-top:6px; }
+.btn { flex:1; padding:13px; border-radius:12px; font-size:14px; font-weight:700; border:none; cursor:pointer; }
+.btn-cancel { background:var(--gray-100); color:var(--gray-600); }
+.btn-ok { background:var(--brand-dark); color:#fff; }
+.btn-ok:disabled { opacity:0.5; }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-top">
+    <a class="hdr-back" href="/dashboard">‹</a>
+    <div style="flex:1">
+      <div class="hdr-title">Импортын бараа</div>
+      <div class="hdr-sub">Захиалга → төлбөр → складад орсон</div>
+    </div>
+  </div>
+  <a class="hdr-detail" href="/imports">📊 Ачилт &amp; landed cost →</a>
+</div>
+
+<div class="stats">
+  <div class="st active"><div class="st-v" id="stActive">0</div><div class="st-l">Идэвхтэй</div></div>
+  <div class="st done"><div class="st-v" id="stDone">0</div><div class="st-l">Складад орсон</div></div>
+  <div class="st unas"><div class="st-v" id="stUnas">0</div><div class="st-l">Хуваарилаагүй</div></div>
+</div>
+
+<div id="inboxWrap"></div>
+
+<div class="tabs">
+  <div class="tab on" id="tabActive" onclick="switchTab('active')">Идэвхтэй <span class="cnt" id="cntActive">0</span></div>
+  <div class="tab" id="tabDone" onclick="switchTab('done')">Складад орсон <span class="cnt" id="cntDone">0</span></div>
+</div>
+
+<div class="sec">
+  <div id="activeList"></div>
+  <div id="doneList" style="display:none"></div>
+</div>
+
+<!-- Assign modal -->
+<div class="overlay" id="assignOverlay">
+  <div class="modal">
+    <h3>Төлбөр хуваарилах</h3>
+    <div class="sub">Энэ банкны төлбөрийг аль бараанд хамаарахыг сонгоно уу.</div>
+    <div class="m-pay" id="mPay"></div>
+    <div class="fld">
+      <label>Бараа (захиалга)</label>
+      <select id="assignOrder"></select>
+    </div>
+    <span class="link-new" id="toggleNew" onclick="toggleNewGood()">+ Шинэ бараа үүсгэх</span>
+    <div class="newg" id="newGood">
+      <div class="fld"><label>Барааны нэр</label><input id="ngName" placeholder="ж: Хашаа М-1 төмөр"></div>
+      <div class="fld"><label>Нийлүүлэгч</label><input id="ngSupplier" placeholder="ж: Shandong Yongding"></div>
+      <div class="fld"><label>Валют</label>
+        <select id="ngCurrency"><option value="USD">USD</option><option value="CNY">CNY</option><option value="MNT">MNT</option></select>
+      </div>
+    </div>
+    <label class="chk">
+      <input type="checkbox" id="assignFinal">
+      <div><div class="chk-txt">Энэ нь эцсийн (бүрэн) төлбөр</div><div class="chk-sub">Тэмдэглэвэл бараа «Складад орсон» болно</div></div>
+    </label>
+    <div class="btns">
+      <button class="btn btn-cancel" onclick="closeAssign()">Болих</button>
+      <button class="btn btn-ok" id="assignOk" onclick="submitAssign()">Хуваарилах</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/bottom-nav.js"></script>
+<script>
+const token = localStorage.getItem('token');
+if (!token) window.location.href = '/';
+const me = JSON.parse(localStorage.getItem('user') || '{}');
+const isAdmin = me.role === 'admin';
+
+async function api(path) {
+  const r = await fetch('/api/import' + path, { headers: { 'Authorization': 'Bearer ' + token }});
+  if (r.status === 401) { localStorage.clear(); window.location.href = '/'; return; }
+  return r.json();
+}
+async function postApi(path, body) {
+  const r = await fetch('/api/import' + path, {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (r.status === 401) { localStorage.clear(); window.location.href = '/'; return; }
+  return r.json();
+}
+function esc(s) { return (s || '').replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c])); }
+function fmt(n) { return (n || 0).toLocaleString() + '₮'; }
+function acctClass(label) { return /хаан|khan|касс|касc/i.test(label || '') ? 'kass' : ''; }
+function acctShort(label) { return /хаан|khan|касс|касc/i.test(label || '') ? 'Касс' : 'TDB'; }
+
+let data = { active: [], done: [], unassigned: [], orders: [] };
+let tab = 'active';
+let assignTx = null;
+const expanded = new Set();
+
+async function load() {
+  data = await api('/orders-tracker') || data;
+  render();
+}
+
+function render() {
+  document.getElementById('stActive').textContent = data.active.length;
+  document.getElementById('stDone').textContent = data.done.length;
+  document.getElementById('stUnas').textContent = data.unassigned.length;
+  document.getElementById('cntActive').textContent = data.active.length;
+  document.getElementById('cntDone').textContent = data.done.length;
+  renderInbox();
+  renderList('active');
+  renderList('done');
+}
+
+function renderInbox() {
+  const wrap = document.getElementById('inboxWrap');
+  const ps = data.unassigned || [];
+  if (!ps.length) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = `<div class="sec"><div class="inbox">
+    <div class="inbox-hd">🔻 Хуваарилаагүй импортын төлбөр (${ps.length}) · ${fmt(data.unassigned_total_mnt)}</div>
+    ${ps.map(p => `
+      <div class="upay">
+        <div class="upay-main">
+          <div class="upay-top"><span class="upay-amt">${fmt(p.amount)}</span><span class="upay-date">${esc(p.date)}</span><span class="acct ${acctClass(p.account_label)}">${acctShort(p.account_label)}</span></div>
+          <div class="upay-memo">${esc(p.memo)}</div>
+        </div>
+        ${isAdmin ? `<button class="btn-assign" onclick="openAssign('${p.transaction_id}')">Хуваарилах</button>` : ''}
+      </div>`).join('')}
+  </div></div>`;
+}
+
+function renderList(which) {
+  const el = document.getElementById(which === 'active' ? 'activeList' : 'doneList');
+  const orders = data[which] || [];
+  if (!orders.length) {
+    el.innerHTML = `<div class="empty">${which === 'active' ? 'Идэвхтэй захиалга алга' : 'Складад орсон бараа алга'}</div>`;
+    return;
+  }
+  el.innerHTML = orders.map(o => orderCard(o, which === 'done')).join('');
+}
+
+function orderCard(o, isDone) {
+  const open = expanded.has(o.id);
+  return `<div class="card ${isDone ? 'done' : ''}">
+    <div class="c-top">
+      <div style="flex:1;min-width:0">
+        <div class="c-name">${esc(o.name)}</div>
+        <div class="c-supplier">${esc(o.supplier)}</div>
+        <div class="c-code">${esc(o.code)}</div>
+      </div>
+      <div class="c-right">
+        <span class="c-cur">${esc(o.currency)}</span>
+        <div class="c-paid">${fmt(o.total_paid_mnt)}</div>
+        <div class="c-paid-l">төлсөн</div>
+      </div>
+    </div>
+    <div class="c-meta">
+      <span>💳 ${o.payment_count} төлбөр</span>
+      ${isDone ? `<span class="badge-done">✓ Складад орсон${o.done_at ? ' · ' + esc(o.done_at) : ''}</span>` : ''}
+    </div>
+    <div class="exp-btn" onclick="toggleExp('${o.id}')">${open ? '▴ Төлбөрүүд хаах' : '▾ Төлбөрүүд харах (' + o.payment_count + ')'}</div>
+    <div class="pays ${open ? 'open' : ''}">
+      ${o.payments.length ? o.payments.map(p => payRow(p, o.id)).join('') : '<div class="pays-empty">Төлбөр бүртгэгдээгүй</div>'}
+    </div>
+  </div>`;
+}
+
+function payRow(p, orderId) {
+  return `<div class="pay ${p.is_final ? 'final' : ''}">
+    <div class="pay-l">
+      <div class="pay-row1">
+        <span class="pay-amt">${fmt(p.amount)}</span>
+        <span class="pay-date">${esc(p.date)}</span>
+        <span class="acct ${acctClass(p.account_label)}">${acctShort(p.account_label)}</span>
+        ${p.is_final ? '<span class="final-tag">★ ЭЦСИЙН</span>' : ''}
+      </div>
+      <div class="pay-memo">${esc(p.memo)}</div>
+    </div>
+    ${isAdmin ? `<div class="pay-act">
+      <button class="mini star ${p.is_final ? 'on' : ''}" onclick="toggleFinal('${orderId}','${p.transaction_id}',${!p.is_final})">${p.is_final ? '★ Эцсийн' : '☆ Эцсийн'}</button>
+      <button class="mini rm" onclick="unassignPay('${p.transaction_id}')">✕ Салгах</button>
+    </div>` : ''}
+  </div>`;
+}
+
+function toggleExp(id) { expanded.has(id) ? expanded.delete(id) : expanded.add(id); render(); }
+
+function switchTab(t) {
+  tab = t;
+  document.getElementById('tabActive').classList.toggle('on', t === 'active');
+  document.getElementById('tabDone').classList.toggle('on', t === 'done');
+  document.getElementById('activeList').style.display = t === 'active' ? 'block' : 'none';
+  document.getElementById('doneList').style.display = t === 'done' ? 'block' : 'none';
+}
+
+async function toggleFinal(orderId, txId, makeFinal) {
+  if (makeFinal && !confirm('Энэ төлбөрийг ЭЦСИЙН болгох уу? Бараа «Складад орсон» болно.')) return;
+  const res = await postApi('/assign-payment', { transaction_id: txId, order_id: orderId, is_final: makeFinal });
+  if (res && res.ok) { await load(); if (makeFinal) switchTab('done'); }
+  else alert((res && res.error) || 'Алдаа гарлаа');
+}
+
+async function unassignPay(txId) {
+  if (!confirm('Энэ төлбөрийг бараанаас салгах уу?')) return;
+  const res = await postApi('/unassign-payment', { transaction_id: txId });
+  if (res && res.ok) await load();
+  else alert((res && res.error) || 'Алдаа гарлаа');
+}
+
+// ── Assign modal ──
+function openAssign(txId) {
+  assignTx = (data.unassigned || []).find(p => p.transaction_id === txId);
+  if (!assignTx) return;
+  document.getElementById('mPay').innerHTML =
+    `<div class="m-pay-amt">${fmt(assignTx.amount)}</div>
+     <div class="m-pay-meta">${esc(assignTx.date)} · ${acctShort(assignTx.account_label)} · ${esc(assignTx.memo)}</div>`;
+  const sel = document.getElementById('assignOrder');
+  sel.innerHTML = (data.orders || []).map(o => `<option value="${o.id}">${esc(o.name)} — ${esc(o.supplier)}</option>`).join('');
+  document.getElementById('assignFinal').checked = false;
+  document.getElementById('newGood').classList.remove('open');
+  document.getElementById('toggleNew').style.display = 'inline-block';
+  document.getElementById('ngName').value = '';
+  document.getElementById('ngSupplier').value = '';
+  document.getElementById('assignOverlay').classList.add('open');
+}
+function closeAssign() { document.getElementById('assignOverlay').classList.remove('open'); assignTx = null; }
+function toggleNewGood() {
+  const ng = document.getElementById('newGood');
+  const open = ng.classList.toggle('open');
+  document.getElementById('assignOrder').disabled = open;
+  document.getElementById('toggleNew').textContent = open ? '− Одоо байгаа бараанаас сонгох' : '+ Шинэ бараа үүсгэх';
+}
+async function submitAssign() {
+  if (!assignTx) return;
+  const ok = document.getElementById('assignOk');
+  ok.disabled = true;
+  try {
+    const isFinal = document.getElementById('assignFinal').checked;
+    const newOpen = document.getElementById('newGood').classList.contains('open');
+    let orderId;
+    if (newOpen) {
+      const name = document.getElementById('ngName').value.trim();
+      const supplier = document.getElementById('ngSupplier').value.trim();
+      if (!name || !supplier) { alert('Барааны нэр болон нийлүүлэгч оруулна уу'); ok.disabled = false; return; }
+      const created = await postApi('/projects', {
+        name, supplier_name: supplier, currency: document.getElementById('ngCurrency').value
+      });
+      if (!created || !created.id) { alert((created && created.error) || 'Бараа үүсгэж чадсангүй'); ok.disabled = false; return; }
+      orderId = created.id;
+    } else {
+      orderId = document.getElementById('assignOrder').value;
+    }
+    const res = await postApi('/assign-payment', { transaction_id: assignTx.transaction_id, order_id: orderId, is_final: isFinal });
+    if (res && res.ok) { closeAssign(); await load(); if (isFinal) switchTab('done'); }
+    else alert((res && res.error) || 'Алдаа гарлаа');
+  } finally { ok.disabled = false; }
+}
+
+load();
+</script>
+</body>
+</html>
