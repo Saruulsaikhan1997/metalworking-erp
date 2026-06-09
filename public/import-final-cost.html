@@ -97,10 +97,10 @@ tfoot td .r-total { color: var(--brand-dark); }
 
 <div class="hdr">
   <div class="hdr-top">
-    <a class="hdr-back" href="/imports">‹</a>
+    <a class="hdr-back" id="backLink" href="/imports/orders">‹</a>
     <div style="flex:1">
-      <div class="hdr-title">Эцсийн өртөг — склад орохын өмнө</div>
-      <div class="hdr-sub">Ачилт бүрийн хийцлэл бүрийн бодит өртөг</div>
+      <div class="hdr-title" id="hdrTitle">Эцсийн өртөг — склад орохын өмнө</div>
+      <div class="hdr-sub" id="hdrSub">Ачилт бүрийн хийцлэл бүрийн бодит өртөг</div>
     </div>
   </div>
 </div>
@@ -196,10 +196,24 @@ function renderShipment(s) {
   </div>`;
 }
 
+// Per-good scope: this page always shows ONE good's final cost (opened from
+// that good's card on /imports/orders). The all-goods list was removed.
+const params = new URLSearchParams(location.search);
+const orderId = params.get('order');
+const orderName = params.get('name');
+if (orderName) {
+  document.getElementById('hdrTitle').textContent = orderName;
+  document.getElementById('hdrSub').textContent = 'Эцсийн өртөг — склад орохын өмнө';
+}
+
 async function load() {
-  const data = await api('/final-cost');
+  if (!orderId) {
+    document.getElementById('list').innerHTML = '<div class="empty">Бараагаа сонгоно уу.<br><a href="/imports/orders" style="color:var(--brand);font-weight:700;text-decoration:none">← Импортын бараа руу буцах</a></div>';
+    return;
+  }
+  const data = await api('/final-cost?order=' + encodeURIComponent(orderId));
   if (!Array.isArray(data) || !data.length) {
-    document.getElementById('list').innerHTML = '<div class="empty">Ачилтын мэдээлэл байхгүй</div>';
+    document.getElementById('list').innerHTML = '<div class="empty">Энэ барааны эцсийн өртөг хараахан гараагүй.<br><span style="font-size:11px;color:var(--gray-400)">Ачилт бүртгэгдэж, зардал хуваарилагдсаны дараа харагдана.</span></div>';
     return;
   }
   document.getElementById('list').innerHTML = data.map(renderShipment).join('');
