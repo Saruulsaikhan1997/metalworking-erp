@@ -289,6 +289,128 @@ router.post('/unassign-payment', adminOnly, (req, res) => {
 });
 
 // ══════════════════════════════════════════
+//  COST WORKSPACE (per good / Import Order) — read-only v1
+//  The central per-good surface (freeze §10): money in (costs + linked bank
+//  payments), line items (profiles) with DUAL UNITS — buy-unit (basis) ↔
+//  stock-unit (catalog output) + conversion — and LOOSE reconciliation
+//  (Ledger / Allocated / Difference; warn-not-block, freeze §12).
+//  Shown on each warehoused (складад орсон) good. No mutation here.
+// ══════════════════════════════════════════
+router.get('/cost-workspace/:orderId', (req, res) => {
+  const db = load();
+  const order = (db.import_projects || []).find(p => p.id === req.params.orderId);
+  if (!order) return res.status(404).json({ error: 'Захиалга олдсонгүй' });
+
+  const shipments = (db.import_shipments || []).filter(s => s.project_id === order.id);
+  const shipIds = shipments.map(s => s.id);
+  const lots = (db.import_lots || []).filter(l => shipIds.includes(l.shipment_id) && !l.is_sample);
+  const allCosts = db.import_cost_ledger || [];
+  const pcodes = db.import_product_codes || [];
+  const txs = db.transactions || [];
+
+  // cost-type → management bucket / capitalize tag (freeze §15)
+  const bucketOf = (type) => {
+    const t = (type || '').toLowerCase();
+    if (t === 'product' || t === 'product_adjustment') return 'product';
+    if (t.startsWith('freight')) return 'freight';
+    if (t.includes('vat') || t === 'tax' || t.includes('duty')) return 'tax';
+    if (t.startsWith('customs')) return 'customs';
+    return 'other';
+  };
+  // 🟢 capitalize (goods landed cost) vs ⚪ period (general/period cost)
+  const tagOf = (type) => {
+    const t = (type || '').toLowerCase();
+    if (t.includes('bank') || t.includes('fee') || t.startsWith('fx') || t.includes('fx_loss')) return 'period';
+    return 'capitalize';
+  };
+
+  // costs recorded against this good (project_id is reliably set on every row)
+  const txById = {}; for (const t of txs) txById[t.id] = t;
+  const costRows = allCosts.filter(c => c.project_id === order.id).map(c => {
+    const tx = c.transaction_id ? txById[c.transaction_id] : null;
+    return {
+      id: c.id, type: c.type, bucket: bucketOf(c.type), tag: tagOf(c.type),
+      amount_mnt: c.amount_mnt || 0,
+      note: c.description || '',
+      payment: tx ? { date: tx.date, account_label: tx.account_label, memo: tx.note || tx.description || tx.raw_memo || '' } : null
+    };
+  });
+  const ledgerTotal = costRows.reduce((s, c) => s + c.amount_mnt, 0);
+  const capitalizeTotal = costRows.filter(c => c.tag === 'capitalize').reduce((s, c) => s + c.amount_mnt, 0);
+  const periodTotal = costRows.filter(c => c.tag === 'period').reduce((s, c) => s + c.amount_mnt, 0);
+
+  // Per-lot business numbers (mirror /final-cost so the stock-side matches the
+  // эцсийн өртөг page). buy side = primary purchase unit (e.g. ton); stock side
+  // = business unit from catalog (e.g. meter), bridged by conversion_factor.
+  const lineBusiness = (lot) => {
+    const pcode = pcodes.find(p => p.code === lot.product_code) || {};
+    const invUnit = pcode.inventory_unit || lot.units?.primary?.unit || 'piece';
+    const invQty = (lot.units?.primary?.unit === invUnit) ? (lot.units.primary.qty || 0)
+      : (lot.units?.secondary?.unit === invUnit) ? (lot.units.secondary.qty || 0)
+      : (lot.units?.secondary?.qty || lot.units?.primary?.qty || 0);
+    const bizUnit = lot.business_unit || pcode.business_unit || invUnit;
+    const factor = lot.conversion_factor || pcode.conversion_factor || 1;
+    const bizQty = factor > 0 ? invQty / factor : invQty;
+    return {
+      buyUnit: lot.units?.primary?.unit || invUnit,
+      buyQty: lot.units?.primary?.qty || invQty,
+      stockUnit: bizUnit,
+      stockQty: bizQty,
+      factor
+    };
+  };
+
+  const lines = lots.map(lot => {
+    const b = lineBusiness(lot);
+    const breakdown = { product: 0, freight: 0, customs: 0, tax: 0, other: 0 };
+    for (const c of allCosts.filter(c => c.lot_id === lot.id)) breakdown[bucketOf(c.type)] += (c.amount_mnt || 0);
+    for (const a of (lot.allocations || [])) breakdown[bucketOf(a.cost_type)] += (a.final_value || 0);
+    const pcode = pcodes.find(p => p.code === lot.product_code) || {};
+    const allocated = lot.total_cost_mnt || 0;
+    return {
+      lot_id: lot.id,
+      name: lot.product?.name || pcode.name || lot.product_code,
+      spec: lot.product?.spec || '',
+      image: lot.product?.image || pcode.image || null,
+      buy_unit: b.buyUnit, buy_qty: Math.round(b.buyQty * 1000) / 1000,
+      stock_unit: b.stockUnit, stock_qty: Math.round(b.stockQty * 100) / 100,
+      conversion_factor: b.factor,
+      same_unit: b.stockUnit === b.buyUnit || b.factor === 1,
+      allocated_mnt: allocated,
+      unit_cost_stock: b.stockQty > 0 ? Math.round(allocated / b.stockQty) : 0,
+      breakdown
+    };
+  });
+  const allocatedTotal = lines.reduce((s, l) => s + l.allocated_mnt, 0);
+
+  // Linked bank payments (traceability — each good lists its IMP payments).
+  // Same derivation as /orders-tracker: explicit tag, else cost-ledger derived.
+  const ledgerProject = {};
+  for (const c of allCosts) if (c.transaction_id && c.project_id && ledgerProject[c.transaction_id] == null) ledgerProject[c.transaction_id] = c.project_id;
+  const payments = txs.filter(t => t.code === 'IMP' && !t.archived && !t.import_detached
+      && (t.import_order_id === order.id || ledgerProject[t.id] === order.id))
+    .map(t => ({ transaction_id: t.id, date: t.date, amount: t.amount,
+      account_label: t.account_label, memo: t.note || t.description || t.raw_memo || '',
+      is_final: t.import_final === true }))
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+  res.json({
+    order: { id: order.id, code: order.code, name: order.name, supplier: order.supplier?.name || '', currency: order.currency || 'USD' },
+    costs: costRows,
+    ledger_total_mnt: ledgerTotal,
+    capitalize_total_mnt: capitalizeTotal,
+    period_total_mnt: periodTotal,
+    lines,
+    line_count: lines.length,
+    allocated_total_mnt: allocatedTotal,
+    difference_mnt: ledgerTotal - allocatedTotal,
+    basis_hint: 'weight',
+    payments,
+    payment_total_mnt: payments.reduce((s, p) => s + (p.amount || 0), 0)
+  });
+});
+
+// ══════════════════════════════════════════
 //  SHIPMENTS
 // ══════════════════════════════════════════
 router.get('/shipments', (req, res) => {
@@ -433,7 +555,10 @@ router.get('/cost-analysis', (req, res) => {
 // ══════════════════════════════════════════
 router.get('/final-cost', (req, res) => {
   const db = load();
-  const shipments = db.import_shipments || [];
+  // Per-good scope: ?order=<projectId> → only that good's shipments.
+  // The all-goods list view was dropped (useless); callers pass an order.
+  const orderFilter = req.query.order || null;
+  const shipments = (db.import_shipments || []).filter(s => !orderFilter || s.project_id === orderFilter);
   const allLots = (db.import_lots || []).filter(l => !l.is_sample);
   const costs = db.import_cost_ledger || [];
   const pcodes = db.import_product_codes || [];
@@ -510,6 +635,7 @@ router.get('/final-cost', (req, res) => {
 
     return {
       shipment_code: ship.code,
+      project_id: ship.project_id || null,
       status: ship.status,
       reference_image: ship.reference_image || null,
       supplier: project.supplier?.name || '',

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+<title>Cost Workspace — Метал Воркинг Центр</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --brand: #1565c0; --brand-dark: #0d47a1;
+  --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb; --gray-300: #d1d5db;
+  --gray-400: #9ca3af; --gray-500: #6b7280; --gray-600: #4b5563; --gray-700: #374151; --gray-900: #111827;
+  --green: #059669; --green-bg: #d1fae5; --amber: #d97706; --amber-bg:#fef3c7; --blue: #2563eb; --red: #dc2626; --purple: #7c3aed;
+}
+body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; background: var(--gray-50); color: var(--gray-900); padding-bottom: 90px; -webkit-font-smoothing: antialiased; }
+
+.hdr { background: linear-gradient(135deg, #0d47a1 0%, #1565c0 100%); color: #fff; padding: 18px 20px 16px; border-radius: 0 0 20px 20px; box-shadow: 0 4px 12px rgba(13,71,161,0.18); }
+.hdr-top { display: flex; align-items: center; gap: 12px; }
+.hdr-back { font-size: 22px; color: #fff; text-decoration: none; padding: 4px 8px; }
+.hdr-title { font-size: 17px; font-weight: 800; flex: 1; line-height:1.25; }
+.hdr-sub { font-size: 11px; opacity: 0.85; margin-top: 3px; }
+
+.sec { padding: 14px 14px 0; }
+.sec-h { font-size: 12px; font-weight: 800; color: var(--gray-600); text-transform: uppercase; letter-spacing: .5px; margin: 4px 2px 8px; }
+
+.card { background:#fff; border-radius:14px; padding:14px 16px; margin-bottom:12px; box-shadow:0 1px 5px rgba(0,0,0,0.05); border:1px solid var(--gray-200); }
+
+/* reconciliation */
+.recon { display:flex; gap:8px; }
+.recon .box { flex:1; background:#fff; border:1px solid var(--gray-200); border-radius:13px; padding:11px 10px; text-align:center; }
+.recon .lbl { font-size:9.5px; color:var(--gray-500); font-weight:700; text-transform:uppercase; letter-spacing:.3px; }
+.recon .val { font-size:14px; font-weight:900; margin-top:4px; }
+.recon .box.ledger .val { color:var(--brand-dark); }
+.recon .box.alloc .val { color:var(--purple); }
+.recon .box.diff.zero { border-color:var(--green-bg); background:#f0fdf4; }
+.recon .box.diff.zero .val { color:var(--green); }
+.recon .box.diff.warn { border-color:#fde68a; background:#fffbeb; }
+.recon .box.diff.warn .val { color:var(--amber); }
+.diff-note { font-size:10.5px; color:var(--gray-500); margin-top:8px; line-height:1.5; padding:0 2px; }
+.diff-note.warn { color:#92400e; }
+
+/* cost rows */
+.crow { display:flex; align-items:flex-start; gap:9px; padding:10px 0; border-top:1px solid var(--gray-100); }
+.crow:first-child { border-top:none; }
+.tag { width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-top:3px; }
+.tag.capitalize { background:var(--green); }
+.tag.period { background:var(--gray-400); }
+.crow-l { flex:1; min-width:0; }
+.crow-type { font-size:13px; font-weight:700; }
+.crow-note { font-size:10.5px; color:var(--gray-500); margin-top:2px; line-height:1.35; }
+.crow-pay { font-size:9.5px; color:var(--blue); margin-top:3px; }
+.crow-amt { font-size:13.5px; font-weight:800; color:var(--gray-900); white-space:nowrap; }
+.csub { display:flex; justify-content:space-between; font-size:11px; padding:9px 0 0; margin-top:6px; border-top:2px solid var(--gray-200); }
+.csub .g { color:var(--green); font-weight:700; } .csub .p { color:var(--gray-500); font-weight:700; }
+
+/* line items (dual unit) */
+.ltable { width:100%; border-collapse:collapse; }
+.ltable thead th { font-size:9px; color:var(--gray-400); font-weight:700; text-transform:uppercase; letter-spacing:.3px; text-align:right; padding:6px 6px; border-bottom:1px solid var(--gray-200); }
+.ltable thead th.l { text-align:left; }
+.ltable tbody td { padding:9px 6px; border-bottom:1px solid var(--gray-100); font-size:12px; text-align:right; vertical-align:top; }
+.ltable tbody td.l { text-align:left; }
+.ltable tbody tr:last-child td { border-bottom:none; }
+.l-name { font-weight:700; font-size:12.5px; }
+.l-spec { font-size:9.5px; color:var(--gray-400); font-family:monospace; margin-top:1px; }
+.l-buy { color:var(--gray-600); white-space:nowrap; }
+.l-arrow { color:var(--gray-300); font-size:10px; }
+.l-stock { color:var(--brand-dark); font-weight:700; white-space:nowrap; }
+.l-unit { font-weight:900; color:var(--purple); white-space:nowrap; }
+.l-unit-sub { font-size:8.5px; color:var(--gray-400); font-weight:600; }
+.l-total { font-weight:700; color:var(--brand-dark); white-space:nowrap; }
+.ltable tfoot td { padding:10px 6px; font-size:12.5px; font-weight:800; border-top:2px solid var(--gray-200); text-align:right; }
+.ltable tfoot td.l { text-align:left; color:var(--gray-500); font-size:10.5px; text-transform:uppercase; letter-spacing:.3px; }
+.basis { font-size:10px; color:var(--gray-500); margin:8px 2px 0; }
+.basis b { color:var(--gray-700); }
+
+/* payments */
+.pay { display:flex; align-items:flex-start; gap:8px; padding:9px 0; border-top:1px solid var(--gray-100); }
+.pay:first-child { border-top:none; }
+.pay.final { background:linear-gradient(90deg,#ecfdf5,transparent); border-radius:8px; padding:9px 8px; }
+.pay-l { flex:1; min-width:0; }
+.pay-row1 { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.pay-amt { font-size:13px; font-weight:800; }
+.pay-date { font-size:10px; color:var(--gray-500); }
+.acct { font-size:9px; font-weight:700; padding:2px 6px; border-radius:6px; background:#dbeafe; color:#1e40af; }
+.acct.kass { background:var(--amber-bg); color:#92400e; }
+.final-tag { font-size:9px; font-weight:800; color:#065f46; }
+.pay-memo { font-size:10px; color:var(--gray-500); margin-top:3px; line-height:1.35; }
+
+.empty { text-align:center; color:var(--gray-400); padding:40px 20px; font-size:13px; line-height:1.6; }
+.note { font-size:10px; color:var(--gray-400); text-align:center; padding:6px 16px 0; line-height:1.5; }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-top">
+    <a class="hdr-back" id="backLink" href="/imports/orders">‹</a>
+    <div style="flex:1">
+      <div class="hdr-title" id="hdrTitle">Cost Workspace</div>
+      <div class="hdr-sub" id="hdrSub">Барааны эцсийн өртөг — складад орсон</div>
+    </div>
+  </div>
+</div>
+
+<div id="body"></div>
+<div class="note">Сул нийцэл: бүх мөнгийг бараанд шингээх албагүй — зөрүү байж болно, систем зөвхөн анхааруулна. Складын өртгийн зөв байх нь №1 зорилго.</div>
+
+<script src="/js/bottom-nav.js"></script>
+<script>
+const token = localStorage.getItem('token');
+if (!token) window.location.href = '/';
+
+const params = new URLSearchParams(location.search);
+const orderId = params.get('order');
+const orderName = params.get('name');
+if (orderName) document.getElementById('hdrTitle').textContent = orderName;
+
+async function api(path) {
+  const r = await fetch('/api/import' + path, { headers: { 'Authorization': 'Bearer ' + token }});
+  if (r.status === 401) { localStorage.clear(); window.location.href = '/'; }
+  return r.json();
+}
+
+function fmt(n) { if (!n) return '0₮'; return Math.round(n).toLocaleString() + '₮'; }
+function fmtShort(n) { if (!n) return '0₮'; if (Math.abs(n) >= 1e6) return (n/1e6).toFixed(1).replace(/\.0$/,'') + 'сая₮'; return Math.round(n).toLocaleString() + '₮'; }
+const UNIT_MN = { meter:'метр', kg:'кг', ton:'тонн', m2:'м²', piece:'ш', set:'иж', bundle:'багц', stick:'ш', roll:'ороомог' };
+function unitMn(u) { return UNIT_MN[u] || u || ''; }
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+const TYPE_MN = {
+  product:'Бараа', product_adjustment:'Барааны тохируулга',
+  freight_border_to_ub:'Тээвэр (хил→УБ)', freight:'Тээвэр',
+  customs:'Гааль', customs_duty:'Гаалийн татвар', duty:'Татвар',
+  vat:'НӨАТ', tax:'Татвар', bank_fee:'Банкны шимтгэл', fx_loss:'Валютын зөрүү', agent_fee:'Агентын хөлс'
+};
+function typeMn(t){ return TYPE_MN[t] || TYPE_MN[(t||'').replace(/_.*/,'')] || t || 'Зардал'; }
+function acctShort(label){ return /хаан|khan|касс/i.test(label||'') ? 'Касс' : 'TDB'; }
+function acctClass(label){ return /хаан|khan|касс/i.test(label||'') ? 'kass' : ''; }
+
+function renderRecon(d) {
+  const diff = d.difference_mnt || 0;
+  const zero = Math.abs(diff) < 1;
+  const note = zero
+    ? '✅ Бүртгэгдсэн зардал бүрэн хуваарилагдсан.'
+    : `⚠️ ${fmt(Math.abs(diff))} зөрүү байна${diff>0?' (хуваарилагдаагүй үлдсэн)':' (хэт хуваарилсан)'}. Энэ нь Finalize-ийг блоклохгүй — мэдээлэл.`;
+  return `<div class="recon">
+    <div class="box ledger"><div class="lbl">Нийт зардал</div><div class="val">${fmtShort(d.ledger_total_mnt)}</div></div>
+    <div class="box alloc"><div class="lbl">Хуваарилсан</div><div class="val">${fmtShort(d.allocated_total_mnt)}</div></div>
+    <div class="box diff ${zero?'zero':'warn'}"><div class="lbl">Зөрүү</div><div class="val">${fmtShort(diff)}</div></div>
+  </div>
+  <div class="diff-note ${zero?'':'warn'}">${note}</div>`;
+}
+
+function renderCosts(d) {
+  if (!d.costs.length) return '<div class="empty">Зардал бүртгэгдээгүй.</div>';
+  const rows = d.costs.map(c => `<div class="crow">
+    <span class="tag ${c.tag}" title="${c.tag==='capitalize'?'Бараанд шингэнэ':'Ерөнхий зардал'}"></span>
+    <div class="crow-l">
+      <div class="crow-type">${esc(typeMn(c.type))}</div>
+      ${c.note?`<div class="crow-note">${esc(c.note)}</div>`:''}
+      ${c.payment?`<div class="crow-pay">💳 ${esc(c.payment.date||'')} · ${esc(acctShort(c.payment.account_label))}${c.payment.memo?' · '+esc(c.payment.memo):''}</div>`:''}
+    </div>
+    <div class="crow-amt">${fmt(c.amount_mnt)}</div>
+  </div>`).join('');
+  return `<div class="card">${rows}
+    <div class="csub"><span class="g">🟢 Бараанд: ${fmt(d.capitalize_total_mnt)}</span><span class="p">⚪ Ерөнхий: ${fmt(d.period_total_mnt)}</span></div>
+  </div>`;
+}
+
+function renderLines(d) {
+  if (!d.lines.length) return '<div class="empty">Энэ бараанд хийцлэл (line item) хараахан бүртгэгдээгүй.<br><span style="font-size:11px">Cost Workspace-д profile/нэр төрөл нэмэх нь дараагийн алхам.</span></div>';
+  const body = d.lines.map(l => {
+    const buy = `${(l.buy_qty||0).toLocaleString()} ${unitMn(l.buy_unit)}`;
+    const stock = `${(l.stock_qty||0).toLocaleString()} ${unitMn(l.stock_unit)}`;
+    const dualBuy = l.same_unit ? '' : `<span class="l-buy">${buy}</span> <span class="l-arrow">→</span> `;
+    return `<tr>
+      <td class="l"><div class="l-name">${esc(l.name)}</div>${l.spec?`<div class="l-spec">${esc(l.spec)}</div>`:''}</td>
+      <td>${dualBuy}<span class="l-stock">${stock}</span></td>
+      <td><span class="l-unit">${fmt(l.unit_cost_stock)}</span><div class="l-unit-sub">₮/${unitMn(l.stock_unit)}</div></td>
+      <td><span class="l-total">${fmtShort(l.allocated_mnt)}</span></td>
+    </tr>`;
+  }).join('');
+  return `<div class="card" style="padding:10px 12px">
+    <table class="ltable">
+      <thead><tr><th class="l">Хийцлэл</th><th>Худ.авсан → Складын</th><th>Нэгж өртөг</th><th>Нийт</th></tr></thead>
+      <tbody>${body}</tbody>
+      <tfoot><tr><td class="l">Нийт хуваарилсан</td><td></td><td></td><td><span class="l-total">${fmtShort(d.allocated_total_mnt)}</span></td></tr></tfoot>
+    </table>
+    <div class="basis">Хуваарилах суурь: <b>${d.basis_hint==='weight'?'жин':d.basis_hint==='value'?'үнэ':d.basis_hint==='qty'?'тоо':d.basis_hint}</b> · Худ.авах нэгж нь зардлыг хуваах суурь, складын нэгж нь эцсийн ₮/нэгж.</div>
+  </div>`;
+}
+
+function renderPayments(d) {
+  if (!d.payments.length) return '<div class="empty">IMP төлбөр холбогдоогүй.</div>';
+  const rows = d.payments.map(p => `<div class="pay ${p.is_final?'final':''}">
+    <div class="pay-l">
+      <div class="pay-row1">
+        <span class="pay-amt">${fmt(p.amount)}</span>
+        <span class="pay-date">${esc(p.date)}</span>
+        <span class="acct ${acctClass(p.account_label)}">${acctShort(p.account_label)}</span>
+        ${p.is_final?'<span class="final-tag">★ ЭЦСИЙН</span>':''}
+      </div>
+      ${p.memo?`<div class="pay-memo">${esc(p.memo)}</div>`:''}
+    </div>
+  </div>`).join('');
+  return `<div class="card">${rows}</div>`;
+}
+
+async function load() {
+  const body = document.getElementById('body');
+  if (!orderId) { body.innerHTML = '<div class="empty">Бараагаа сонгоно уу.<br><a href="/imports/orders" style="color:var(--brand);font-weight:700;text-decoration:none">← Импортын бараа руу буцах</a></div>'; return; }
+  const d = await api('/cost-workspace/' + encodeURIComponent(orderId));
+  if (d.error) { body.innerHTML = `<div class="empty">${esc(d.error)}</div>`; return; }
+  if (d.order && d.order.name && !orderName) document.getElementById('hdrTitle').textContent = d.order.name;
+  if (d.order && d.order.supplier) document.getElementById('hdrSub').textContent = d.order.supplier + ' · складад орсон';
+  body.innerHTML =
+    `<div class="sec">${renderRecon(d)}</div>` +
+    `<div class="sec"><div class="sec-h">📦 Хийцлэл бүрийн өртөг (dual-unit)</div>${renderLines(d)}</div>` +
+    `<div class="sec"><div class="sec-h">🧾 Зардлууд</div>${renderCosts(d)}</div>` +
+    `<div class="sec"><div class="sec-h">💳 Холбогдсон банкны төлбөр</div>${renderPayments(d)}</div>`;
+}
+load();
+</script>
+</body>
+</html>
