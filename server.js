@@ -95,6 +95,7 @@ app.get('/finance-detail', (req, res) => res.sendFile(path.join(__dirname, 'publ
 app.get('/more',       (req, res) => res.sendFile(path.join(__dirname, 'public', 'more.html')));
 app.get('/news',       (req, res) => res.sendFile(path.join(__dirname, 'public', 'news.html')));
 app.get('/imports',    (req, res) => res.sendFile(path.join(__dirname, 'public', 'imports.html')));
+app.get('/imports/orders', (req, res) => res.sendFile(path.join(__dirname, 'public', 'import-orders.html')));
 app.get('/imports/cost-analysis', (req, res) => res.sendFile(path.join(__dirname, 'public', 'import-cost-analysis.html')));
 app.get('/imports/final-cost', (req, res) => res.sendFile(path.join(__dirname, 'public', 'import-final-cost.html')));
 app.get('/imports/shipment/:code', (req, res) => res.sendFile(path.join(__dirname, 'public', 'import-shipment.html')));

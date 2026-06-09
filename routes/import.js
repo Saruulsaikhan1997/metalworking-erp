@@ -161,6 +161,134 @@ router.get('/unassigned-payments', (req, res) => {
 });
 
 // ══════════════════════════════════════════
+//  PAYMENT-DRIVEN ORDER TRACKER
+//  The import module is a MONEY tracker, not a physical-goods tracker.
+//  • An import "order" (захиалсан бараа) = an import_project.
+//  • Its payments = IMP bank transactions linked to it.
+//  • A good becomes "Складад орсон" (done) the moment its FINAL payment is
+//    made — i.e. a linked payment is flagged import_final. Until then the good
+//    is "Идэвхтэй" (active). Nothing here touches physical receive/inventory.
+//  Linkage precedence: explicit tag (import_order_id) wins; otherwise we fall
+//  back to the existing cost-ledger link so historical payments appear at once.
+//  import_detached lets an admin fully unlink a payment (overrides the ledger).
+// ══════════════════════════════════════════
+router.get('/orders-tracker', (req, res) => {
+  const db = load();
+  const projects = db.import_projects || [];
+  const txs = db.transactions || [];
+  const ledger = db.import_cost_ledger || [];
+
+  // tx.id -> project_id, derived from the existing cost ledger (first link wins)
+  const ledgerProject = {};
+  for (const c of ledger) {
+    if (c.transaction_id && c.project_id && ledgerProject[c.transaction_id] == null) {
+      ledgerProject[c.transaction_id] = c.project_id;
+    }
+  }
+  const orderOf = (t) => {
+    if (t.import_detached) return null;
+    return t.import_order_id || ledgerProject[t.id] || null;
+  };
+
+  const toPayment = (t) => ({
+    transaction_id: t.id,
+    date: t.date,
+    amount: t.amount,
+    direction: t.direction,
+    account: t.account,
+    account_label: t.account_label,
+    memo: t.note || t.description || t.raw_memo || '',
+    counterparty: t.counterparty || null,
+    is_foreign: t.is_foreign || false,
+    is_final: t.import_final === true
+  });
+
+  const paymentsByOrder = {};
+  const unassigned = [];
+  for (const t of txs) {
+    if (t.code !== 'IMP' || t.archived) continue;
+    const oid = orderOf(t);
+    if (oid) (paymentsByOrder[oid] = paymentsByOrder[oid] || []).push(toPayment(t));
+    else unassigned.push(toPayment(t));
+  }
+  Object.values(paymentsByOrder).forEach(a => a.sort((x, y) => (x.date || '').localeCompare(y.date || '')));
+  unassigned.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+  const mapOrder = (p) => {
+    const pays = paymentsByOrder[p.id] || [];
+    const finals = pays.filter(x => x.is_final);
+    const done = finals.length > 0;
+    return {
+      id: p.id,
+      code: p.code,
+      name: p.name,
+      supplier: p.supplier?.name || '',
+      currency: p.currency || 'USD',
+      created_at: p.created_at || null,
+      payments: pays,
+      payment_count: pays.length,
+      total_paid_mnt: pays.reduce((s, x) => s + (x.amount || 0), 0),
+      done,
+      done_at: done ? finals.map(f => f.date).sort().slice(-1)[0] : null
+    };
+  };
+
+  const all = projects.map(mapOrder);
+  const active = all.filter(o => !o.done)
+    .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+  const done = all.filter(o => o.done)
+    .sort((a, b) => (b.done_at || '').localeCompare(a.done_at || ''));
+
+  res.json({
+    active,
+    done,
+    unassigned,
+    unassigned_total_mnt: unassigned.reduce((s, p) => s + (p.amount || 0), 0),
+    orders: projects.map(p => ({
+      id: p.id, code: p.code, name: p.name,
+      supplier: p.supplier?.name || '', currency: p.currency || 'USD'
+    }))
+  });
+});
+
+// Link an IMP payment to an import order (and optionally flag it as the FINAL
+// payment, which moves the good into "Складад орсон").
+router.post('/assign-payment', adminOnly, (req, res) => {
+  const db = load();
+  const { transaction_id, order_id, is_final } = req.body;
+  if (!transaction_id || !order_id) return res.status(400).json({ error: 'transaction_id, order_id шаардлагатай' });
+
+  const tx = (db.transactions || []).find(t => t.id === transaction_id);
+  if (!tx) return res.status(404).json({ error: 'Гүйлгээ олдсонгүй' });
+  if (tx.code !== 'IMP') return res.status(400).json({ error: 'Зөвхөн IMP гүйлгээ холбоно' });
+
+  const proj = (db.import_projects || []).find(p => p.id === order_id);
+  if (!proj) return res.status(404).json({ error: 'Захиалга олдсонгүй' });
+
+  tx.import_order_id = order_id;
+  tx.import_final = is_final === true;
+  tx.import_detached = false;
+  save(db);
+  res.json({ ok: true, transaction_id, order_id, is_final: tx.import_final });
+});
+
+// Detach an IMP payment from its order (also overrides any cost-ledger link).
+router.post('/unassign-payment', adminOnly, (req, res) => {
+  const db = load();
+  const { transaction_id } = req.body;
+  if (!transaction_id) return res.status(400).json({ error: 'transaction_id шаардлагатай' });
+
+  const tx = (db.transactions || []).find(t => t.id === transaction_id);
+  if (!tx) return res.status(404).json({ error: 'Гүйлгээ олдсонгүй' });
+
+  tx.import_order_id = null;
+  tx.import_final = false;
+  tx.import_detached = true;
+  save(db);
+  res.json({ ok: true, transaction_id });
+});
+
+// ══════════════════════════════════════════
 //  SHIPMENTS
 // ══════════════════════════════════════════
 router.get('/shipments', (req, res) => {
