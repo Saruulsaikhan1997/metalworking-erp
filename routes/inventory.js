@@ -403,4 +403,56 @@ router.post('/production', (req, res) => {
   save(db); res.json({ id });
 });
 
+// ── Үйлдвэрлэсэн бүтээгдэхүүнийг склад руу шилжүүлэх ──
+// Складын "Бэлэн" барааны qty нэмэгдэнэ (PRODUCTION_IN). Нэрээр тааруулна,
+// байхгүй бол шинээр үүсгэнэ. Нэг удаа (warehoused флагаар идемпотент).
+router.post('/production/:id/to-warehouse', (req, res) => {
+  if (!['admin','warehouse','manager'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
+  const db = load();
+  if (!db.inventory) db.inventory = [];
+  if (!db.inventory_log) db.inventory_log = [];
+  const p = (db.production || []).find(x => x.id === parseInt(req.params.id));
+  if (!p) return res.status(404).json({ error: 'Үйлдвэрлэлийн бичлэг олдсонгүй' });
+  if (p.warehoused) return res.json({ ok: true, already: true, item_id: p.warehoused_item_id });
+
+  const name = (p.product || '').trim();
+  const qty  = parseInt(p.qty) || 0;
+  if (!name || qty <= 0) return res.status(400).json({ error: 'Бүтээгдэхүүн/тоо буруу' });
+
+  // Бэлэн бараа нэрээр олох, байхгүй бол үүсгэх
+  let item = db.inventory.find(i => (i.name || '').trim().toLowerCase() === name.toLowerCase());
+  if (!item) {
+    const id = Math.max(0, ...db.inventory.map(i => i.id || 0)) + 1;
+    item = {
+      id, code: '', name, category: 'finished', status: 'available',
+      unit: p.unit || 'ш', location: 'central', qty: 0, threshold: 0,
+      cost_per_unit: null, active: true, has_manual_adjustment: false,
+      created_at: new Date().toISOString(), created_by: 'Үйлдвэрлэл (' + req.user.name + ')',
+    };
+    db.inventory.push(item);
+  }
+
+  // qty нэмэгдүүлэх + PRODUCTION_IN хөдөлгөөн бүртгэх
+  const before = item.qty || 0;
+  item.qty = before + qty;
+  item.updated_at = new Date().toISOString();
+  const now = new Date();
+  const logId = Math.max(0, ...db.inventory_log.map(l => l.id || 0)) + 1;
+  db.inventory_log.push({
+    id: logId, item_id: item.id, item_code: item.code, item_name: item.name,
+    type: 'in', source: 'PRODUCTION_IN', source_id: 'PROD-' + p.id, qty,
+    unit: item.unit, location_from: 'factory', location_to: 'central',
+    reason: null, note: 'Үйлдвэрлэлээс склад руу', by: req.user.name, by_role: req.user.role,
+    before_qty: before, after_qty: item.qty,
+    date: now.toISOString().slice(0,10), time: now.toTimeString().slice(0,8), created_at: now.toISOString(),
+  });
+
+  p.warehoused = true;
+  p.warehoused_at = now.toISOString();
+  p.warehoused_item_id = item.id;
+  p.warehoused_by = req.user.name;
+  save(db);
+  res.json({ ok: true, item_id: item.id, new_qty: item.qty });
+});
+
 module.exports = router;
