@@ -116,6 +116,51 @@ router.get('/dashboard', (req, res) => {
 });
 
 // ══════════════════════════════════════════
+//  UNASSIGNED IMPORT PAYMENTS  (derived, read-only)
+//  Memo-first: an "IMP:" bank transaction is the source of truth for an
+//  import payment. It is considered ASSIGNED once an import_cost_ledger row
+//  references it via transaction_id. Until then it surfaces here so the CEO
+//  can link it to an import order. Derive-don't-store: nothing new persisted.
+// ══════════════════════════════════════════
+router.get('/unassigned-payments', (req, res) => {
+  const db = load();
+  const txs = db.transactions || [];
+  const ledger = db.import_cost_ledger || [];
+  const projects = db.import_projects || [];
+
+  const linked = new Set(ledger.map(c => c.transaction_id).filter(Boolean));
+
+  const payments = txs
+    .filter(t => t.code === 'IMP' && !t.archived && !linked.has(t.id))
+    .map(t => ({
+      transaction_id: t.id,
+      date: t.date,
+      amount: t.amount,
+      direction: t.direction,
+      account: t.account,
+      account_label: t.account_label,
+      memo: t.note || t.description || t.raw_memo || '',
+      counterparty: t.counterparty || null,
+      is_foreign: t.is_foreign || false
+    }))
+    .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+  res.json({
+    count: payments.length,
+    total_mnt: payments.reduce((s, p) => s + (p.amount || 0), 0),
+    payments,
+    // Import orders available to assign a payment into (for the dropdown)
+    orders: projects.map(p => ({
+      id: p.id,
+      code: p.code,
+      name: p.name,
+      supplier: p.supplier?.name || '',
+      currency: p.currency || 'MNT'
+    }))
+  });
+});
+
+// ══════════════════════════════════════════
 //  SHIPMENTS
 // ══════════════════════════════════════════
 router.get('/shipments', (req, res) => {

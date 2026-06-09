@@ -126,6 +126,33 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
   font-size: 9px; padding: 2px 7px; border-radius: 6px;
   background: var(--gray-100); color: var(--gray-600); font-weight: 600;
 }
+
+/* Unassigned import payments (memo-first inbox) */
+.upay-sec { padding: 14px 16px 0; }
+.upay-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.upay-head .t { font-size: 13px; font-weight: 800; color: var(--amber); }
+.upay-head .n { font-size: 10px; font-weight: 700; background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 10px; }
+.upay-card { background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid var(--amber); border-radius: 12px; padding: 12px 14px; margin-bottom: 9px; }
+.upay-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.upay-amt { font-size: 15px; font-weight: 800; color: var(--gray-900); white-space: nowrap; }
+.upay-date { font-size: 10px; color: var(--gray-400); font-family: monospace; }
+.upay-memo { font-size: 11px; color: var(--gray-600); margin-top: 4px; line-height: 1.4; word-break: break-word; }
+.upay-acct { font-size: 9.5px; color: var(--gray-400); margin-top: 4px; }
+.upay-btn { display: block; width: 100%; margin-top: 10px; background: var(--brand-dark); color: #fff; border: none; font-size: 12.5px; font-weight: 700; padding: 10px; border-radius: 10px; cursor: pointer; }
+
+/* Assign modal */
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: flex-end; justify-content: center; z-index: 50; }
+.modal.on { display: flex; }
+.modal-box { background: #fff; width: 100%; max-width: 480px; border-radius: 18px 18px 0 0; padding: 20px 18px calc(20px + env(safe-area-inset-bottom)); }
+.modal-h { font-size: 15px; font-weight: 800; margin-bottom: 4px; }
+.modal-sub { font-size: 11px; color: var(--gray-400); margin-bottom: 14px; }
+.fld { margin-bottom: 12px; }
+.fld label { display: block; font-size: 11px; font-weight: 700; color: var(--gray-600); margin-bottom: 5px; }
+.fld select { width: 100%; padding: 11px; border: 1.5px solid var(--gray-200); border-radius: 10px; font-size: 13px; background: #fff; -webkit-appearance: none; }
+.modal-actions { display: flex; gap: 8px; margin-top: 6px; }
+.btn-cancel { flex: 1; padding: 12px; border: 1.5px solid var(--gray-200); background: #fff; color: var(--gray-600); font-size: 13px; font-weight: 700; border-radius: 10px; cursor: pointer; }
+.btn-ok { flex: 2; padding: 12px; border: none; background: var(--green); color: #fff; font-size: 13px; font-weight: 700; border-radius: 10px; cursor: pointer; }
+.btn-ok:disabled { opacity: .5; }
 </style>
 </head>
 <body>
@@ -146,9 +173,37 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 
 <div class="stats" id="stats"></div>
 
+<div id="unassigned"></div>
+
 <div class="sec">
   <div class="chips" id="chips"></div>
   <div id="list"></div>
+</div>
+
+<!-- Assign payment → import order modal -->
+<div class="modal" id="assignModal">
+  <div class="modal-box">
+    <div class="modal-h">Төлбөрийг захиалгад холбох</div>
+    <div class="modal-sub" id="assignSub"></div>
+    <div class="fld">
+      <label>Импортын захиалга</label>
+      <select id="assignOrder"></select>
+    </div>
+    <div class="fld">
+      <label>Зардлын төрөл</label>
+      <select id="assignType">
+        <option value="product">📦 Бараа (бүтээгдэхүүн)</option>
+        <option value="freight_border_to_ub">🚛 Тээвэр</option>
+        <option value="customs_duty">🏛 Гааль / татвар</option>
+        <option value="bank_fee">🏦 Банкны шимтгэл</option>
+        <option value="other">Бусад</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeAssign()">Болих</button>
+      <button class="btn-ok" id="assignOk" onclick="submitAssign()">Холбох</button>
+    </div>
+  </div>
 </div>
 
 <script src="/js/bottom-nav.js"></script>
@@ -160,6 +215,82 @@ async function api(path) {
   const r = await fetch('/api/import' + path, { headers: { 'Authorization': 'Bearer ' + token }});
   if (r.status === 401) { localStorage.clear(); window.location.href = '/'; }
   return r.json();
+}
+
+async function postApi(path, body) {
+  const r = await fetch('/api/import' + path, {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (r.status === 401) { localStorage.clear(); window.location.href = '/'; }
+  return r.json();
+}
+
+function esc(s) { return (s || '').replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c])); }
+function fmtFull(n) { return (n || 0).toLocaleString() + '₮'; }
+
+// ── Unassigned import payments (memo-first) ──
+let unassigned = { payments: [], orders: [] };
+let assignTarget = null;
+
+function renderUnassigned() {
+  const el = document.getElementById('unassigned');
+  const ps = unassigned.payments || [];
+  if (!ps.length) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="upay-sec">
+    <div class="upay-head"><span class="t">⏳ Холбогдоогүй импортын төлбөр</span><span class="n">${ps.length}</span></div>
+    ${ps.map((p, i) => `
+      <div class="upay-card">
+        <div class="upay-top">
+          <div style="flex:1;min-width:0">
+            <div class="upay-date">${p.date}${p.is_foreign ? ' · 🌐 валют' : ''}</div>
+            <div class="upay-memo">${esc(p.memo)}</div>
+            <div class="upay-acct">${esc(p.account_label || '')}</div>
+          </div>
+          <div class="upay-amt">${fmtFull(p.amount)}</div>
+        </div>
+        <button class="upay-btn" onclick="openAssign(${i})">+ Захиалгад холбох</button>
+      </div>`).join('')}
+  </div>`;
+}
+
+function openAssign(i) {
+  assignTarget = unassigned.payments[i];
+  if (!assignTarget) return;
+  document.getElementById('assignSub').textContent = `${fmtFull(assignTarget.amount)} · ${assignTarget.date}`;
+  document.getElementById('assignOrder').innerHTML =
+    (unassigned.orders || []).map(o => `<option value="${o.id}">${esc(o.name)} (${o.code})</option>`).join('');
+  document.getElementById('assignType').value = 'product';
+  document.getElementById('assignModal').classList.add('on');
+}
+
+function closeAssign() {
+  document.getElementById('assignModal').classList.remove('on');
+  assignTarget = null;
+}
+
+async function submitAssign() {
+  if (!assignTarget) return;
+  const btn = document.getElementById('assignOk');
+  const project_id = document.getElementById('assignOrder').value;
+  const type = document.getElementById('assignType').value;
+  if (!project_id) { alert('Захиалга сонгоно уу'); return; }
+  btn.disabled = true; btn.textContent = 'Холбож байна…';
+  const p = assignTarget;
+  const acct = /хаан|khan|касс/i.test(p.account_label || '') ? 'khan' : 'tdb';
+  const res = await postApi('/costs', {
+    project_id, type,
+    amount: p.amount, amount_mnt: p.amount, currency: 'MNT', exchange_rate: 1,
+    transaction_id: p.transaction_id,
+    payment_account: acct,
+    payment_reference: p.transaction_id,
+    paid: true, paid_at: p.date,
+    description: p.memo
+  });
+  btn.disabled = false; btn.textContent = 'Холбох';
+  if (res && res.id) { closeAssign(); await load(); }
+  else { alert('Алдаа: ' + (res && res.error ? res.error : 'тодорхойгүй')); }
 }
 
 const STATUS = {
@@ -307,12 +438,15 @@ function toggleLog(el) {
 }
 
 async function load() {
-  const [dashboard, shipments] = await Promise.all([
+  const [dashboard, shipments, up] = await Promise.all([
     api('/dashboard'),
-    api('/shipments')
+    api('/shipments'),
+    api('/unassigned-payments')
   ]);
   renderStats(dashboard);
   all = shipments;
+  unassigned = up || { payments: [], orders: [] };
+  renderUnassigned();
   renderChips();
   renderList();
 }
