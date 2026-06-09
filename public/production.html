@@ -94,6 +94,17 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 .ip-dest-btn.active.dest-production { background: #ea580c; }
 .ip-dest-btn.active.dest-repair     { background: #16a34a; }
 .ip-dest-note { font-size: 10.5px; font-weight: 700; color: #16a34a; margin-left: 2px; }
+/* Материалын урсгал (складаас авсан / складад өгсөн) */
+.flow-sub { font-size: 12px; font-weight: 800; color: var(--gray-700); margin: 14px 0 6px; display: flex; align-items: center; gap: 6px; }
+.flow-card { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid var(--gray-200); border-radius: 10px; padding: 9px 12px; margin-bottom: 6px; }
+.flow-card.flow-out { border-left: 3px solid #ea580c; }
+.flow-card.flow-in  { border-left: 3px solid #16a34a; }
+.flow-name { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; color: var(--gray-900); }
+.flow-meta { font-size: 10.5px; color: var(--gray-400); margin-top: 2px; }
+.flow-qty { font-size: 14px; font-weight: 800; white-space: nowrap; }
+.flow-qty.out { color: #ea580c; } .flow-qty.in { color: #16a34a; }
+.flow-qty span { font-size: 10px; font-weight: 600; color: var(--gray-400); }
+.flow-empty { font-size: 11.5px; color: var(--gray-400); padding: 7px 4px; }
 
 .settings-link {
   display: block; text-align: center;
@@ -121,6 +132,15 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
   <div class="section-label">🛒 Хүлээгдэж буй дотоод худалдан авалт</div>
   <div class="ip-note">Санхүүд <b>MAT_PROD</b> (үйлдвэрлэлийн материал) гэж бүртгэсэн худалдан авалтууд автоматаар энд харагдана. Зөвхөн мэдээлэл — хүлээн авах/баталгаажуулах үйлдэл дараагийн шатанд нэмэгдэнэ.</div>
   <div id="ipList"></div>
+</div>
+
+<!-- Материалын урсгал: складаас авсан (PRODUCTION_OUT) ба складад өгсөн (PRODUCTION_IN). Хоосон бол нуугдана. -->
+<div class="section" id="flowSection" style="display:none">
+  <div class="section-label">📦 Материалын урсгал</div>
+  <div class="flow-sub">📥 Складаас авсан материал</div>
+  <div id="flowOutList"></div>
+  <div class="flow-sub">📤 Үйлдвэрээс складад өгсөн</div>
+  <div id="flowInList"></div>
 </div>
 
 <div class="section">
@@ -298,7 +318,33 @@ async function loadExec() {
   </div>`).join('');
 }
 
+// Материалын урсгал — складаас авсан (PRODUCTION_OUT), складад өгсөн (PRODUCTION_IN)
+async function loadMaterialFlow() {
+  const logs = await api('/inventory/log') || [];
+  const arr  = Array.isArray(logs) ? logs : [];
+  const outs = arr.filter(l => l.source === 'PRODUCTION_OUT');
+  const ins  = arr.filter(l => l.source === 'PRODUCTION_IN');
+  const sec  = document.getElementById('flowSection');
+  if (!outs.length && !ins.length) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  renderFlow('flowOutList', outs, 'out', 'Складаас үйлдвэрт гаргасан бараа байхгүй');
+  renderFlow('flowInList',  ins,  'in',  'Үйлдвэрээс складад өгсөн бараа байхгүй');
+}
+function renderFlow(elId, logs, dir, emptyMsg) {
+  const el = document.getElementById(elId);
+  if (!logs.length) { el.innerHTML = `<div class="flow-empty">${emptyMsg}</div>`; return; }
+  logs.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+  el.innerHTML = logs.map(l => `<div class="flow-card flow-${dir}">
+    <div style="flex:1;min-width:0">
+      <div class="flow-name">${l.item_name || '—'}</div>
+      <div class="flow-meta">📅 ${l.date || ''}${l.by ? ' · ' + l.by : ''}</div>
+    </div>
+    <div class="flow-qty ${dir}">${dir === 'out' ? '−' : '+'}${fmt(l.qty)} <span>${l.unit || 'ш'}</span></div>
+  </div>`).join('');
+}
+
 loadInternalPurchases();
+loadMaterialFlow();
 </script>
 </body>
 </html>
