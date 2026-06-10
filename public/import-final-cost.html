@@ -100,13 +100,13 @@ tfoot td .r-total { color: var(--brand-dark); }
     <a class="hdr-back" id="backLink" href="/imports/orders">‹</a>
     <div style="flex:1">
       <div class="hdr-title" id="hdrTitle">Эцсийн өртөг — склад орохын өмнө</div>
-      <div class="hdr-sub" id="hdrSub">Ачилт бүрийн хийцлэл бүрийн бодит өртөг</div>
+      <div class="hdr-sub" id="hdrSub">Ачилт бүрийн нэр төрөл бүрийн бодит өртөг</div>
     </div>
   </div>
 </div>
 
 <div class="sec" id="list"></div>
-<div class="note">Бараа склад орохоос өмнө хийцлэл (нэр төрөл) бүрийн эцсийн өртгийг баталгаажуулна. Нэгж өртөг = бизнес нэгж (метр/м²/ширхэг) дэх бодит өртөг.</div>
+<div class="note">Бараа склад орохоос өмнө нэр төрөл бүрийн эцсийн өртгийг баталгаажуулна. Нэгж өртөг = бизнес нэгж (метр/м²/ширхэг) дэх бодит өртөг.</div>
 
 <script src="/js/bottom-nav.js"></script>
 <script>
@@ -172,12 +172,12 @@ function renderRow(r) {
 function renderShipment(s) {
   const ws = WSTATE[s.warehouse_state] || WSTATE.pending;
   const warn = !s.all_allocated
-    ? `<div class="warn">⚠️ Зарим хийцлэлийн өртөг бүрэн тооцоологдоогүй (allocation хийгдээгүй). Энэ хүснэгт дутуу байж болзошгүй.</div>` : '';
+    ? `<div class="warn">⚠️ Зарим нэр төрлийн өртөг бүрэн тооцоологдоогүй (allocation хийгдээгүй). Энэ хүснэгт дутуу байж болзошгүй.</div>` : '';
   return `<div class="card ${ws.c}">
     <div class="c-top">
       <div style="flex:1;min-width:0">
         <div class="c-name">${s.product_name}</div>
-        <div class="c-meta"><span class="c-code">${s.shipment_code}</span>${s.supplier ? ' · '+s.supplier : ''} · ${s.lot_count} хийцлэл</div>
+        <div class="c-meta"><span class="c-code">${s.shipment_code}</span>${s.supplier ? ' · '+s.supplier : ''} · ${s.lot_count} нэр төрөл</div>
       </div>
       <span class="badge ${ws.c}">${ws.l}</span>
     </div>

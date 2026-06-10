@@ -89,6 +89,47 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 
 .empty { text-align:center; color:var(--gray-400); padding:40px 20px; font-size:13px; line-height:1.6; }
 .note { font-size:10px; color:var(--gray-400); text-align:center; padding:6px 16px 0; line-height:1.5; }
+
+/* ── editing controls ── */
+.btn { border:none; border-radius:10px; font-size:13px; font-weight:700; padding:10px 14px; cursor:pointer; font-family:inherit; }
+.btn-primary { background:var(--brand); color:#fff; }
+.btn-ok { background:var(--green); color:#fff; }
+.btn-ghost { background:var(--gray-100); color:var(--gray-600); }
+.editstart { text-align:center; }
+.es-txt { font-size:11.5px; color:var(--gray-500); line-height:1.5; margin-bottom:12px; }
+.editbar .eb-top { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.editbar .eb-basis { margin-top:12px; display:flex; align-items:center; gap:10px; justify-content:space-between; }
+.eb-lbl { font-size:11px; color:var(--gray-500); font-weight:700; }
+.chips { display:flex; gap:6px; }
+.chip { border:1px solid var(--gray-200); background:#fff; color:var(--gray-600); border-radius:9px; padding:6px 13px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; }
+.chip.on { background:var(--brand); color:#fff; border-color:var(--brand); }
+.chip:disabled { opacity:.45; cursor:default; }
+.badge { font-size:11px; font-weight:800; padding:5px 11px; border-radius:8px; }
+.badge.draft { background:var(--amber-bg); color:#92400e; }
+.badge.fin { background:var(--green-bg); color:#065f46; }
+.card-add { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.card-add .ca-t { font-size:11px; font-weight:800; color:var(--gray-500); text-transform:uppercase; letter-spacing:.3px; }
+.btn-add { background:var(--brand); color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:700; padding:6px 11px; cursor:pointer; font-family:inherit; }
+.l-name-row { display:flex; align-items:center; gap:6px; }
+.l-name.tap { cursor:pointer; border-bottom:1px dashed var(--gray-300); }
+.crow-type.tap { cursor:pointer; }
+.x { border:none; background:none; color:var(--red); font-size:14px; font-weight:800; cursor:pointer; padding:2px 5px; line-height:1; flex-shrink:0; }
+
+/* ── bottom sheet (add/edit form) ── */
+.sheet-bg { position:fixed; inset:0; background:rgba(0,0,0,0.4); display:none; align-items:flex-end; z-index:50; }
+.sheet-bg.on { display:flex; }
+.sheet { background:#fff; width:100%; border-radius:18px 18px 0 0; padding:18px 16px calc(16px + env(safe-area-inset-bottom)); max-height:90vh; overflow-y:auto; }
+.sheet-h { font-size:15px; font-weight:800; margin-bottom:14px; }
+.fld { display:block; margin-bottom:12px; }
+.fld-l { display:block; font-size:11px; font-weight:700; color:var(--gray-600); margin-bottom:5px; }
+.fld-h { display:block; font-size:9.5px; color:var(--gray-400); margin-top:3px; }
+.in { width:100%; border:1px solid var(--gray-300); border-radius:10px; padding:10px 11px; font-size:14px; font-family:inherit; background:#fff; color:var(--gray-900); }
+.frow { display:flex; gap:10px; } .frow .fld { flex:1; }
+.seg { display:flex; gap:6px; }
+.seg-b { flex:1; border:1px solid var(--gray-300); background:#fff; color:var(--gray-600); border-radius:9px; padding:9px 6px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; }
+.seg-b.on { background:var(--brand); color:#fff; border-color:var(--brand); }
+.sheet-foot { display:flex; gap:10px; margin-top:6px; }
+.sheet-foot .btn { flex:1; }
 </style>
 </head>
 <body>
@@ -105,6 +146,17 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 
 <div id="body"></div>
 <div class="note">Сул нийцэл: бүх мөнгийг бараанд шингээх албагүй — зөрүү байж болно, систем зөвхөн анхааруулна. Складын өртгийн зөв байх нь №1 зорилго.</div>
+
+<div class="sheet-bg" id="sheet" onclick="if(event.target===this)closeSheet()">
+  <div class="sheet">
+    <div class="sheet-h" id="sheetTitle"></div>
+    <div id="sheetBody"></div>
+    <div class="sheet-foot">
+      <button class="btn btn-ghost" onclick="closeSheet()">Болих</button>
+      <button class="btn btn-primary" id="sheetSave">Хадгалах</button>
+    </div>
+  </div>
+</div>
 
 <script src="/js/bottom-nav.js"></script>
 <script>
@@ -152,42 +204,89 @@ function renderRecon(d) {
   <div class="diff-note ${zero?'':'warn'}">${note}</div>`;
 }
 
+function lineName(d, id) { const l = (d.lines||[]).find(x => (x.line_id||x.lot_id) === id); return l ? l.name : '—'; }
+
 function renderCosts(d) {
-  if (!d.costs.length) return '<div class="empty">Зардал бүртгэгдээгүй.</div>';
-  const rows = d.costs.map(c => `<div class="crow">
+  const ed = d.editable && d.status === 'draft';
+  const addBtn = ed ? `<div class="card-add"><span class="ca-t">Зардал</span><button class="btn-add" onclick="openCostSheet(null)">+ Нэмэх</button></div>` : '';
+  if (!d.costs.length) return `<div class="card">${addBtn}<div class="empty">Зардал бүртгэгдээгүй.</div></div>`;
+  const rows = d.costs.map(c => {
+    const typeCell = ed
+      ? `<div class="crow-type tap" onclick="openCostSheet('${c.id}')">${esc(typeMn(c.type))}</div>`
+      : `<div class="crow-type">${esc(typeMn(c.type))}</div>`;
+    const scopeTag = (c.scope === 'direct' && c.line_id) ? `<div class="crow-pay">🎯 ${esc(lineName(d, c.line_id))}</div>` : '';
+    return `<div class="crow">
     <span class="tag ${c.tag}" title="${c.tag==='capitalize'?'Бараанд шингэнэ':'Ерөнхий зардал'}"></span>
     <div class="crow-l">
-      <div class="crow-type">${esc(typeMn(c.type))}</div>
+      ${typeCell}
       ${c.note?`<div class="crow-note">${esc(c.note)}</div>`:''}
+      ${scopeTag}
       ${c.payment?`<div class="crow-pay">💳 ${esc(c.payment.date||'')} · ${esc(acctShort(c.payment.account_label))}${c.payment.memo?' · '+esc(c.payment.memo):''}</div>`:''}
     </div>
     <div class="crow-amt">${fmt(c.amount_mnt)}</div>
-  </div>`).join('');
-  return `<div class="card">${rows}
+    ${ed?`<button class="x" onclick="delCost('${c.id}')">✕</button>`:''}
+  </div>`;
+  }).join('');
+  return `<div class="card">${addBtn}${rows}
     <div class="csub"><span class="g">🟢 Бараанд: ${fmt(d.capitalize_total_mnt)}</span><span class="p">⚪ Ерөнхий: ${fmt(d.period_total_mnt)}</span></div>
   </div>`;
 }
 
+function renderEditBar(d) {
+  if (!d.materialized) {
+    return `<div class="card editstart">
+      <div class="es-txt">Энэ барааны өртгийг гараар засварлаж болно. Эхлэхэд одоогийн склад/зардлын мэдээллээс ноорог үүснэ — <b>склад хөндөгдөхгүй</b>.</div>
+      <button class="btn btn-primary" onclick="doMaterialize()">✏️ Засварлаж эхлэх</button>
+    </div>`;
+  }
+  const fin = d.status === 'finalized';
+  const badge = fin ? '<span class="badge fin">✓ Баталгаажсан</span>' : '<span class="badge draft">✎ Ноорог</span>';
+  const action = fin
+    ? `<button class="btn btn-ghost" onclick="doReopen()">Дахин нээх</button>`
+    : `<button class="btn btn-ok" onclick="doFinalize()">Баталгаажуулах ✓</button>`;
+  const chips = ['weight','value','qty'].map(b => {
+    const lbl = b==='weight'?'Жин':b==='value'?'Үнэ':'Тоо';
+    return `<button class="chip${d.basis===b?' on':''}"${fin?' disabled':''} onclick="setBasis('${b}')">${lbl}</button>`;
+  }).join('');
+  return `<div class="card editbar">
+    <div class="eb-top">${badge}${action}</div>
+    <div class="eb-basis"><span class="eb-lbl">Хуваарилах суурь</span><div class="chips">${chips}</div></div>
+  </div>`;
+}
+
 function renderLines(d) {
-  if (!d.lines.length) return '<div class="empty">Энэ бараанд хийцлэл (line item) хараахан бүртгэгдээгүй.<br><span style="font-size:11px">Cost Workspace-д profile/нэр төрөл нэмэх нь дараагийн алхам.</span></div>';
+  const ed = d.editable && d.status === 'draft';
+  const addBtn = ed ? `<div class="card-add"><span class="ca-t">Нэр төрөл</span><button class="btn-add" onclick="openLineSheet(null)">+ Нэмэх</button></div>` : '';
+  if (!d.lines.length) {
+    const msg = ed
+      ? '<div class="empty">Нэр төрөл алга.<br><span style="font-size:11px">Дээрх “+ Нэмэх” товчоор бараагаа задлан бичнэ үү.</span></div>'
+      : '<div class="empty">Энэ бараанд нэр төрөл хараахан бүртгэгдээгүй.<br><span style="font-size:11px">Cost Workspace-д нэр төрөл нэмэх нь дараагийн алхам.</span></div>';
+    return `<div class="card">${addBtn}${msg}</div>`;
+  }
   const body = d.lines.map(l => {
+    const lid = l.line_id || l.lot_id;
     const buy = `${(l.buy_qty||0).toLocaleString()} ${unitMn(l.buy_unit)}`;
     const stock = `${(l.stock_qty||0).toLocaleString()} ${unitMn(l.stock_unit)}`;
     const dualBuy = l.same_unit ? '' : `<span class="l-buy">${buy}</span> <span class="l-arrow">→</span> `;
+    const nameCell = ed
+      ? `<div class="l-name-row"><span class="l-name tap" onclick="openLineSheet('${lid}')">${esc(l.name)}</span><button class="x" onclick="delLine('${lid}')">✕</button></div>`
+      : `<div class="l-name">${esc(l.name)}</div>`;
     return `<tr>
-      <td class="l"><div class="l-name">${esc(l.name)}</div>${l.spec?`<div class="l-spec">${esc(l.spec)}</div>`:''}</td>
+      <td class="l">${nameCell}${l.spec?`<div class="l-spec">${esc(l.spec)}</div>`:''}</td>
       <td>${dualBuy}<span class="l-stock">${stock}</span></td>
       <td><span class="l-unit">${fmt(l.unit_cost_stock)}</span><div class="l-unit-sub">₮/${unitMn(l.stock_unit)}</div></td>
       <td><span class="l-total">${fmtShort(l.allocated_mnt)}</span></td>
     </tr>`;
   }).join('');
+  const basis = d.basis || d.basis_hint;
   return `<div class="card" style="padding:10px 12px">
+    ${addBtn}
     <table class="ltable">
-      <thead><tr><th class="l">Хийцлэл</th><th>Худ.авсан → Складын</th><th>Нэгж өртөг</th><th>Нийт</th></tr></thead>
+      <thead><tr><th class="l">Нэр төрөл</th><th>Худ.авсан → Складын</th><th>Нэгж өртөг</th><th>Нийт</th></tr></thead>
       <tbody>${body}</tbody>
       <tfoot><tr><td class="l">Нийт хуваарилсан</td><td></td><td></td><td><span class="l-total">${fmtShort(d.allocated_total_mnt)}</span></td></tr></tfoot>
     </table>
-    <div class="basis">Хуваарилах суурь: <b>${d.basis_hint==='weight'?'жин':d.basis_hint==='value'?'үнэ':d.basis_hint==='qty'?'тоо':d.basis_hint}</b> · Худ.авах нэгж нь зардлыг хуваах суурь, складын нэгж нь эцсийн ₮/нэгж.</div>
+    <div class="basis">Хуваарилах суурь: <b>${basis==='weight'?'жин':basis==='value'?'үнэ':basis==='qty'?'тоо':basis}</b> · Худ.авах нэгж нь зардлыг хуваах суурь, складын нэгж нь эцсийн ₮/нэгж.</div>
   </div>`;
 }
 
@@ -207,18 +306,135 @@ function renderPayments(d) {
   return `<div class="card">${rows}</div>`;
 }
 
-async function load() {
+// ══════════════════════════════════════════
+//  Editing layer (writes go to db.import_cost_workspaces — склад хөндөгдөхгүй)
+// ══════════════════════════════════════════
+let DATA = null, curEdit = null, curTag = 'capitalize', curScope = 'shared';
+const UNIT_OPTS = ['ton','kg','meter','m2','piece','set','bundle','stick','roll'];
+const TYPE_OPTS = ['product','product_adjustment','freight_border_to_ub','freight','customs','customs_duty','vat','tax','bank_fee','fx_loss','agent_fee','other'];
+function defaultTagGuess(type){ const t=(type||'').toLowerCase(); return (t.includes('bank')||t.includes('fee')||t.startsWith('fx'))?'period':'capitalize'; }
+
+async function apiSend(path, method, body) {
+  const r = await fetch('/api/import' + path, {
+    method,
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: body !== undefined ? JSON.stringify(body || {}) : undefined
+  });
+  if (r.status === 401) { localStorage.clear(); window.location.href = '/'; return { error: 'Нэвтрэх шаардлагатай' }; }
+  return r.json();
+}
+
+/* sheet helpers */
+const sheetEl = document.getElementById('sheet');
+function setSheet(title, html) {
+  document.getElementById('sheetTitle').textContent = title;
+  document.getElementById('sheetBody').innerHTML = html;
+  document.getElementById('sheetSave').textContent = 'Хадгалах';
+  sheetEl.classList.add('on');
+}
+function closeSheet(){ sheetEl.classList.remove('on'); }
+function field(label, html, hint) { return `<label class="fld"><span class="fld-l">${label}</span>${html}${hint?`<span class="fld-h">${esc(hint)}</span>`:''}</label>`; }
+function inp(id, v, type, attrs) { return `<input id="${id}" class="in" type="${type||'text'}" value="${esc(v==null?'':v)}" ${attrs||''}>`; }
+function selF(id, opts, v, labelFn) { return `<select id="${id}" class="in">${opts.map(o=>`<option value="${esc(o)}"${o===v?' selected':''}>${esc(labelFn?labelFn(o):o)}</option>`).join('')}</select>`; }
+function val(id){ const e=document.getElementById(id); return e?String(e.value).trim():''; }
+function numv(id){ const v=parseFloat(val(id)); return isFinite(v)?v:0; }
+
+/* нэр төрөл (line) form */
+function openLineSheet(id) {
+  const l = id ? (DATA.lines||[]).find(x => (x.line_id||x.lot_id)===id) || {} : {};
+  curEdit = { kind:'line', id: id||null };
+  setSheet(id ? 'Нэр төрөл засах' : 'Нэр төрөл нэмэх',
+    field('Нэр', inp('f_name', l.name)) +
+    field('Спец (заавал биш)', inp('f_spec', l.spec)) +
+    `<div class="frow">${field('Худ.авах нэгж', selF('f_bunit', UNIT_OPTS, l.buy_unit||'ton', unitMn))}${field('Худ.авах тоо', inp('f_bqty', l.buy_qty, 'number', 'step="any" inputmode="decimal"'))}</div>` +
+    `<div class="frow">${field('Складын нэгж', selF('f_sunit', UNIT_OPTS, l.stock_unit||l.buy_unit||'meter', unitMn))}${field('Складын тоо', inp('f_sqty', l.stock_qty, 'number', 'step="any" inputmode="decimal"'))}</div>` +
+    `<div class="frow">${field('Хөрвүүлэх коэф.', inp('f_factor', l.conversion_factor||1, 'number', 'step="any" inputmode="decimal"'), '1 склад = ? худ.авах')}${field('Жин (кг)', inp('f_wkg', l.weight_kg, 'number', 'step="any" inputmode="decimal"'), 'жингээр хуваарилахад')}</div>`
+  );
+  document.getElementById('sheetSave').onclick = saveLine;
+}
+async function saveLine() {
+  const name = val('f_name');
+  if (!name) { alert('Нэр оруулна уу'); return; }
+  const wkg = val('f_wkg');
+  const body = {
+    name, spec: val('f_spec'),
+    buy_unit: val('f_bunit'), buy_qty: numv('f_bqty'),
+    stock_unit: val('f_sunit'), stock_qty: numv('f_sqty'),
+    conversion_factor: numv('f_factor') || 1,
+    weight_kg: wkg === '' ? null : numv('f_wkg')
+  };
+  const id = curEdit.id;
+  const path = '/cost-workspace/'+encodeURIComponent(orderId)+'/line'+(id?'/'+encodeURIComponent(id):'');
+  afterSave(await apiSend(path, id?'PUT':'POST', body));
+}
+
+/* зардал (cost) form */
+function openCostSheet(id) {
+  const c = id ? (DATA.costs||[]).find(x => x.id===id) || {} : {};
+  curEdit = { kind:'cost', id: id||null };
+  curTag = id ? (c.tag||'capitalize') : defaultTagGuess('product');
+  curScope = c.scope || 'shared';
+  const lines = DATA.lines||[];
+  const lineSel = lines.length
+    ? selF('c_line', lines.map(l => l.line_id||l.lot_id), c.line_id||(lines[0].line_id||lines[0].lot_id), (lid)=>lineName(DATA, lid))
+    : '<div class="fld-h">Эхлээд нэр төрөл нэмнэ үү.</div>';
+  setSheet(id ? 'Зардал засах' : 'Зардал нэмэх',
+    `<div class="frow">${field('Төрөл', `<select id="c_type" class="in" onchange="onTypeChange()">${TYPE_OPTS.map(o=>`<option value="${o}"${o===(c.type||'product')?' selected':''}>${esc(typeMn(o))}</option>`).join('')}</select>`)}${field('Дүн (₮)', inp('c_amt', c.amount_mnt, 'number', 'step="any" inputmode="numeric"'))}</div>` +
+    field('Тэмдэглэл (заавал биш)', inp('c_note', c.note)) +
+    field('Ангилал', `<div class="seg" id="seg_tag"><button type="button" class="seg-b" data-tag="capitalize" onclick="pickTag('capitalize')">🟢 Бараанд шингэнэ</button><button type="button" class="seg-b" data-tag="period" onclick="pickTag('period')">⚪ Ерөнхий</button></div>`) +
+    field('Хамрах хүрээ', `<div class="seg" id="seg_scope"><button type="button" class="seg-b" data-scope="shared" onclick="pickScope('shared')">Бүх нэр төрөлд</button><button type="button" class="seg-b" data-scope="direct" onclick="pickScope('direct')">Нэг нэр төрөлд</button></div>`) +
+    `<div id="c_line_wrap" style="display:none">${field('Аль нэр төрөл', lineSel)}</div>`
+  );
+  applyTagScope();
+  document.getElementById('sheetSave').onclick = saveCost;
+}
+function onTypeChange(){ curTag = defaultTagGuess(val('c_type')); applyTagScope(); }
+function pickTag(t){ curTag = t; applyTagScope(); }
+function pickScope(s){ curScope = s; applyTagScope(); }
+function applyTagScope(){
+  document.querySelectorAll('#seg_tag .seg-b').forEach(b=>b.classList.toggle('on', b.dataset.tag===curTag));
+  document.querySelectorAll('#seg_scope .seg-b').forEach(b=>b.classList.toggle('on', b.dataset.scope===curScope));
+  const w=document.getElementById('c_line_wrap'); if(w) w.style.display = curScope==='direct' ? 'block' : 'none';
+}
+async function saveCost() {
+  const body = { type: val('c_type'), amount_mnt: numv('c_amt'), note: val('c_note'), tag: curTag, scope: curScope, line_id: curScope==='direct'?val('c_line'):null };
+  if (curScope==='direct' && !body.line_id) { alert('Нэр төрөл сонгоно уу'); return; }
+  const id = curEdit.id;
+  const path = '/cost-workspace/'+encodeURIComponent(orderId)+'/cost'+(id?'/'+encodeURIComponent(id):'');
+  afterSave(await apiSend(path, id?'PUT':'POST', body));
+}
+
+/* lifecycle + basis + delete */
+async function doMaterialize(){ afterSave(await apiSend('/cost-workspace/'+encodeURIComponent(orderId)+'/materialize','POST')); }
+async function setBasis(b){ if(DATA && DATA.basis===b) return; afterSave(await apiSend('/cost-workspace/'+encodeURIComponent(orderId)+'/basis','PUT',{basis:b})); }
+async function delLine(id){ if(!confirm('Энэ нэр төрлийг устгах уу?'))return; afterSave(await apiSend('/cost-workspace/'+encodeURIComponent(orderId)+'/line/'+encodeURIComponent(id),'DELETE')); }
+async function delCost(id){ if(!confirm('Энэ зардлыг устгах уу?'))return; afterSave(await apiSend('/cost-workspace/'+encodeURIComponent(orderId)+'/cost/'+encodeURIComponent(id),'DELETE')); }
+async function doFinalize(){
+  const d = await apiSend('/cost-workspace/'+encodeURIComponent(orderId)+'/finalize','POST');
+  if (d && d.error){ alert(d.error + (d.lines&&d.lines.length?': '+d.lines.join(', '):'')); return; }
+  closeSheet(); render(d);
+}
+async function doReopen(){ if(!confirm('Дахин нээх үү? Засвар хийх боломжтой болно.'))return; afterSave(await apiSend('/cost-workspace/'+encodeURIComponent(orderId)+'/reopen','POST')); }
+function afterSave(d){ if(d && d.error){ alert(d.error); return; } closeSheet(); render(d); }
+
+/* render */
+function render(d) {
+  DATA = d;
   const body = document.getElementById('body');
-  if (!orderId) { body.innerHTML = '<div class="empty">Бараагаа сонгоно уу.<br><a href="/imports/orders" style="color:var(--brand);font-weight:700;text-decoration:none">← Импортын бараа руу буцах</a></div>'; return; }
-  const d = await api('/cost-workspace/' + encodeURIComponent(orderId));
-  if (d.error) { body.innerHTML = `<div class="empty">${esc(d.error)}</div>`; return; }
+  if (d.error){ body.innerHTML = `<div class="empty">${esc(d.error)}</div>`; return; }
   if (d.order && d.order.name && !orderName) document.getElementById('hdrTitle').textContent = d.order.name;
   if (d.order && d.order.supplier) document.getElementById('hdrSub').textContent = d.order.supplier + ' · складад орсон';
   body.innerHTML =
+    `<div class="sec">${renderEditBar(d)}</div>` +
     `<div class="sec">${renderRecon(d)}</div>` +
-    `<div class="sec"><div class="sec-h">📦 Хийцлэл бүрийн өртөг (dual-unit)</div>${renderLines(d)}</div>` +
+    `<div class="sec"><div class="sec-h">📦 Нэр төрөл бүрийн өртөг (dual-unit)</div>${renderLines(d)}</div>` +
     `<div class="sec"><div class="sec-h">🧾 Зардлууд</div>${renderCosts(d)}</div>` +
     `<div class="sec"><div class="sec-h">💳 Холбогдсон банкны төлбөр</div>${renderPayments(d)}</div>`;
+}
+async function load() {
+  const body = document.getElementById('body');
+  if (!orderId) { body.innerHTML = '<div class="empty">Бараагаа сонгоно уу.<br><a href="/imports/orders" style="color:var(--brand);font-weight:700;text-decoration:none">← Импортын бараа руу буцах</a></div>'; return; }
+  render(await api('/cost-workspace/' + encodeURIComponent(orderId)));
 }
 load();
 </script>

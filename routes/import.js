@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { load, save } = require('../database');
+const cw = require('../lib/cost_workspace');
 
 // Auth middleware
 function authRequired(req, res, next) {
@@ -301,6 +302,12 @@ router.get('/cost-workspace/:orderId', (req, res) => {
   const order = (db.import_projects || []).find(p => p.id === req.params.orderId);
   if (!order) return res.status(404).json({ error: 'Захиалга олдсонгүй' });
 
+  // If the owner has begun editing this good, a workspace has been materialized
+  // into db.import_cost_workspaces — serve the editable, deterministic version.
+  // Otherwise fall back to the read-only v1 derive (preserves the 5 legacy goods).
+  const ws = (db.import_cost_workspaces || []).find(w => w.order_id === order.id);
+  if (ws) return res.json(cw.buildResponse(db, order, ws));
+
   const shipments = (db.import_shipments || []).filter(s => s.project_id === order.id);
   const shipIds = shipments.map(s => s.id);
   const lots = (db.import_lots || []).filter(l => shipIds.includes(l.shipment_id) && !l.is_sample);
@@ -408,6 +415,236 @@ router.get('/cost-workspace/:orderId', (req, res) => {
     payments,
     payment_total_mnt: payments.reduce((s, p) => s + (p.amount || 0), 0)
   });
+});
+
+// ── Cost Workspace EDITING layer (additive — never mutates lots/inventory) ──
+//  All writes live in db.import_cost_workspaces. The owner materializes a
+//  workspace (seeded from legacy lots/ledger or linked IMP payments), then
+//  edits нэр төрөл (lines) and costs; the app does the deterministic
+//  allocation (lib/cost_workspace.js). Finalize freezes it (guard: ≥1 line,
+//  every line stock_qty>0). Admin-only. Складыг хөндөхгүй.
+
+function findOrder(db, id) { return (db.import_projects || []).find(p => p.id === id); }
+function findWs(db, orderId) { return (db.import_cost_workspaces || []).find(w => w.order_id === orderId); }
+function touch(ws, who) { ws.updated_at = new Date().toISOString(); ws.updated_by = who || 'admin'; }
+function guardOpen(ws, res) {
+  if (ws.status === 'finalized') { res.status(409).json({ error: 'Баталгаажсан — засахын тулд эхлээд нээнэ үү' }); return false; }
+  return true;
+}
+
+// Materialize (idempotent): seed a workspace so it becomes editable.
+router.post('/cost-workspace/:orderId/materialize', adminOnly, (req, res) => {
+  const db = load();
+  const order = findOrder(db, req.params.orderId);
+  if (!order) return res.status(404).json({ error: 'Захиалга олдсонгүй' });
+  const ws = cw.materialize(db, order, req.user?.username || req.user?.name || 'admin');
+  save(db);
+  res.json(cw.buildResponse(db, order, ws));
+});
+
+// Basis (weight | value | qty)
+router.put('/cost-workspace/:orderId/basis', adminOnly, (req, res) => {
+  const db = load();
+  const order = findOrder(db, req.params.orderId);
+  const ws = findWs(db, req.params.orderId);
+  if (!order || !ws) return res.status(404).json({ error: 'Workspace олдсонгүй' });
+  if (!guardOpen(ws, res)) return;
+  const basis = (req.body?.basis || '').toLowerCase();
+  if (!['weight', 'value', 'qty'].includes(basis)) return res.status(400).json({ error: 'basis: weight|value|qty' });
+  ws.basis = basis;
+  touch(ws, req.user?.username);
+  save(db);
+  res.json(cw.buildResponse(db, order, ws));
+});
+
+// ── Lines (нэр төрөл) ──
+router.post('/cost-workspace/:orderId/line', adminOnly, (req, res) => {
+  const db = load();
+  const order = findOrder(db, req.params.orderId);
+  const ws = findWs(db, req.params.orderId);
+  if (!order || !ws) return res.status(404).json({ error: 'Workspace олдсонгүй' });
+  if (!guardOpen(ws, res)) return;
+  const b = req.body || {};
+  if (!b.name) return res.status(400).json({ error: 'name шаардлагатай' });
+  const buyUnit = b.buy_unit || 'piece';
+  const stockUnit = b.stock_unit || buyUnit;
+  const factor = Number(b.conversion_factor) || 1;
+  const buyQty = Number(b.buy_qty) || 0;
+  let weightKg = b.weight_kg != null ? Number(b.weight_kg) : null;
+  if (weightKg == null) {
+    if (buyUnit.toLowerCase() === 'ton') weightKg = buyQty * 1000;
+    else if (buyUnit.toLowerCase() === 'kg') weightKg = buyQty;
+  }
+  const line = {
+    id: cw.rid('wl_'),
+    product_code: b.product_code || null,
+    name: b.name,
+    spec: b.spec || '',
+    buy_qty: Math.round(buyQty * 1000) / 1000,
+    buy_unit: buyUnit,
+    stock_qty: Math.round((Number(b.stock_qty) || 0) * 100) / 100,
+    stock_unit: stockUnit,
+    conversion_factor: factor,
+    weight_kg: weightKg,
+    source: 'manual',
+    created_at: new Date().toISOString(),
+    created_by: req.user?.username || 'admin'
+  };
+  ws.lines = ws.lines || [];
+  ws.lines.push(line);
+  touch(ws, req.user?.username);
+  save(db);
+  res.json(cw.buildResponse(db, order, ws));
+});
+
+router.put('/cost-workspace/:orderId/line/:lineId', adminOnly, (req, res) => {
+  const db = load();
+  const order = findOrder(db, req.params.orderId);
+  const ws = findWs(db, req.params.orderId);
+  if (!order || !ws) return res.status(404).json({ error: 'Workspace олдсонгүй' });
+  if (!guardOpen(ws, res)) return;
+  const line = (ws.lines || []).find(l => l.id === req.params.lineId);
+  if (!line) return res.status(404).json({ error: 'Нэр төрөл олдсонгүй' });
+  const b = req.body || {};
+  if (b.name != null) line.name = b.name;
+  if (b.spec != null) line.spec = b.spec;
+  if (b.product_code != null) line.product_code = b.product_code || null;
+  if (b.buy_unit != null) line.buy_unit = b.buy_unit;
+  if (b.stock_unit != null) line.stock_unit = b.stock_unit;
+  if (b.buy_qty != null) line.buy_qty = Math.round((Number(b.buy_qty) || 0) * 1000) / 1000;
+  if (b.stock_qty != null) line.stock_qty = Math.round((Number(b.stock_qty) || 0) * 100) / 100;
+  if (b.conversion_factor != null) line.conversion_factor = Number(b.conversion_factor) || 1;
+  if (b.weight_kg !== undefined) line.weight_kg = b.weight_kg === null || b.weight_kg === '' ? null : Number(b.weight_kg);
+  else {
+    // keep weight_kg in sync when buy side changes and no explicit override
+    const u = (line.buy_unit || '').toLowerCase();
+    if (u === 'ton') line.weight_kg = (line.buy_qty || 0) * 1000;
+    else if (u === 'kg') line.weight_kg = line.buy_qty || 0;
+  }
+  touch(ws, req.user?.username);
+  save(db);
+  res.json(cw.buildResponse(db, order, ws));
+});
+
+router.delete('/cost-workspace/:orderId/line/:lineId', adminOnly, (req, res) => {
+  const db = load();
+  const order = findOrder(db, req.params.orderId);
+  const ws = findWs(db, req.params.orderId);
+  if (!order || !ws) return res.status(404).json({ error: 'Workspace олдсонгүй' });
+  if (!guardOpen(ws, res)) return;
+  const n = (ws.lines || []).length;
+  ws.lines = (ws.lines || []).filter(l => l.id !== req.params.lineId);
+  if (ws.lines.length === n) return res.status(404).json({ error: 'Нэр төрөл олдсонгүй' });
+  // detach any direct costs that pointed at the removed line → become shared
+  for (const c of (ws.costs || [])) if (c.line_id === req.params.lineId) { c.line_id = null; c.scope = 'shared'; }
+  touch(ws, req.user?.username);
+  save(db);
+  res.json(cw.buildResponse(db, order, ws));
+});
+
+// ── Costs (🟢 capitalize / ⚪ period) ──
+router.post('/cost-workspace/:orderId/cost', adminOnly, (req, res) => {
+  const db = load();
+  const order = findOrder(db, req.params.orderId);
+  const ws = findWs(db, req.params.orderId);
+  if (!order || !ws) return res.status(404).json({ error: 'Workspace олдсонгүй' });
+  if (!guardOpen(ws, res)) return;
+  const b = req.body || {};
+  const type = b.type || 'other';
+  const tag = (b.tag === 'capitalize' || b.tag === 'period') ? b.tag : cw.defaultTagOf(type);
+  const scope = b.scope === 'direct' ? 'direct' : 'shared';
+  const line_id = scope === 'direct' ? (b.line_id || null) : null;
+  if (scope === 'direct' && !(ws.lines || []).some(l => l.id === line_id)) return res.status(400).json({ error: 'direct cost-д хүчинтэй line_id хэрэгтэй' });
+  const cost = {
+    id: cw.rid('wc_'),
+    type,
+    tag,
+    scope,
+    line_id,
+    amount_mnt: Math.round(Number(b.amount_mnt) || 0),
+    transaction_id: b.transaction_id || null,
+    note: b.note || '',
+    source: 'manual',
+    created_at: new Date().toISOString(),
+    created_by: req.user?.username || 'admin'
+  };
+  ws.costs = ws.costs || [];
+  ws.costs.push(cost);
+  touch(ws, req.user?.username);
+  save(db);
+  res.json(cw.buildResponse(db, order, ws));
+});
+
+router.put('/cost-workspace/:orderId/cost/:costId', adminOnly, (req, res) => {
+  const db = load();
+  const order = findOrder(db, req.params.orderId);
+  const ws = findWs(db, req.params.orderId);
+  if (!order || !ws) return res.status(404).json({ error: 'Workspace олдсонгүй' });
+  if (!guardOpen(ws, res)) return;
+  const cost = (ws.costs || []).find(c => c.id === req.params.costId);
+  if (!cost) return res.status(404).json({ error: 'Зардал олдсонгүй' });
+  const b = req.body || {};
+  if (b.type != null) cost.type = b.type;
+  if (b.tag === 'capitalize' || b.tag === 'period') cost.tag = b.tag;
+  if (b.note != null) cost.note = b.note;
+  if (b.amount_mnt != null) cost.amount_mnt = Math.round(Number(b.amount_mnt) || 0);
+  if (b.scope != null) {
+    cost.scope = b.scope === 'direct' ? 'direct' : 'shared';
+    if (cost.scope === 'shared') cost.line_id = null;
+  }
+  if (b.line_id !== undefined && cost.scope === 'direct') {
+    if (b.line_id && !(ws.lines || []).some(l => l.id === b.line_id)) return res.status(400).json({ error: 'Буруу line_id' });
+    cost.line_id = b.line_id || null;
+  }
+  touch(ws, req.user?.username);
+  save(db);
+  res.json(cw.buildResponse(db, order, ws));
+});
+
+router.delete('/cost-workspace/:orderId/cost/:costId', adminOnly, (req, res) => {
+  const db = load();
+  const order = findOrder(db, req.params.orderId);
+  const ws = findWs(db, req.params.orderId);
+  if (!order || !ws) return res.status(404).json({ error: 'Workspace олдсонгүй' });
+  if (!guardOpen(ws, res)) return;
+  const n = (ws.costs || []).length;
+  ws.costs = (ws.costs || []).filter(c => c.id !== req.params.costId);
+  if (ws.costs.length === n) return res.status(404).json({ error: 'Зардал олдсонгүй' });
+  touch(ws, req.user?.username);
+  save(db);
+  res.json(cw.buildResponse(db, order, ws));
+});
+
+// ── Finalize / Reopen (freeze §11 lifecycle) ──
+router.post('/cost-workspace/:orderId/finalize', adminOnly, (req, res) => {
+  const db = load();
+  const order = findOrder(db, req.params.orderId);
+  const ws = findWs(db, req.params.orderId);
+  if (!order || !ws) return res.status(404).json({ error: 'Workspace олдсонгүй' });
+  if (ws.status === 'finalized') return res.status(409).json({ error: 'Аль хэдийн баталгаажсан' });
+  const lines = ws.lines || [];
+  if (!lines.length) return res.status(400).json({ error: 'Дор хаяж 1 нэр төрөл хэрэгтэй' });
+  const bad = lines.filter(l => !(Number(l.stock_qty) > 0));
+  if (bad.length) return res.status(400).json({ error: 'Бүх нэр төрлийн склад тоо хэмжээ > 0 байх ёстой', lines: bad.map(l => l.name) });
+  ws.status = 'finalized';
+  ws.finalized_at = new Date().toISOString();
+  ws.finalized_by = req.user?.username || 'admin';
+  touch(ws, req.user?.username);
+  save(db);
+  res.json(cw.buildResponse(db, order, ws));
+});
+
+router.post('/cost-workspace/:orderId/reopen', adminOnly, (req, res) => {
+  const db = load();
+  const order = findOrder(db, req.params.orderId);
+  const ws = findWs(db, req.params.orderId);
+  if (!order || !ws) return res.status(404).json({ error: 'Workspace олдсонгүй' });
+  ws.status = 'draft';
+  ws.finalized_at = null;
+  ws.finalized_by = null;
+  touch(ws, req.user?.username);
+  save(db);
+  res.json(cw.buildResponse(db, order, ws));
 });
 
 // ══════════════════════════════════════════
