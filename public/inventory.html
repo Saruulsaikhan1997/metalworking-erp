@@ -460,6 +460,7 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
           <option value="PRODUCTION_OUT">🏭 Үйлдвэрлэлд</option>
           <option value="TRANSFER">🔄 Шилжүүлэг</option>
           <option value="MANUAL_ADJUSTMENT">⚠️ Гар тохируулга (хасах)</option>
+          <option value="TO_EXHIBITION">🖼 Үзүүлэнд</option>
         </select>
       </div>
 
@@ -475,6 +476,10 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
           <option value="warehouse-5">📦 Склад 3</option>
           <option value="exhibition">🖼 Үзүүлэн</option>
         </select>
+      </div>
+
+      <div id="out-exhibition-hint" style="display:none;margin-bottom:12px;padding:8px 12px;border-radius:8px;background:#faf5ff;border:1px solid #e9d5ff;font-size:11.5px;color:#6b21a8">
+        🖼 Сонгосон бараа <b>бүхэлдээ</b> Үзүүлэн байршил руу шилжинэ (тоо хэмжээ хамаарахгүй).
       </div>
 
       <div class="ifield">
@@ -1598,10 +1603,14 @@ function onOutSourceChange() {
   const src  = document.getElementById('out-source').value;
   const dest = document.getElementById('out-destination');
   const wrap = document.getElementById('out-dest-wrap');
-  if (src === 'SALES_OUT')           { dest.value = 'customer'; wrap.style.display = ''; }
-  else if (src === 'PRODUCTION_OUT') { dest.value = 'factory';  wrap.style.display = ''; }
-  else if (src === 'TRANSFER')       { dest.value = '';         wrap.style.display = ''; }
-  else                               { wrap.style.display = 'none'; }
+  const hint = document.getElementById('out-exhibition-hint');
+  const isExhib = (src === 'TO_EXHIBITION');
+  if (hint) hint.style.display = isExhib ? '' : 'none';
+  if (src === 'SALES_OUT')           { dest.value = 'customer';   wrap.style.display = ''; dest.disabled = false; }
+  else if (src === 'PRODUCTION_OUT') { dest.value = 'factory';    wrap.style.display = ''; dest.disabled = false; }
+  else if (src === 'TRANSFER')       { dest.value = '';           wrap.style.display = ''; dest.disabled = false; }
+  else if (isExhib)                  { dest.value = 'exhibition'; wrap.style.display = ''; dest.disabled = true;  }
+  else                               { wrap.style.display = 'none'; dest.disabled = false; }
   document.getElementById('out-reason-wrap').style.display =
     (src === 'MANUAL_ADJUSTMENT' || src === 'TRANSFER') ? '' : 'none';
 }
@@ -1619,6 +1628,22 @@ async function submitOut() {
 
   const it = catalogItems.find(x => x.id === itemId);
   const hasLots = Array.isArray(it?.lots) && it.lots.length > 0;
+
+  // 🖼 Үзүүлэнд — барааг Үзүүлэн байршил руу бүхэлд нь шилжүүлэх (тоо хэмжээ хамаарахгүй)
+  if (source === 'TO_EXHIBITION') {
+    btn.disabled = true; btn.textContent = '⏳ Шилжүүлж байна...';
+    const r = await api('/inventory/item/' + itemId, { method: 'PUT', body: JSON.stringify({ location: 'exhibition' }) });
+    btn.disabled = false; btn.textContent = '📤 Гаралт бүртгэх';
+    if (r && r.ok) {
+      status.className = 'intake-status ok';
+      status.innerHTML = `✅ <b>${it?.name || ''}</b> 🖼 Үзүүлэн рүү шилжлээ`;
+      document.getElementById('out-item').value = '';
+      loadStock();
+    } else {
+      showOutError((r && r.error) || 'Алдаа гарлаа');
+    }
+    return;
+  }
 
   if (source === 'MANUAL_ADJUSTMENT' && !reason) { showOutError('Шалтгаан оруулна уу'); return; }
   if (source === 'TRANSFER' && !reason) { showOutError('Хаашаа шилжүүлж байгаа тайлбар оруулна уу'); return; }
