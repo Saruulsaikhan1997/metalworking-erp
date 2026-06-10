@@ -876,6 +876,8 @@ function showLotBreakdown(selectId, containerId) {
 
 // ── Material Intake (IN) ──
 let catalogItems = [];
+// Орлого/Гаралтын барааны сонголтоос нуух категори (засвар/эд хогшил — багаж, туслах материал)
+const DROPDOWN_HIDE_CATS = ['maintenance', 'assets'];
 
 async function loadIntakeForm() {
   catalogItems = await api('/inventory') || [];
@@ -883,7 +885,7 @@ async function loadIntakeForm() {
   const sel = document.getElementById('in-item');
   if (!sel) return;
   sel.innerHTML = '<option value="">— сонгох —</option>' +
-    catalogItems.filter(i => i.active !== false).map(i =>
+    catalogItems.filter(i => i.active !== false && !DROPDOWN_HIDE_CATS.includes(i.category)).map(i =>
       `<option value="${i.id}">${(i.code ? i.code + ' · ' : '')}${i.name}</option>`
     ).join('');
 
@@ -1451,7 +1453,7 @@ async function loadOutForm() {
     window.catalogItems = catalogItems;
   }
   sel.innerHTML = '<option value="">— сонгох —</option>' +
-    catalogItems.filter(i => i.active !== false && i.qty > 0).map(i =>
+    catalogItems.filter(i => i.active !== false && i.qty > 0 && !DROPDOWN_HIDE_CATS.includes(i.category)).map(i =>
       `<option value="${i.id}">${(i.code ? i.code + ' · ' : '')}${i.name} (${Number(i.qty).toLocaleString('en-US')} ${i.unit||''})</option>`
     ).join('');
   document.getElementById('out-qty').closest('.i-row2').style.display = '';
