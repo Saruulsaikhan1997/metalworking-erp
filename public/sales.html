@@ -189,7 +189,7 @@ const token = localStorage.getItem('token');
 const user  = JSON.parse(localStorage.getItem('user') || '{}');
 if (!token) window.location.href = '/';
 
-if (['admin','sales','accountant'].includes(user.role)) document.getElementById('adminSection').style.display = '';
+if (['admin','sales','accountant','manager'].includes(user.role)) document.getElementById('adminSection').style.display = '';
 
 async function api(path) {
   const r = await fetch('/api' + path, { headers: { 'Authorization': 'Bearer ' + token }});
