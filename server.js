@@ -87,6 +87,7 @@ app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.ht
 app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
 app.get('/sales',       (req, res) => res.sendFile(path.join(__dirname, 'public', 'sales.html')));
 app.get('/sales-entry', (req, res) => res.sendFile(path.join(__dirname, 'public', 'sales-entry.html')));
+app.get('/sales-income', (req, res) => res.sendFile(path.join(__dirname, 'public', 'sales-income.html')));
 app.get('/inventory', (req, res) => res.sendFile(path.join(__dirname, 'public', 'inventory.html')));
 app.get('/production', (req, res) => res.sendFile(path.join(__dirname, 'public', 'production.html')));
 app.get('/settings',   (req, res) => res.sendFile(path.join(__dirname, 'public', 'settings.html')));

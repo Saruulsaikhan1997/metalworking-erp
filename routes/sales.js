@@ -16,6 +16,25 @@ router.get('/sales', (req, res) => {
   res.json(sales);
 });
 
+// ── БАНКНЫ ХУУЛГЫН БОРЛУУЛАЛТЫН ОРЛОГО (зөвхөн УНШИХ жагсаалт) ──
+// SALE: кодтой банкны гүйлгээ = "Бүрэн төлсөн борлуулалт" (revenue, lib/pdf_parser.js).
+// Зорилго: борлуулалт хэрхэн явж буйг БҮХ хүн (engineer ч) ил тод харах.
+// Зөвхөн SALE мөрийг буцаана — бусад санхүүгийн гүйлгээ ЗАДРАХГҮЙ.
+// Энэ бол зөвхөн ТҮҮХИЙ ЖАГСААЛТ. Ангилал/боловсруулалт = МЕНЕЖЕРИЙН модуль (энд хийгдэхгүй).
+router.get('/sales-income', (req, res) => {
+  const db = load();
+  const list = (db.transactions || [])
+    .filter(t => t.code === 'SALE')
+    .map(t => ({
+      id:     t.id,
+      date:   t.date,                                      // огноо (он-сар-өдөр)
+      memo:   t.note || t.description || t.raw_memo || '', // хүний бичсэн гүйлгээний утга
+      amount: t.amount || 0,                               // дүн
+    }))
+    .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  res.json(list);
+});
+
 router.post('/sales', (req, res) => {
   if (!['admin', 'sales', 'manager'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
   const db = load();
