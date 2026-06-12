@@ -356,6 +356,8 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
     <!-- ── Салбар складууд ── -->
     <div id="branch-cards" class="branch-cards-wrap"></div>
     <div id="stockList"></div>
+    <!-- ── 📤 Өгсөн (гарсан) бараа ── -->
+    <div id="stock-out-section"></div>
   </div>
 
   <div id="panel-in" class="panel">
@@ -578,6 +580,13 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 
       <button class="intake-btn" id="outBtn" onclick="submitOut()" style="background:linear-gradient(135deg,#991b1b 0%,#dc2626 100%);box-shadow:0 4px 12px rgba(220,38,38,0.25)">📤 Гаралт бүртгэх</button>
       <div id="outStatus" class="intake-status"></div>
+    </div>
+
+    <!-- ── 🛒 Зарагдсан бараа (борлуулалтын үед харагдана) ── -->
+    <div class="intake-card" id="out-sold-panel" style="border-top-color:#16a34a;display:none">
+      <div class="intake-title" style="font-size:15px">🛒 Зарагдсан бараа</div>
+      <div class="intake-sub">Сүүлд хэрэглэгчид гарсан борлуулалтууд</div>
+      <div id="out-sold-list"></div>
     </div>
   </div>
 
@@ -1266,6 +1275,7 @@ async function loadStock() {
   const items = await api('/inventory') || [];
   catalogItems = items;
   window.catalogItems = catalogItems;
+  loadStockOutSection();
   const el = document.getElementById('stockList');
   if (!items.length) {
     el.innerHTML = '<div class="empty">Нөөцийн бүртгэл хараахан байхгүй<br><small style="display:block;margin-top:6px">Бараа ирмэгц орлого бүртгэх ёстой</small></div>';
@@ -1448,6 +1458,54 @@ async function loadHistory() {
   }).join('');
 }
 
+// ── Гаралтын мөр (read-only, /inventory/log-оос) ──
+function movementRowHtml(l) {
+  const fmt = n => Number(n).toLocaleString('en-US');
+  const srcLabel = SOURCE_LABEL[l.source] || l.source || '';
+  return `<div class="item-card">
+    <div class="item-info">
+      <div class="item-name">${l.item_name || '—'}</div>
+      <div class="item-meta">${l.date||''}${l.time ? ' ' + l.time : ''} · ${l.by||''}<span class="source-badge">${srcLabel}</span></div>
+      ${l.note ? `<div class="item-meta">📝 ${l.note}</div>` : ''}
+    </div>
+    <div class="item-qty" style="color:#c62828">−${fmt(l.qty)}<span class="item-unit">${l.unit||''}</span></div>
+  </div>`;
+}
+
+// Гаралтын формд — зарагдсан бараа (зөвхөн Борлуулалт сонгосон үед)
+async function loadSoldGoods() {
+  const panel = document.getElementById('out-sold-panel');
+  const list  = document.getElementById('out-sold-list');
+  if (!panel || !list) return;
+  if (document.getElementById('out-source').value !== 'SALES_OUT') { panel.style.display = 'none'; return; }
+  panel.style.display = '';
+  list.innerHTML = '<div class="empty" style="padding:16px">⏳ Уншиж байна...</div>';
+  const logs = (await api('/inventory/log') || []).filter(l => l.source === 'SALES_OUT');
+  logs.sort((a,b) => (b.created_at||b.date||'').localeCompare(a.created_at||a.date||''));
+  if (!logs.length) { list.innerHTML = '<div class="empty" style="padding:18px">Зарагдсан бараа хараахан бүртгэгдээгүй</div>'; return; }
+  list.innerHTML = logs.slice(0, 15).map(movementRowHtml).join('');
+}
+
+// Үлдэгдэл хэсэгт — өгсөн (гарсан) бараа (бүх OUT хөдөлгөөн)
+async function loadStockOutSection() {
+  const wrap = document.getElementById('stock-out-section');
+  if (!wrap) return;
+  const logs = (await api('/inventory/log') || []).filter(l => l.type === 'out');
+  logs.sort((a,b) => (b.created_at||b.date||'').localeCompare(a.created_at||a.date||''));
+  const body = logs.length
+    ? logs.slice(0, 30).map(movementRowHtml).join('')
+    : '<div style="padding:14px 16px;color:#94a3b8;font-size:13px">Гарсан бараа байхгүй</div>';
+  wrap.innerHTML = `<div class="cat-accordion" id="cat-acc-outmov" style="margin-top:14px">
+      <div class="cat-acc-header" onclick="toggleCatAcc('outmov')">
+        <span class="cat-acc-icon">📤</span>
+        <span class="cat-acc-name">Өгсөн (гарсан) бараа</span>
+        <span class="cat-acc-count">${logs.length} хөдөлгөөн</span>
+        <span class="cat-acc-caret">▸</span>
+      </div>
+      <div class="cat-acc-body" id="cat-body-outmov" style="display:none">${body}</div>
+    </div>`;
+}
+
 // ── Material Output (OUT) ──
 async function loadOutForm() {
   const sel = document.getElementById('out-item');
@@ -1613,6 +1671,7 @@ function onOutSourceChange() {
   else                               { wrap.style.display = 'none'; dest.disabled = false; }
   document.getElementById('out-reason-wrap').style.display =
     (src === 'MANUAL_ADJUSTMENT' || src === 'TRANSFER') ? '' : 'none';
+  loadSoldGoods();
 }
 function updateOutReasonVisibility() { onOutSourceChange(); }
 
@@ -1673,6 +1732,8 @@ async function submitOut() {
         note: note || lotNote,
         lot_name: lot.name
       };
+      const destEl = document.getElementById('out-destination');
+      if (destEl && destEl.value && document.getElementById('out-dest-wrap').style.display !== 'none') body.location_to = destEl.value;
       if (reason) body.reason = reason;
       lastResult = await api('/inventory/log', { method: 'POST', body: JSON.stringify(body) });
       if (!lastResult.ok) { showOutError(lastResult.error || 'Алдаа гарлаа'); btn.disabled = false; btn.textContent = '📤 Гаралт бүртгэх'; return; }
@@ -1712,6 +1773,8 @@ async function submitOut() {
     if (it && qty > it.qty) { showOutError(`Нөөц хүрэлцэхгүй. Одоогийн: ${it.qty} ${it.unit||''}`); return; }
 
     const body = { item_id: itemId, source, qty, note, direction: 'out' };
+    const destEl2 = document.getElementById('out-destination');
+    if (destEl2 && destEl2.value && document.getElementById('out-dest-wrap').style.display !== 'none') body.location_to = destEl2.value;
     if (reason) body.reason = reason;
 
     btn.disabled = true; btn.textContent = '⏳ Бүртгэж байна...';
@@ -1737,7 +1800,10 @@ async function submitOut() {
   document.getElementById('out-breakdown').style.display = 'none';
   catalogItems = await api('/inventory') || [];
   window.catalogItems = catalogItems;
+  // loadOutForm статусыг цэвэрлэдэг тул амжилтын мэдээг хадгалж сэргээнэ
+  const okCls = status.className, okHtml = status.innerHTML;
   loadOutForm();
+  status.className = okCls; status.innerHTML = okHtml;
 }
 
 function showOutError(msg) {

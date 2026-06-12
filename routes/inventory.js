@@ -352,6 +352,67 @@ router.post('/inventory/log', (req, res) => {
     time:         now.toTimeString().slice(0,8),
     created_at:   now.toISOString(),
   });
+
+  // ── TRANSFER: очих складад барааг нэмэх ──
+  // Шилжүүлэг нь эх байршлаас хасаад очих байршилд нэмнэ — ингэснээр
+  // Склад 1/2/3 зэрэг салбарт үлдэгдэл зөв харагдана.
+  const WAREHOUSE_LOCS = ['central', 'factory', 'plastic-center', 'warehouse-4', 'warehouse-5', 'exhibition'];
+  if (source === 'TRANSFER' && dir === 'out' && WAREHOUSE_LOCS.includes(location_to)) {
+    // Очих байршилд ижил нэртэй бараа хайх (байхгүй бол клон үүсгэнэ)
+    let destItem = db.inventory.find(i =>
+      i.id !== item.id &&
+      (i.location || 'central') === location_to &&
+      (i.name || '').trim().toLowerCase() === (item.name || '').trim().toLowerCase()
+    );
+    if (!destItem) {
+      const newId = Math.max(0, ...db.inventory.map(i => i.id || 0)) + 1;
+      destItem = {
+        id: newId,
+        code: item.code || '',
+        name: item.name,
+        category: item.category,
+        status: 'available',
+        unit: item.unit,
+        location: location_to,
+        qty: 0,
+        threshold: 0,
+        cost_per_unit: item.cost_per_unit != null ? item.cost_per_unit : null,
+        active: true,
+        has_manual_adjustment: false,
+        created_at: now.toISOString(),
+        created_by: 'Шилжүүлэг (' + req.user.name + ')',
+      };
+      db.inventory.push(destItem);
+    }
+    const destBefore = destItem.qty || 0;
+    destItem.qty = destBefore + q;
+    destItem.active = true;
+    destItem.updated_at = now.toISOString();
+    db.inventory_log.push({
+      id:           logId + 1,
+      item_id:      destItem.id,
+      item_code:    destItem.code,
+      item_name:    destItem.name,
+      type:         'in',
+      source:       'TRANSFER',
+      source_id:    'LOG-' + logId,
+      qty:          q,
+      unit:         destItem.unit,
+      unit_cost:    unit_cost != null ? parseFloat(unit_cost) : null,
+      location_from: item.location || 'central',
+      location_to:   location_to,
+      reason:       reason || null,
+      note:         note || '',
+      by:           req.user.name,
+      by_role:      req.user.role,
+      before_qty:   destBefore,
+      after_qty:    destItem.qty,
+      date:         now.toISOString().slice(0,10),
+      time:         now.toTimeString().slice(0,8),
+      created_at:   now.toISOString(),
+    });
+  }
+
   save(db);
   res.json({ ok: true, new_qty: item.qty, log_id: logId });
 });
