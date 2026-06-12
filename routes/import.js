@@ -23,6 +23,13 @@ function adminOrWarehouse(req, res, next) {
 
 router.use(authRequired);
 
+// The whole import/cost surface is the owner's private section.
+// Factory engineers must not see landed costs, supplier prices, or payments.
+router.use((req, res, next) => {
+  if (req.user?.role === 'engineer') return res.status(403).json({ error: 'Эрх хүрэхгүй' });
+  next();
+});
+
 // ══════════════════════════════════════════
 //  PRODUCT CODES
 // ══════════════════════════════════════════

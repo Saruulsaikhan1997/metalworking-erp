@@ -301,6 +301,12 @@ updateDate();
 setInterval(updateDate, 60000);
 if (['admin','shareholder'].includes(user.role)) document.getElementById('investCard').style.display = '';
 
+// Engineer: factory-floor view only — hide owner-private money/import/sales cards.
+if (user.role === 'engineer') {
+  document.querySelectorAll('.op-card.import, .op-card.sales, .op-card.finance')
+    .forEach(el => el.style.display = 'none');
+}
+
 async function logout() {
   try { await fetch('/api/auth/logout', { method: 'POST' }); } catch(_) {}
   localStorage.clear();

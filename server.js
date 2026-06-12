@@ -1069,6 +1069,26 @@ app.get('/inventory-admin', (req, res) => res.sendFile(path.join(__dirname, 'pub
     save(db);
     console.log('Migration: warehouse-manager user (mnk9) created');
   }
+
+  // ── Create the factory-engineer (инженер) staff login ──
+  // Factory-floor account: warehouse/inventory view + production module.
+  // No access to the owner's import/cost section, finance, sales, or settings
+  // (enforced server-side in routes/import.js, routes/sales.js, routes/api.js).
+  // Password is stored as a bcrypt hash (same scheme as other users).
+  // Idempotent — only creates the user if the username is not already present.
+  if (db.users && !db.users.some(u => u.username === 'engineer')) {
+    const nextId = Math.max(0, ...db.users.map(u => u.id || 0)) + 1;
+    db.users.push({
+      id: nextId,
+      username: 'engineer',
+      // bcrypt hash of the password chosen by the CEO
+      password: '$2a$10$H8.gEHcp3aNQxszGwqklquDbkAN3bLzThJgboZ2vuGP50XoNIO/4a',
+      role: 'engineer',
+      name: 'Инженер'
+    });
+    save(db);
+    console.log('Migration: factory-engineer user (engineer) created');
+  }
 })();
 
 const PORT = process.env.PORT || 3000;
