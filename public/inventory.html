@@ -767,14 +767,9 @@ const BAL_MATS = {
   p4020: { name: "Хоолой 40×20×1×6м",   unit: "ш" },
   upvc:  { name: "UPVC хавтан",          unit: "м²" },
 };
-// Орц — 1 ш бүтээгдэхүүнд зарцуулах материал (ТУРШИЛТЫН тоо — бодит тоогоор солино)
+// Орц — 1 ш бүтээгдэхүүнд зарцуулах материал (ТУРШИЛТЫН тоо — бодит орцоор солино)
 const BAL_PRODUCTS = {
-  haalga:   { emoji:"🚪", name:"Хашааны хаалга", bom:{ p4040:2, p4020:1,   upvc:2 } },
-  huree:    { emoji:"🪟", name:"Цонхны хүрээ",    bom:{ p4020:1, upvc:1.5 } },
-  haasaa:   { emoji:"🧱", name:"Хашаа (1 хэсэг)", bom:{ p8080:1, p4020:0.5 } },
-  shat:     { emoji:"🪜", name:"Ган шат",         bom:{ p4040:3, p8080:1 } },
-  shiree:   { emoji:"🪑", name:"Металл ширээ",    bom:{ p4040:1, p4020:0.5, upvc:0.8 } },
-  hashlaga: { emoji:"🛡", name:"Хашлага",         bom:{ p4020:1, p4040:0.5 } },
+  buheeg: { emoji:"🚻", name:"Жорлонгийн бүхээг", bom:{ p8080:4, p4040:6, p4020:4, upvc:6 } },
 };
 let balSelected = null, balReady = false;
 
@@ -790,7 +785,7 @@ function balInit() {
     grid.appendChild(b);
   });
   balReady = true;
-  balSelectProduct('haalga');
+  balSelectProduct('buheeg');
 }
 
 function balSelectProduct(k) {
