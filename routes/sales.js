@@ -7,6 +7,8 @@ router.use(authMiddleware);
 
 // ── БОРЛУУЛАЛТ ──
 router.get('/sales', (req, res) => {
+  // Revenue is owner/sales data — factory engineers don't see it.
+  if (req.user.role === 'engineer') return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
   const db = load();
   // Exclude archived records from normal view
   const sales = (db.sales || []).filter(s => !s.archived);
