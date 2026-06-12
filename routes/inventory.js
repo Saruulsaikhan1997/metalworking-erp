@@ -674,7 +674,7 @@ router.get('/production', (req, res) => {
 });
 
 router.post('/production', (req, res) => {
-  if (!['admin','warehouse','manager'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
+  if (!['admin','warehouse','manager','engineer'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
   const db = load();
   if (!db.production) db.production = [];
   const id = Math.max(0, ...db.production.map(p => p.id || 0)) + 1;
@@ -686,7 +686,7 @@ router.post('/production', (req, res) => {
 // Складын "Бэлэн" барааны qty нэмэгдэнэ (PRODUCTION_IN). Нэрээр тааруулна,
 // байхгүй бол шинээр үүсгэнэ. Нэг удаа (warehoused флагаар идемпотент).
 router.post('/production/:id/to-warehouse', (req, res) => {
-  if (!['admin','warehouse','manager'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
+  if (!['admin','warehouse','manager','engineer'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
   const db = load();
   if (!db.inventory) db.inventory = [];
   if (!db.inventory_log) db.inventory_log = [];
