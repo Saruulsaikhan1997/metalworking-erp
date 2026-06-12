@@ -762,19 +762,18 @@ function showTab(name) {
 
 // ══════════ ⚖️ Үйлдвэрлэлийн тэнцүүр (зөвхөн эзэн = admin) ══════════
 const BAL_MATS = {
-  p8080: { name: "Хоолой 80×80×1.2×6м", unit: "ш" },
-  p4040: { name: "Хоолой 40×40×1×6м",   unit: "ш" },
-  p4020: { name: "Хоолой 40×20×1×6м",   unit: "ш" },
-  upvc:  { name: "UPVC хавтан",          unit: "м²" },
+  p2040:    { name: "Хоолой 20×40 (6м бар)", unit: "ш" },
+  pvc:      { name: "PVC хавтан",            unit: "м²" },
+  floor:    { name: "Пластик шал",           unit: "кг" },
+  door:     { name: "Хаалга",                unit: "ш" },
+  paint:    { name: "Шүршдэг будаг",         unit: "ш" },
+  silicone: { name: "Силикон",               unit: "ш" },
+  shrup:    { name: "Шрүп",                  unit: "₮" },
 };
-// Орц — 1 ш бүтээгдэхүүнд зарцуулах материал (ТУРШИЛТЫН тоо — бодит тоогоор солино)
+// Орц — 1 ш Жорлонгийн бүхээгт зарцуулах материал (бодит орц, 2026-06-12)
+// 20×40 хоолой 36м = 6м бар × 6ш. Шрүп нь дүнгээр (10,000₮).
 const BAL_PRODUCTS = {
-  haalga:   { emoji:"🚪", name:"Хашааны хаалга", bom:{ p4040:2, p4020:1,   upvc:2 } },
-  huree:    { emoji:"🪟", name:"Цонхны хүрээ",    bom:{ p4020:1, upvc:1.5 } },
-  haasaa:   { emoji:"🧱", name:"Хашаа (1 хэсэг)", bom:{ p8080:1, p4020:0.5 } },
-  shat:     { emoji:"🪜", name:"Ган шат",         bom:{ p4040:3, p8080:1 } },
-  shiree:   { emoji:"🪑", name:"Металл ширээ",    bom:{ p4040:1, p4020:0.5, upvc:0.8 } },
-  hashlaga: { emoji:"🛡", name:"Хашлага",         bom:{ p4020:1, p4040:0.5 } },
+  buheeg: { emoji:"🚻", name:"Жорлонгийн бүхээг", bom:{ p2040:6, pvc:12.883, floor:69, door:1, paint:1, silicone:1, shrup:10000 } },
 };
 let balSelected = null, balReady = false;
 
@@ -790,7 +789,7 @@ function balInit() {
     grid.appendChild(b);
   });
   balReady = true;
-  balSelectProduct('haalga');
+  balSelectProduct('buheeg');
 }
 
 function balSelectProduct(k) {
