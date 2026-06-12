@@ -106,6 +106,74 @@ function ensureReceiptItems(db) {
   return added > 0;
 }
 
+// ── Migration: хуучин шилжүүлгүүдийг цэгцлэх (нэг удаа, fix_pre_transfer_v1) ──
+// 1) "шалгалт" гэсэн шилжүүлгийг устгаж, тоог нь эх бараанд буцаана.
+// 2) Засвараас өмнөх шилжүүлгүүд зөвхөн хасдаг байсан тул очих складын
+//    кредитийг нөхөж олгоно (хос in бичлэггүй TRANSFER out бүрт).
+const XFER_LOCS = ['central', 'factory', 'plastic-center', 'warehouse-4', 'warehouse-5', 'exhibition'];
+function ensureTransferCleanup(db) {
+  if (db.fix_pre_transfer_v1) return;
+  if (!db.inventory) db.inventory = [];
+  if (!db.inventory_log) db.inventory_log = [];
+  const isTest = s => String(s || '').toLowerCase().includes('шалгалт');
+
+  // 1) Тест ("шалгалт") шилжүүлгийг буцааж устгана
+  const keep = [];
+  for (const l of db.inventory_log) {
+    if (l.source === 'TRANSFER' && l.type === 'out' && (isTest(l.reason) || isTest(l.note))) {
+      const item = db.inventory.find(i => i.id === l.item_id);
+      if (item) { item.qty = (item.qty || 0) + (l.qty || 0); item.updated_at = new Date().toISOString(); }
+      continue; // log-оос хасна
+    }
+    keep.push(l);
+  }
+  db.inventory_log = keep;
+
+  // 2) Үлдсэн TRANSFER out-уудад очих складын кредит нөхөж олгох
+  const now = new Date();
+  for (const l of [...db.inventory_log]) {
+    if (l.source !== 'TRANSFER' || l.type !== 'out') continue;
+    if (!XFER_LOCS.includes(l.location_to)) continue;
+    const hasPair = db.inventory_log.some(x =>
+      x.source === 'TRANSFER' && x.type === 'in' && x.source_id === 'LOG-' + l.id);
+    if (hasPair) continue; // шинэ кодоор хийгдсэн — аль хэдийн кредиттэй
+    const src = db.inventory.find(i => i.id === l.item_id);
+    const name = (l.item_name || src?.name || '').trim();
+    if (!name) continue;
+    let dest = db.inventory.find(i =>
+      i.id !== l.item_id &&
+      (i.location || 'central') === l.location_to &&
+      (i.name || '').trim().toLowerCase() === name.toLowerCase());
+    if (!dest) {
+      const newId = Math.max(0, ...db.inventory.map(i => i.id || 0)) + 1;
+      dest = {
+        id: newId, code: l.item_code || '', name,
+        category: src?.category || 'raw', status: 'available',
+        unit: l.unit || src?.unit || 'ш', location: l.location_to,
+        qty: 0, threshold: 0,
+        cost_per_unit: src?.cost_per_unit != null ? src.cost_per_unit : null,
+        active: true, has_manual_adjustment: false,
+        created_at: now.toISOString(), created_by: 'migration (шилжүүлэг нөхөлт)',
+      };
+      db.inventory.push(dest);
+    }
+    const before = dest.qty || 0;
+    dest.qty = before + (l.qty || 0);
+    dest.active = true;
+    const logId = Math.max(0, ...db.inventory_log.map(x => x.id || 0)) + 1;
+    db.inventory_log.push({
+      id: logId, item_id: dest.id, item_code: dest.code, item_name: dest.name,
+      type: 'in', source: 'TRANSFER', source_id: 'LOG-' + l.id, qty: l.qty,
+      unit: dest.unit, location_from: l.location_from || 'central', location_to: l.location_to,
+      reason: null, note: 'Шилжүүлгийн нөхөлт (migration)', by: 'system', by_role: 'system',
+      before_qty: before, after_qty: dest.qty,
+      date: now.toISOString().slice(0,10), time: now.toTimeString().slice(0,8),
+      created_at: now.toISOString(),
+    });
+  }
+  db.fix_pre_transfer_v1 = true;
+}
+
 // ── List items (enriched with received-lot breakdown for the warehouse view) ──
 // Read-only, additive enrichment: each item gets a `lots` array (profile name +
 // quantity in the item's OWN unit). NO cost/valuation fields are exposed here —
@@ -125,6 +193,7 @@ router.get('/inventory', (req, res) => {
   const db = load();
   ensureInventorySeed(db);
   ensureReceiptItems(db);
+  ensureTransferCleanup(db);
   save(db);
 
   // Sub-breakdown = received, non-sample import lots, grouped by inventory item.
