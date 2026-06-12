@@ -194,6 +194,26 @@ function ensureTransferCleanupV2(db) {
   if (!db.inventory) db.inventory = [];
   if (!db.inventory_log) db.inventory_log = [];
   const now = new Date();
+
+  // 0) "шалгалт" гэсэн БҮХ хөдөлгөөнийг (орлого/гаралт/шилжүүлэг) буцааж устгана
+  const isTest = s => String(s || '').toLowerCase().includes('шалгалт');
+  const keep = [];
+  for (const l of db.inventory_log) {
+    if (isTest(l.reason) || isTest(l.note)) {
+      const item = db.inventory.find(i => i.id === l.item_id);
+      if (item) {
+        // Буцаалт: гаралт байсныг нэмж, орлого байсныг хасна
+        item.qty = l.type === 'out'
+          ? (item.qty || 0) + (l.qty || 0)
+          : Math.max(0, (item.qty || 0) - (l.qty || 0));
+        item.updated_at = now.toISOString();
+      }
+      continue; // log-оос хасна
+    }
+    keep.push(l);
+  }
+  db.inventory_log = keep;
+
   for (const l of [...db.inventory_log]) {
     if (l.source !== 'TRANSFER' || l.type !== 'out') continue;
     if (XFER_LOCS.includes(l.location_to)) continue; // v1 эсвэл шинэ код аль хэдийн хийсэн
