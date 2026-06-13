@@ -211,6 +211,12 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
   </div>
 </div>
 
+<!-- ── Шинэ SALE орлого: банкны хуулгын түүхий feed (менежер боловсруулна) ── -->
+<div class="section">
+  <div class="section-label">Шинэ SALE орлого</div>
+  <div id="saleFeed"><div class="empty">Ачааллаж байна...</div></div>
+</div>
+
 <!-- /sales-admin will be created in Phase 4. Keep sales-entry link (operational, not settings). -->
 <div id="adminSection" style="display:none">
   <a class="admin-entry-link" href="/sales-entry">📝 Борлуулалт бүртгэх (нягтлан)</a>
@@ -231,6 +237,7 @@ async function api(path) {
 }
 
 function fmt(n) { return Number(n||0).toLocaleString('mn-MN'); }
+function escapeHtml(s) { return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function today() { return new Date().toISOString().slice(0,10); }
 function thisMonth() { return new Date().toISOString().slice(0,7); }
 
@@ -307,6 +314,7 @@ async function load() {
     : '<div class="empty">Бүртгэл байхгүй</div>';
 
   renderRecent();
+  renderSaleFeed();
 }
 
 function renderRecent() {
@@ -336,6 +344,22 @@ function renderPending() {
       <div class="sale-meta">${o.date} · ${(o.quantity||o.qty||0)} ш · ${o.customer_name || '—'} · Үлд: ${fmt(o.remaining_amount)}₮</div>
     </div>
     <div class="sale-amt">${fmt(o.total_amount || 0)} ₮</div>
+  </div>`).join('');
+}
+
+// ── Шинэ SALE орлого feed — /api/sales-income-ийн түүхий жагсаалт (зөвхөн харуулна) ──
+// Linking / processed-state / disappear ХИЙГЭЭГҮЙ — энэ бол менежерийн боловсруулах түүхий өгөгдөл.
+// Дараа шаардлага гарвал менежерийн хэсэг дээр тусад нь сайжруулна.
+async function renderSaleFeed() {
+  const el = document.getElementById('saleFeed');
+  const feed = await api('/sales-income') || [];
+  if (!feed.length) { el.innerHTML = '<div class="empty">Шинэ SALE орлого байхгүй</div>'; return; }
+  el.innerHTML = feed.map(t => `<div class="sale-row">
+    <div class="sale-info">
+      <div class="sale-product">${escapeHtml(t.memo) || '<span style="color:#9ca3af">(утга байхгүй)</span>'}</div>
+      <div class="sale-meta">📅 ${escapeHtml(t.date || '—')}</div>
+    </div>
+    <div class="sale-amt">${fmt(t.amount)} ₮</div>
   </div>`).join('');
 }
 
