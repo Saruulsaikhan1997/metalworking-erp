@@ -368,9 +368,12 @@ async function loadMasters() {
   productMap = {};
   prods.forEach(p => { productMap[p.id] = p.name; });
 
-  // Product select
+  // Product select — одоогоор зөвхөн Замын хавтан + Жорлонгийн бүхээг
+  const SALE_KEYWORDS = /хавтан|бүхээг/i;
   const ps = document.getElementById('nProduct');
-  ps.innerHTML = prods.map(p =>
+  let saleProds = prods.filter(p => SALE_KEYWORDS.test(p.name || ''));
+  if (!saleProds.length) saleProds = prods;   // тааруулсан бараа байхгүй бол бүгдийг харуулна
+  ps.innerHTML = saleProds.map(p =>
     `<option value="${p.id}">${p.name}${p.price > 0 ? ' — ' + fmt(p.price) + '₮' : ''}</option>`
   ).join('');
 
