@@ -15,10 +15,10 @@
 body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; background: var(--gray-50); color: var(--gray-900); padding-bottom: 30px; -webkit-font-smoothing: antialiased; }
 
 .id-bar {
-  background: linear-gradient(135deg, #047857 0%, #059669 100%);
+  background: #1a1a2e;
   color: #fff; padding: 18px 20px;
   border-radius: 0 0 20px 20px;
-  box-shadow: 0 4px 12px rgba(4,120,87,0.18);
+  box-shadow: 0 4px 12px rgba(26,26,46,0.22);
 }
 .id-top { display: flex; align-items: center; gap: 12px; }
 .id-back { font-size: 22px; color: #fff; text-decoration: none; padding: 4px 8px; }
@@ -56,6 +56,33 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 .kpi-card .kpi-lbl { font-size: 10.5px; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
 .kpi-card .kpi-val { font-size: 19px; font-weight: 800; color: var(--brand-dark); margin-top: 5px; line-height: 1.1; }
 .kpi-card .kpi-sub { font-size: 11px; color: var(--gray-400); margin-top: 4px; }
+
+/* ── Өнгөт KPI картууд (орлого/авлага) ── */
+.kpi { border-radius: 14px; padding: 14px 16px; }
+.kpi.green { background: #2e7d32; color: #fff; }
+.kpi.blue  { background: #1565c0; color: #fff; }
+.kpi.dark  { background: #1a1a2e; color: #fff; }
+.kpi.red   { background: #b71c1c; color: #fff; }
+.kpi .lbl  { font-size: 10px; opacity: 0.78; margin-bottom: 4px; }
+.kpi .val  { font-size: 20px; font-weight: 800; line-height: 1.1; }
+.kpi .sub  { font-size: 10px; opacity: 0.68; margin-top: 3px; }
+
+/* ── Цагаан самбар карт ── */
+.dash-card { background: #fff; border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); border: 1px solid var(--gray-200); }
+
+/* ── 7 хоногийн график ── */
+.week-bars { display: flex; align-items: flex-end; gap: 4px; height: 52px; }
+.wday-col  { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.wday-bar  { width: 100%; background: #1a1a2e; border-radius: 3px 3px 0 0; min-height: 3px; }
+.wday-lbl  { font-size: 9px; color: var(--gray-400); }
+
+/* ── Бүтээгдэхүүний дүн (баар) ── */
+.bar-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--gray-100); }
+.bar-row:last-child { border-bottom: none; }
+.bar-lbl { font-size: 11px; color: var(--gray-600); width: 130px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-track { flex: 1; height: 8px; background: var(--gray-100); border-radius: 4px; }
+.bar-fill  { height: 8px; background: #1a1a2e; border-radius: 4px; min-width: 3px; }
+.bar-val   { font-size: 11px; font-weight: 700; color: #1a1a2e; width: 92px; text-align: right; flex-shrink: 0; }
 
 /* ── View switcher ── */
 .tabs-row {
@@ -137,39 +164,45 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 </div>
 
 <div class="section">
-  <div class="section-label">🏆 Энэ сарын амжилт</div>
-  <div class="hero-stat">
-    <div class="hero-lbl">Энэ сар бүрэн борлуулсан</div>
-    <div class="hero-val" id="monthTotal">0 ширхэг</div>
-    <div class="hero-sub" id="monthSub">Бүтээгдэхүүн</div>
+  <div class="kpi-grid">
+    <div class="kpi green">
+      <div class="lbl">Өнөөдрийн орлого</div>
+      <div class="val" id="dToday">0 ₮</div>
+      <div class="sub" id="dTodaySub">0 борлуулалт</div>
+    </div>
+    <div class="kpi blue">
+      <div class="lbl">Энэ сарын орлого</div>
+      <div class="val" id="dMonth">0 ₮</div>
+      <div class="sub" id="dMonthSub">0 борлуулалт</div>
+    </div>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi dark">
+      <div class="lbl">Нийт орлого</div>
+      <div class="val" id="dAll">0 ₮</div>
+      <div class="sub" id="dAllSub">0 борлуулалт</div>
+    </div>
+    <div class="kpi red">
+      <div class="lbl">Нийт авлага</div>
+      <div class="val" id="dRec">0 ₮</div>
+      <div class="sub" id="dRecSub">0 захиалга</div>
+    </div>
   </div>
 
-  <div class="kpi-grid">
-    <div class="kpi-card">
-      <div class="kpi-lbl">Өнөөдөр</div>
-      <div class="kpi-val" id="todayQty">0</div>
-      <div class="kpi-sub">ширхэг</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-lbl">7 хоног</div>
-      <div class="kpi-val" id="weekQty">0</div>
-      <div class="kpi-sub">ширхэг</div>
-    </div>
-  </div>
+  <div class="section-label" style="margin-top:6px">Сүүлийн 7 хоног</div>
+  <div class="dash-card" style="padding-bottom:10px"><div class="week-bars" id="dWeek"></div></div>
+
+  <div class="section-label">Бүтээгдэхүүний дүн</div>
+  <div class="dash-card" id="dProds"></div>
 </div>
 
 <div class="section">
   <div class="tabs-row">
-    <button class="tab-pill active" id="t-prod" onclick="showTab('prod')">Бүтээгдэхүүнээр</button>
-    <button class="tab-pill" id="t-recent" onclick="showTab('recent')">Сүүлийн</button>
+    <button class="tab-pill active" id="t-recent" onclick="showTab('recent')">Сүүлийн борлуулалт</button>
     <button class="tab-pill" id="t-pending" onclick="showTab('pending')">Урьдчилгаатай</button>
   </div>
 
-  <div id="panel-prod" class="panel active">
-    <div id="prodList"></div>
-  </div>
-
-  <div id="panel-recent" class="panel">
+  <div id="panel-recent" class="panel active">
     <div id="recentList"></div>
   </div>
 
@@ -227,52 +260,53 @@ async function load() {
   products = await api('/products') || [];
   allSales = await api('/sales') || [];
 
-  const completed = allSales.filter(isCompleted);
-  const todayCmp  = completed.filter(s => s.date === today());
-  const mon = thisMonth();
-  const monthCmp  = completed.filter(s => (s.date||'').slice(0,7) === mon);
+  const done   = allSales.filter(isCompleted);
+  const t = today(), mon = thisMonth();
+  const todayD = done.filter(s => s.date === t);
+  const monthD = done.filter(s => (s.date||'').slice(0,7) === mon);
+  const recvbl = allSales.filter(s => !isCompleted(s) && (s.remaining_amount||0) > 0);
 
-  // 7-day window
-  const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - 6);
-  const weekStr = weekStart.toISOString().slice(0,10);
-  const weekCmp = completed.filter(s => s.date >= weekStr);
+  const sum    = arr => arr.reduce((s,o) => s + (o.total_amount||0), 0);
+  const recSum = recvbl.reduce((s,o) => s + (o.remaining_amount||0), 0);
 
-  const monthQty = monthCmp.reduce((s,o) => s + (o.quantity || o.qty || 0), 0);
-  document.getElementById('monthTotal').textContent = monthQty + ' ширхэг';
-  document.getElementById('monthSub').textContent = monthCmp.length + ' захиалга · ' + fmt(monthCmp.reduce((s,o)=>s+(o.total_amount||0),0)) + ' ₮';
-  document.getElementById('todayQty').textContent = todayCmp.reduce((s,o)=>s+(o.quantity||o.qty||0),0);
-  document.getElementById('weekQty').textContent  = weekCmp.reduce((s,o)=>s+(o.quantity||o.qty||0),0);
+  document.getElementById('dToday').textContent    = fmt(sum(todayD)) + ' ₮';
+  document.getElementById('dTodaySub').textContent = todayD.length + ' борлуулалт';
+  document.getElementById('dMonth').textContent    = fmt(sum(monthD)) + ' ₮';
+  document.getElementById('dMonthSub').textContent = monthD.length + ' борлуулалт';
+  document.getElementById('dAll').textContent      = fmt(sum(done)) + ' ₮';
+  document.getElementById('dAllSub').textContent   = done.length + ' борлуулалт';
+  document.getElementById('dRec').textContent      = fmt(recSum) + ' ₮';
+  document.getElementById('dRecSub').textContent   = recvbl.length + ' захиалга';
 
-  renderProducts(monthCmp);
-}
+  // 7 хоногийн график
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const ds  = d.toISOString().slice(0,10);
+    const tot = done.filter(o => o.date === ds).reduce((s,o) => s + (o.total_amount||0), 0);
+    days.push({ tot, lbl: ['Ня','Да','Мя','Лх','Пү','Ба','Бя'][d.getDay()] });
+  }
+  const mx = Math.max(...days.map(d => d.tot), 1);
+  document.getElementById('dWeek').innerHTML = days.map(d => `
+    <div class="wday-col">
+      <div class="wday-bar" style="height:${Math.max(3,Math.round(d.tot/mx*44))}px" title="${fmt(d.tot)}₮"></div>
+      <div class="wday-lbl">${d.lbl}</div>
+    </div>`).join('');
 
-function renderProducts(completed) {
+  // Бүтээгдэхүүний дүн (баар)
   const byProd = {};
-  for (const o of completed) {
-    const p = o.product || 'other';
-    if (!byProd[p]) byProd[p] = { qty: 0, count: 0, total: 0 };
-    byProd[p].qty   += (o.quantity || o.qty || 0);
-    byProd[p].count += 1;
-    byProd[p].total += (o.total_amount || 0);
-  }
-  const entries = Object.entries(byProd).sort((a,b) => b[1].qty - a[1].qty);
-  const el = document.getElementById('prodList');
-  if (!entries.length) {
-    el.innerHTML = '<div class="empty">Энэ сард бүрэн борлуулагдсан бүтээгдэхүүн байхгүй<br><small style="display:block;margin-top:6px">Үйлдвэрлэл эхэлмэгц энд харагдана</small></div>';
-    return;
-  }
-  const max = Math.max(...entries.map(e => e[1].qty), 1);
-  el.innerHTML = entries.map(([id, v]) => `<div class="prod-card">
-    <div class="prod-top">
-      <div class="prod-name">${prodName(id)}</div>
-      <div class="prod-qty">${v.qty} ш</div>
-    </div>
-    <div class="prod-bar"><div class="prod-bar-fill" style="width:${Math.round(v.qty/max*100)}%"></div></div>
-    <div class="prod-meta">
-      <span>${v.count} захиалга</span>
-      <span>${fmt(v.total)} ₮</span>
-    </div>
-  </div>`).join('');
+  for (const o of done) byProd[o.product] = (byProd[o.product]||0) + (o.total_amount||0);
+  const entries = Object.entries(byProd).sort((a,b) => b[1]-a[1]);
+  const mxP = Math.max(...entries.map(e => e[1]), 1);
+  document.getElementById('dProds').innerHTML = entries.length
+    ? entries.map(([id, tot]) => `<div class="bar-row">
+        <div class="bar-lbl">${prodName(id)}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.round(tot/mxP*100)}%"></div></div>
+        <div class="bar-val">${fmt(tot)} ₮</div>
+      </div>`).join('')
+    : '<div class="empty">Бүртгэл байхгүй</div>';
+
+  renderRecent();
 }
 
 function renderRecent() {
