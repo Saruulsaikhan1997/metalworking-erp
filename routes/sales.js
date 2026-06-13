@@ -23,8 +23,12 @@ router.get('/sales', (req, res) => {
 // Энэ бол зөвхөн ТҮҮХИЙ ЖАГСААЛТ. Ангилал/боловсруулалт = МЕНЕЖЕРИЙН модуль (энд хийгдэхгүй).
 router.get('/sales-income', (req, res) => {
   const db = load();
+  // Аль хэдийн борлуулалт болгож ангилсан гүйлгээг хасна
+  const classified = new Set(
+    (db.sales || []).filter(s => !s.archived && s.source_tx_id != null).map(s => String(s.source_tx_id))
+  );
   const list = (db.transactions || [])
-    .filter(t => t.code === 'SALE')
+    .filter(t => t.code === 'SALE' && !classified.has(String(t.id)))
     .map(t => ({
       id:     t.id,
       date:   t.date,                                      // огноо (он-сар-өдөр)
@@ -40,7 +44,7 @@ router.post('/sales', (req, res) => {
   const db = load();
   if (!db.sales) db.sales = [];
 
-  const { date, branch, product, quantity, advance_paid, customer_name, customer_phone, bank_account, note } = req.body;
+  const { date, branch, product, quantity, advance_paid, customer_name, customer_phone, bank_account, note, source_tx_id } = req.body;
 
   // Load price from products master — preserves historical price at time of sale
   const productDef = (db.products || []).find(p => p.id === product);
@@ -75,6 +79,7 @@ router.post('/sales', (req, res) => {
     customer_name:     customer_name || '',
     customer_phone:    customer_phone || '',
     note:              note || '',
+    source_tx_id:      source_tx_id || null,   // банкны хуулгын гүйлгээтэй холбоо
     status,
     archived:          false,
     created_by:        req.user.name,

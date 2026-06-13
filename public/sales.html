@@ -74,6 +74,19 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
 .save-btn { width: 100%; padding: 13px; background: #1a1a2e; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 14px; }
 .save-btn:active { opacity: 0.85; }
 
+/* ── Шинэ SALE орлого (банкны хуулга → ангилах) ── */
+.inc-card { background:#fff; border-radius:12px; padding:12px 14px; margin-bottom:9px; box-shadow:0 1px 4px rgba(0,0,0,0.07); border-left:4px solid #43a047; }
+.inc-top { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+.inc-memo { font-size:13px; font-weight:700; color:#1a1a2e; line-height:1.35; word-break:break-word; }
+.inc-date { font-size:11px; color:#888; margin-top:3px; }
+.inc-amt { font-size:15px; font-weight:800; color:#2e7d32; white-space:nowrap; }
+.inc-acts { display:flex; gap:8px; margin-top:10px; }
+.inc-btn { flex:1; padding:9px; border:none; border-radius:8px; font-size:12.5px; font-weight:700; cursor:pointer; }
+.inc-btn.green { background:#2e7d32; color:#fff; }
+.inc-btn.amber { background:#f59e0b; color:#fff; }
+.inc-btn:active { opacity:0.85; }
+.tx-banner { background:#ecfdf5; border:1px solid #a7f3d0; border-radius:10px; padding:9px 12px; font-size:11.5px; color:#065f46; margin-bottom:10px; line-height:1.5; }
+
 /* ── Receivable cards ── */
 .rec-card { background: #fff; border-radius: 12px; padding: 13px 15px; margin-bottom: 8px; box-shadow: 0 1px 5px rgba(229,57,53,0.1); border-left: 4px solid #e53935; }
 .rec-top  { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
@@ -147,6 +160,9 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
 
 <!-- TAB 1: DASHBOARD -->
 <div id="panel-dash" class="panel active">
+  <div class="sec" id="incSecLbl" style="display:none">🆕 Шинэ SALE орлого — ангилаагүй</div>
+  <div id="incList"></div>
+
   <div class="kpi-grid">
     <div class="kpi green">
       <div class="lbl">Өнөөдрийн орлого</div>
@@ -184,6 +200,7 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
 <!-- TAB 2: NEW ENTRY -->
 <div id="panel-new" class="panel">
   <div class="sec">Борлуулалт бүртгэх</div>
+  <div class="tx-banner" id="txBanner" style="display:none"></div>
   <div class="card">
     <div class="g2">
       <div class="field" style="margin-top:0">
@@ -417,6 +434,53 @@ function calcTotal() {
   }
 }
 
+// ── Шинэ SALE орлого (банкны хуулга) ангилах ──
+function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+let incomeList = [];
+let pendingTx  = null;
+
+async function loadIncome() {
+  incomeList = await api('/sales-income') || [];
+  if (!Array.isArray(incomeList)) incomeList = [];
+  const el  = document.getElementById('incList');
+  const lbl = document.getElementById('incSecLbl');
+  if (!el) return;
+  if (!incomeList.length) { el.innerHTML = ''; lbl.style.display = 'none'; return; }
+  lbl.style.display = '';
+  el.innerHTML = incomeList.map(t => `
+    <div class="inc-card">
+      <div class="inc-top">
+        <div style="flex:1;min-width:0">
+          <div class="inc-memo">${escapeHtml(t.memo) || '<span style=color:#9ca3af>(утга байхгүй)</span>'}</div>
+          <div class="inc-date">📅 ${escapeHtml(t.date || '—')}</div>
+        </div>
+        <div class="inc-amt">${fmt(t.amount)} ₮</div>
+      </div>
+      <div class="inc-acts">
+        <button class="inc-btn green" onclick="classifyIncome('${t.id}','income')">💰 Орлого</button>
+        <button class="inc-btn amber" onclick="classifyIncome('${t.id}','advance')">⏳ Урьдчилгаа</button>
+      </div>
+    </div>`).join('');
+}
+
+function classifyIncome(id, mode) {
+  const t = incomeList.find(x => String(x.id) === String(id));
+  if (!t) return;
+  pendingTx = { id: t.id, mode };
+  showTab('new');
+  document.getElementById('nDate').value    = t.date || today();
+  document.getElementById('nAdvance').value = t.amount || 0;
+  document.getElementById('nNote').value    = t.memo || '';
+  const b = document.getElementById('txBanner');
+  b.style.display = '';
+  b.innerHTML = `🔗 Банкны хуулгаас: <b>${fmt(t.amount)}₮</b> · ${escapeHtml(t.memo || '')}<br>`
+    + (mode === 'advance'
+        ? '⏳ <b>Урьдчилгаа</b> — нийт дүн илүү бол үлдэгдэл авлага үүснэ.'
+        : '💰 <b>Орлого</b> — бүрэн төлсөн (нийт дүнг авсан дүнтэй тэнцүүлбэл дуусна).');
+  calcTotal();
+  window.scrollTo(0, 0);
+}
+
 async function submitSale() {
   const product  = document.getElementById('nProduct').value;
   const qty      = parseInt(document.getElementById('nQty').value)     || 0;
@@ -439,6 +503,7 @@ async function submitSale() {
       customer_phone: document.getElementById('nPhone').value.trim(),
       bank_account:   document.getElementById('nBank').value,
       note:           document.getElementById('nNote').value.trim(),
+      source_tx_id:   pendingTx ? pendingTx.id : null,
     }),
   });
 
@@ -446,7 +511,9 @@ async function submitSale() {
     ['nQty','nAdvance','nCustomer','nPhone','nNote'].forEach(id => document.getElementById(id).value = id === 'nQty' ? '1' : '');
     document.getElementById('nBranch').selectedIndex = 0;
     onProductChange();
-    await loadSales();
+    pendingTx = null;
+    document.getElementById('txBanner').style.display = 'none';
+    await Promise.all([loadSales(), loadIncome()]);
     showTab('dash');
   } else {
     alert(r.error || 'Алдаа гарлаа');
@@ -677,7 +744,7 @@ function doPrint() {
 // ── Init ─────────────────────────────────────────────────
 document.getElementById('nDate').value = today();
 
-Promise.all([loadMasters(), loadSales()]).then(() => renderDash());
+Promise.all([loadMasters(), loadSales(), loadIncome()]).then(() => renderDash());
 </script>
 <script src="/js/bottom-nav.js"></script>
 </body>
