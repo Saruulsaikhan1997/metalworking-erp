@@ -4,166 +4,149 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
-<title>Нийт борлуулалт — Метал ворkинг Центр</title>
+<title>Нийт борлуулалт — Метал воркинг Центр</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --brand: #059669; --brand-dark: #047857;
-  --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
-  --gray-400: #9ca3af; --gray-600: #4b5563; --gray-900: #111827;
-}
-body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; background: var(--gray-50); color: var(--gray-900); padding-bottom: 30px; -webkit-font-smoothing: antialiased; }
+body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color: #1a1a1a; padding-bottom: 72px; }
 
-.id-bar {
-  background: #1a1a2e;
-  color: #fff; padding: 18px 20px;
-  border-radius: 0 0 20px 20px;
-  box-shadow: 0 4px 12px rgba(26,26,46,0.22);
-}
-.id-top { display: flex; align-items: center; gap: 12px; }
-.id-back { font-size: 22px; color: #fff; text-decoration: none; padding: 4px 8px; }
-.id-title { font-size: 17px; font-weight: 700; }
-.id-sub { font-size: 11px; opacity: 0.85; margin-top: 3px; }
+.header { background: #1a1a2e; color: #fff; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 30; }
+.header h1 { font-size: 15px; font-weight: 700; }
+.nav { display: flex; gap: 6px; }
+.nav a { font-size: 11px; color: #aaa; text-decoration: none; padding: 4px 8px; border: 1px solid #444; border-radius: 6px; }
+.nav a.active { color: #fff; border-color: #fff; }
 
-.section { padding: 18px 16px 0; }
-.section-label { font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 1.3px; margin-bottom: 12px; padding: 0 4px; }
+.tab-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #e8e8e8; display: flex; z-index: 30; box-shadow: 0 -2px 8px rgba(0,0,0,0.06); }
+.tab-btn { flex: 1; padding: 8px 0 10px; text-align: center; background: none; border: none; cursor: pointer; color: #bbb; }
+.tab-btn.active { color: #1a1a2e; }
+.tab-btn .ti { font-size: 20px; display: block; }
+.tab-btn .tl { font-size: 10px; font-weight: 600; margin-top: 2px; display: block; }
+.rbadge { display: inline-block; background: #e53935; color: #fff; font-size: 9px; font-weight: 700; border-radius: 10px; padding: 1px 5px; margin-left: 2px; vertical-align: middle; }
 
-/* ── Motivation hero stats ── */
-.hero-stat {
-  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-  color: #fff;
-  border-radius: 18px;
-  padding: 24px 22px;
-  box-shadow: 0 6px 20px rgba(16,185,129,0.20);
-  margin-bottom: 12px;
-  position: relative; overflow: hidden;
-}
-.hero-stat::after {
-  content: ''; position: absolute; top: -40px; right: -40px;
-  width: 140px; height: 140px; border-radius: 50%;
-  background: rgba(255,255,255,0.10);
-}
-.hero-lbl { font-size: 11px; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
-.hero-val { font-size: 30px; font-weight: 900; margin-top: 8px; line-height: 1; }
-.hero-sub { font-size: 12px; opacity: 0.9; margin-top: 8px; }
-
-.kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-.kpi-card {
-  background: #fff; border-radius: 14px;
-  padding: 14px 16px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05); border: 1px solid var(--gray-200);
-}
-.kpi-card .kpi-lbl { font-size: 10.5px; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
-.kpi-card .kpi-val { font-size: 19px; font-weight: 800; color: var(--brand-dark); margin-top: 5px; line-height: 1.1; }
-.kpi-card .kpi-sub { font-size: 11px; color: var(--gray-400); margin-top: 4px; }
-
-/* ── Өнгөт KPI картууд (орлого/авлага) ── */
-.kpi { border-radius: 14px; padding: 14px 16px; }
-.kpi.green { background: #2e7d32; color: #fff; }
-.kpi.blue  { background: #1565c0; color: #fff; }
-.kpi.dark  { background: #1a1a2e; color: #fff; }
-.kpi.red   { background: #b71c1c; color: #fff; }
-.kpi .lbl  { font-size: 10px; opacity: 0.78; margin-bottom: 4px; }
-.kpi .val  { font-size: 20px; font-weight: 800; line-height: 1.1; }
-.kpi .sub  { font-size: 10px; opacity: 0.68; margin-top: 3px; }
-
-/* ── Цагаан самбар карт ── */
-.dash-card { background: #fff; border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); border: 1px solid var(--gray-200); }
-
-/* ── 7 хоногийн график ── */
-.week-bars { display: flex; align-items: flex-end; gap: 4px; height: 52px; }
-.wday-col  { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
-.wday-bar  { width: 100%; background: #1a1a2e; border-radius: 3px 3px 0 0; min-height: 3px; }
-.wday-lbl  { font-size: 9px; color: var(--gray-400); }
-
-/* ── Бүтээгдэхүүний дүн (баар) ── */
-.bar-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--gray-100); }
-.bar-row:last-child { border-bottom: none; }
-.bar-lbl { font-size: 11px; color: var(--gray-600); width: 130px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bar-track { flex: 1; height: 8px; background: var(--gray-100); border-radius: 4px; }
-.bar-fill  { height: 8px; background: #1a1a2e; border-radius: 4px; min-width: 3px; }
-.bar-val   { font-size: 11px; font-weight: 700; color: #1a1a2e; width: 92px; text-align: right; flex-shrink: 0; }
-
-/* ── View switcher ── */
-.tabs-row {
-  display: flex; gap: 6px; overflow-x: auto;
-  padding: 4px 0 12px; scrollbar-width: none;
-}
-.tabs-row::-webkit-scrollbar { display: none; }
-.tab-pill {
-  flex-shrink: 0; padding: 9px 16px;
-  border: 1.5px solid var(--gray-200); border-radius: 22px;
-  background: #fff; font-size: 12px; font-weight: 600;
-  color: var(--gray-600); cursor: pointer; white-space: nowrap;
-}
-.tab-pill.active { background: var(--brand-dark); border-color: var(--brand-dark); color: #fff; }
-
-.panel { display: none; }
+.panel { display: none; padding: 12px 14px 0; }
 .panel.active { display: block; }
 
-/* ── Product breakdown bars ── */
-.prod-card {
-  background: #fff; border-radius: 14px;
-  padding: 14px 16px; margin-bottom: 10px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05); border: 1px solid var(--gray-200);
-}
-.prod-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.prod-name { font-size: 13px; font-weight: 700; color: var(--gray-900); }
-.prod-qty { font-size: 14px; font-weight: 800; color: var(--brand-dark); }
-.prod-bar { height: 6px; background: var(--gray-100); border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
-.prod-bar-fill { height: 100%; background: linear-gradient(90deg, #10b981 0%, #059669 100%); border-radius: 3px; }
-.prod-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--gray-400); }
+.sec { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 8px; }
+.card { background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
 
-.sale-row {
-  background: #fff; border-radius: 12px;
-  padding: 12px 16px; margin-bottom: 8px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05); border: 1px solid var(--gray-200);
-  border-left: 4px solid var(--brand);
-  display: flex; justify-content: space-between; align-items: center; gap: 10px;
-}
-.sale-row.advance { border-left-color: #f59e0b; }
-.sale-info { flex: 1; min-width: 0; }
-.sale-product { font-size: 13.5px; font-weight: 700; color: var(--gray-900); }
-.sale-meta { font-size: 11px; color: var(--gray-400); margin-top: 3px; }
-.sale-tag {
-  display: inline-block; font-size: 9.5px; font-weight: 700;
-  padding: 2px 6px; border-radius: 4px;
-  background: #d1fae5; color: #065f46; margin-left: 5px;
-}
-.sale-tag.adv { background: #fed7aa; color: #9a3412; }
-.sale-amt { font-size: 14px; font-weight: 800; color: var(--brand-dark); white-space: nowrap; }
+/* ── KPI cards ── */
+.kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.kpi { border-radius: 12px; padding: 14px 16px; }
+.kpi.green { background: #2e7d32; color: #fff; }
+.kpi.dark  { background: #1a1a2e; color: #fff; }
+.kpi.red   { background: #b71c1c; color: #fff; }
+.kpi.blue  { background: #1565c0; color: #fff; }
+.kpi .lbl  { font-size: 10px; opacity: 0.75; margin-bottom: 4px; }
+.kpi .val  { font-size: 20px; font-weight: 700; line-height: 1.1; }
+.kpi .sub  { font-size: 10px; opacity: 0.65; margin-top: 3px; }
 
-.empty { text-align: center; color: var(--gray-400); padding: 40px 20px; font-size: 13px; }
+/* ── Bar charts ── */
+.bar-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid #f5f5f5; }
+.bar-row:last-child { border-bottom: none; }
+.bar-lbl { font-size: 11px; color: #555; width: 140px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-track { flex: 1; height: 8px; background: #f0f0f0; border-radius: 4px; }
+.bar-fill  { height: 8px; background: #1a1a2e; border-radius: 4px; min-width: 3px; transition: width 0.3s; }
+.bar-val   { font-size: 11px; font-weight: 700; color: #1a1a2e; width: 90px; text-align: right; flex-shrink: 0; }
 
-.admin-entry-link {
-  display: block; text-align: center;
-  margin: 24px 16px 0; padding: 12px;
-  font-size: 12px; color: var(--brand-dark); font-weight: 700;
-  background: #d1fae5; border: 1px solid #6ee7b7; border-radius: 14px;
-  text-decoration: none;
+/* ── 7-day trend ── */
+.week-bars  { display: flex; align-items: flex-end; gap: 4px; height: 52px; }
+.wday-col   { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.wday-bar   { width: 100%; background: #1a1a2e; border-radius: 3px 3px 0 0; min-height: 3px; }
+.wday-lbl   { font-size: 9px; color: #aaa; }
+
+/* ── Form ── */
+.field { margin-top: 11px; }
+.field:first-child { margin-top: 0; }
+.field label { display: block; font-size: 11px; font-weight: 600; color: #555; margin-bottom: 4px; }
+.field input, .field select {
+  width: 100%; padding: 10px 12px; border: 1.5px solid #e0e0e0;
+  border-radius: 8px; font-size: 14px; outline: none;
+  background: #fff; -webkit-appearance: none; appearance: none;
 }
-.settings-link {
-  display: block; text-align: center;
-  margin: 14px 16px 0; padding: 10px;
-  font-size: 11px; color: var(--gray-400); font-weight: 600;
-  background: #fff; border: 1px solid var(--gray-200); border-radius: 14px;
-  text-decoration: none;
+.field input:focus, .field select:focus { border-color: #1a1a2e; }
+.field input[readonly] { background: #f5f5f5; color: #444; }
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.calc-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 13px; border-radius: 8px; font-size: 13px; font-weight: 700; margin-top: 10px; }
+.calc-bar.green { background: #e8f5e9; color: #2e7d32; }
+.calc-bar.red   { background: #fce4ec; color: #c62828; }
+.calc-bar.gray  { background: #f5f5f5; color: #999; }
+
+.save-btn { width: 100%; padding: 13px; background: #1a1a2e; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 14px; }
+.save-btn:active { opacity: 0.85; }
+
+/* ── Receivable cards ── */
+.rec-card { background: #fff; border-radius: 12px; padding: 13px 15px; margin-bottom: 8px; box-shadow: 0 1px 5px rgba(229,57,53,0.1); border-left: 4px solid #e53935; }
+.rec-top  { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
+.rec-name { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+.rec-rem  { text-align: right; }
+.rec-rem .big { font-size: 19px; font-weight: 700; color: #e53935; line-height: 1; }
+.rec-rem .lbl { font-size: 10px; color: #e53935; }
+.rec-meta { font-size: 11px; color: #888; line-height: 1.7; margin-bottom: 10px; }
+.rec-actions { display: flex; gap: 8px; }
+.rec-input { flex: 1; padding: 9px 12px; border: 1.5px solid #e0e0e0; border-radius: 8px; font-size: 13px; outline: none; }
+.rec-input:focus { border-color: #2e7d32; }
+.rec-btn { padding: 9px 14px; background: #2e7d32; color: #fff; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.rec-btn:active { opacity: 0.85; }
+.no-rec { background: #e8f5e9; border-radius: 10px; padding: 16px; text-align: center; font-size: 13px; color: #2e7d32; font-weight: 600; }
+
+/* ── History ── */
+.filter-bar { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.filter-bar input, .filter-bar select {
+  padding: 8px 10px; border: 1.5px solid #e0e0e0; border-radius: 8px;
+  font-size: 12px; outline: none; background: #fff;
 }
+.filter-bar input { flex: 1; min-width: 100px; }
+.qf-row { display: flex; gap: 6px; margin-bottom: 10px; }
+.qf { padding: 5px 12px; border: 1.5px solid #e0e0e0; border-radius: 20px; font-size: 11px; font-weight: 600; background: #fff; color: #555; cursor: pointer; }
+.qf.active { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
+
+.hist-row { padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+.hist-row:last-child { border-bottom: none; }
+.hist-top { display: flex; justify-content: space-between; align-items: flex-start; }
+.hist-name { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+.hist-amt  { font-size: 13px; font-weight: 700; }
+.hist-meta { font-size: 11px; color: #888; margin-top: 3px; line-height: 1.6; }
+.stag { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; display: inline-block; margin-top: 3px; }
+.stag.completed  { background: #e8f5e9; color: #2e7d32; }
+.stag.receivable { background: #fce4ec; color: #c62828; }
+
+.hist-footer { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 2px; border-top: 2px solid #f0f0f0; margin-top: 4px; font-size: 12px; font-weight: 700; }
+
+.empty { text-align: center; color: #bbb; padding: 28px; font-size: 13px; }
+
+/* ── Print styles ── */
+@media print {
+  .header, .tab-bar, .filter-bar, .qf-row, .save-btn, .rec-actions { display: none !important; }
+  body { background: #fff; padding: 0; }
+  .panel { display: block !important; padding: 0; }
+  #panel-dash, #panel-new, #panel-rec { display: none !important; }
+  #panel-hist { display: block !important; }
+  .print-header { display: block !important; }
+  .card { box-shadow: none; border: 1px solid #ddd; }
+  .hist-row { page-break-inside: avoid; }
+}
+.print-header {
+  display: none;
+  text-align: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #1a1a2e;
+}
+.print-header h2 { font-size: 18px; font-weight: 700; }
+.print-header p  { font-size: 12px; color: #555; margin-top: 4px; }
+
+.print-btn { padding: 7px 13px; border: 1.5px solid #1a1a2e; border-radius: 8px; font-size: 11px; font-weight: 600; background: #fff; color: #1a1a2e; cursor: pointer; }
 </style>
 </head>
 <body>
 
-<div class="id-bar">
-  <div class="id-top">
-    <a class="id-back" href="/dashboard">‹</a>
-    <div style="flex:1">
-      <div class="id-title">📊 Нийт борлуулалт</div>
-      <div class="id-sub">Компанийн гаралт, амжилт</div>
-    </div>
-  </div>
+<div class="header" style="justify-content:flex-start;gap:10px">
+  <a href="/dashboard" style="color:#fff;text-decoration:none;font-size:22px;line-height:1">‹</a>
+  <h1>📊 Нийт борлуулалт</h1>
 </div>
 
-<div class="section">
+<!-- TAB 1: DASHBOARD -->
+<div id="panel-dash" class="panel active">
   <div class="kpi-grid">
     <div class="kpi green">
       <div class="lbl">Өнөөдрийн орлого</div>
@@ -189,85 +172,340 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
     </div>
   </div>
 
-  <div class="section-label" style="margin-top:6px">Сүүлийн 7 хоног</div>
-  <div class="dash-card" style="padding-bottom:10px"><div class="week-bars" id="dWeek"></div></div>
-
-  <div class="section-label">Бүтээгдэхүүний дүн</div>
-  <div class="dash-card" id="dProds"></div>
-</div>
-
-<div class="section">
-  <div class="tabs-row">
-    <button class="tab-pill active" id="t-recent" onclick="showTab('recent')">Сүүлийн борлуулалт</button>
-    <button class="tab-pill" id="t-pending" onclick="showTab('pending')">Урьдчилгаатай</button>
+  <div class="sec">Сүүлийн 7 хоног</div>
+  <div class="card" style="padding-bottom:10px">
+    <div class="week-bars" id="dWeek"></div>
   </div>
 
-  <div id="panel-recent" class="panel active">
-    <div id="recentList"></div>
-  </div>
+  <div class="sec">Бүтээгдэхүүний дүн</div>
+  <div class="card" id="dProds"></div>
+</div>
 
-  <div id="panel-pending" class="panel">
-    <div id="pendingList"></div>
+<!-- TAB 2: NEW ENTRY -->
+<div id="panel-new" class="panel">
+  <div class="sec">Борлуулалт бүртгэх</div>
+  <div class="card">
+    <div class="g2">
+      <div class="field" style="margin-top:0">
+        <label>Огноо</label>
+        <input type="date" id="nDate">
+      </div>
+      <div class="field" style="margin-top:0">
+        <label>Салбар / борлуулагч</label>
+        <select id="nBranch"></select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Бүтээгдэхүүн</label>
+      <select id="nProduct" onchange="onProductChange()"></select>
+    </div>
+
+    <div class="g2">
+      <div class="field">
+        <label>Тоо ширхэг</label>
+        <input type="number" id="nQty" min="1" value="1" oninput="calcTotal()">
+      </div>
+      <div class="field">
+        <label>Нэгжийн үнэ ₮</label>
+        <input type="number" id="nPrice" readonly>
+      </div>
+    </div>
+
+    <div class="calc-bar green" id="nTotal"><span>Нийт дүн</span><span>0 ₮</span></div>
+
+    <div class="g2">
+      <div class="field">
+        <label>Үйлчлүүлэгч</label>
+        <input type="text" id="nCustomer" placeholder="Нэр, байгууллага...">
+      </div>
+      <div class="field">
+        <label>Утас</label>
+        <input type="tel" id="nPhone" placeholder="99xxxxxx">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Мөнгө орсон данс</label>
+      <select id="nBank"></select>
+    </div>
+
+    <div class="field">
+      <label>Авсан дүн ₮ &nbsp;<span style="color:#aaa;font-weight:400">(0 бол бүгд авлага)</span></label>
+      <input type="number" id="nAdvance" placeholder="0" oninput="calcTotal()">
+    </div>
+
+    <div class="calc-bar gray" id="nRem"><span>Үлдэгдэл авлага</span><span>—</span></div>
+
+    <div class="field">
+      <label>Тайлбар</label>
+      <input type="text" id="nNote" placeholder="">
+    </div>
+
+    <button class="save-btn" onclick="submitSale()">Бүртгэх</button>
   </div>
 </div>
 
-<!-- /sales-admin will be created in Phase 4. Keep sales-entry link (operational, not settings). -->
-<div id="adminSection" style="display:none">
-  <a class="admin-entry-link" href="/sales-entry">📝 Борлуулалт бүртгэх (нягтлан)</a>
+<!-- TAB 3: RECEIVABLES -->
+<div id="panel-rec" class="panel">
+  <div class="sec">Авлага — үлдэгдэл төлбөр</div>
+  <div id="recList"></div>
 </div>
 
-<script src="/js/bottom-nav.js"></script>
+<!-- TAB 4: HISTORY -->
+<div id="panel-hist" class="panel">
+  <!-- Print header (hidden on screen) -->
+  <div class="print-header" id="printHeader">
+    <h2>Металворкинг Центр ХХК</h2>
+    <p id="printSubtitle"></p>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <div class="sec" style="margin:0">Бүртгэлийн түүх</div>
+    <button class="print-btn" onclick="doPrint()">🖨 Хэвлэх</button>
+  </div>
+
+  <div class="filter-bar">
+    <input type="text" id="hSearch" placeholder="🔍 Хайх..." oninput="renderHistory()">
+    <select id="hProd" onchange="renderHistory()"><option value="">Бүх бүтээгдэхүүн</option></select>
+    <select id="hStatus" onchange="renderHistory()">
+      <option value="">Бүх төлөв</option>
+      <option value="completed">Бүрэн төлсөн</option>
+      <option value="receivable">Авлага</option>
+    </select>
+  </div>
+
+  <div class="qf-row">
+    <button class="qf" id="qf-today" onclick="setQF('today')">Өнөөдөр</button>
+    <button class="qf" id="qf-week"  onclick="setQF('week')">7 хоног</button>
+    <button class="qf active" id="qf-month" onclick="setQF('month')">Энэ сар</button>
+    <button class="qf" id="qf-all"   onclick="setQF('all')">Бүгд</button>
+  </div>
+
+  <div class="card" id="histList"></div>
+</div>
+
+<!-- BOTTOM TAB BAR -->
+<div class="tab-bar">
+  <button class="tab-btn active" id="tb-dash" onclick="showTab('dash')">
+    <span class="ti">📊</span><span class="tl">Дүн</span>
+  </button>
+  <button class="tab-btn" id="tb-new" onclick="showTab('new')">
+    <span class="ti">➕</span><span class="tl">Бүртгэх</span>
+  </button>
+  <button class="tab-btn" id="tb-rec" onclick="showTab('rec')">
+    <span class="ti">⏳</span>
+    <span class="tl">Авлага<span class="rbadge" id="recBadge" style="display:none"></span></span>
+  </button>
+  <button class="tab-btn" id="tb-hist" onclick="showTab('hist')">
+    <span class="ti">📋</span><span class="tl">Түүх</span>
+  </button>
+</div>
+
 <script>
 const token = localStorage.getItem('token');
 const user  = JSON.parse(localStorage.getItem('user') || '{}');
 if (!token) window.location.href = '/';
 
-if (['admin','sales','accountant','manager'].includes(user.role)) document.getElementById('adminSection').style.display = '';
-
-async function api(path) {
-  const r = await fetch('/api' + path, { headers: { 'Authorization': 'Bearer ' + token }});
+// ── API ───────────────────────────────────────────────────
+async function api(path, opts = {}) {
+  const r = await fetch('/api' + path, {
+    ...opts,
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', ...(opts.headers||{}) }
+  });
   if (r.status === 401) { localStorage.clear(); window.location.href = '/'; }
   return r.json();
 }
 
-function fmt(n) { return Number(n||0).toLocaleString('mn-MN'); }
-function today() { return new Date().toISOString().slice(0,10); }
-function thisMonth() { return new Date().toISOString().slice(0,7); }
+// ── Utils ─────────────────────────────────────────────────
+function fmt(n)     { return Number(n||0).toLocaleString(); }
+function today()    { return new Date().toISOString().slice(0,10); }
+function thisMonth(){ return new Date().toISOString().slice(0,7); }
 
-let allSales = [];
-let products = [];
+// ── State ─────────────────────────────────────────────────
+let orders     = [];
+let products   = [];
+let productMap = {};   // id → display name lookup
+let qfMode     = 'month';
 
-function prodName(id) {
-  const p = products.find(p => p.id === id);
-  return p ? p.name : (id || '—');
-}
-
+// ── Tab switching ─────────────────────────────────────────
 function showTab(name) {
   document.querySelectorAll('.panel').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll('.tab-pill').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
-  const tab = document.getElementById('t-' + name);
-  if (tab) tab.classList.add('active');
-  if (name === 'recent')  renderRecent();
-  if (name === 'pending') renderPending();
+  document.getElementById('tb-'    + name).classList.add('active');
+  if (name === 'dash') renderDash();
+  if (name === 'rec')  renderRec();
+  if (name === 'hist') renderHistory();
 }
 
-function isCompleted(s) {
-  return s.status === 'completed' || s.payment_status === 'paid';
+// ── Load master data ──────────────────────────────────────
+async function loadMasters() {
+  const [prods, branches, banks] = await Promise.all([
+    api('/products'),
+    api('/branches'),
+    api('/bank-accounts'),
+  ]);
+
+  products   = prods;
+  productMap = {};
+  prods.forEach(p => { productMap[p.id] = p.name; });
+
+  // Product select
+  const ps = document.getElementById('nProduct');
+  ps.innerHTML = prods.map(p =>
+    `<option value="${p.id}">${p.name}${p.price > 0 ? ' — ' + fmt(p.price) + '₮' : ''}</option>`
+  ).join('');
+
+  // Product filter in history
+  const hProd = document.getElementById('hProd');
+  prods.forEach(p => {
+    const o = document.createElement('option');
+    o.value = p.id; o.textContent = p.name;
+    hProd.appendChild(o);
+  });
+
+  // Branch select
+  const bs = document.getElementById('nBranch');
+  bs.innerHTML = '<option value="">— Сонгоно уу —</option>' +
+    branches.map(b => `<option value="${b.name}">${b.name}</option>`).join('');
+
+  // Bank account select
+  const bk = document.getElementById('nBank');
+  bk.innerHTML = banks.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+
+  onProductChange();
 }
 
-async function load() {
-  products = await api('/products') || [];
-  allSales = await api('/sales') || [];
+// ── New sale form ─────────────────────────────────────────
+function onProductChange() {
+  const id   = document.getElementById('nProduct').value;
+  const prod = products.find(p => p.id === id);
+  const el   = document.getElementById('nPrice');
+  if (!prod || prod.price === 0) {
+    el.removeAttribute('readonly');
+    el.value = '';
+    el.placeholder = 'Үнэ оруулна уу';
+  } else {
+    el.setAttribute('readonly', true);
+    el.value = prod.price;
+    el.placeholder = '';
+  }
+  calcTotal();
+}
 
-  const done   = allSales.filter(isCompleted);
-  const t = today(), mon = thisMonth();
-  const todayD = done.filter(s => s.date === t);
-  const monthD = done.filter(s => (s.date||'').slice(0,7) === mon);
-  const recvbl = allSales.filter(s => !isCompleted(s) && (s.remaining_amount||0) > 0);
+function calcTotal() {
+  const qty   = parseInt(document.getElementById('nQty').value)     || 0;
+  const price = parseInt(document.getElementById('nPrice').value)   || 0;
+  const adv   = parseInt(document.getElementById('nAdvance').value) || 0;
+  const total = qty * price;
+  const rem   = Math.max(0, total - adv);
 
-  const sum    = arr => arr.reduce((s,o) => s + (o.total_amount||0), 0);
-  const recSum = recvbl.reduce((s,o) => s + (o.remaining_amount||0), 0);
+  document.getElementById('nTotal').innerHTML =
+    `<span>Нийт дүн</span><span>${fmt(total)} ₮</span>`;
+
+  const re = document.getElementById('nRem');
+  if (total === 0) {
+    re.innerHTML = '<span>Үлдэгдэл авлага</span><span>—</span>';
+    re.className = 'calc-bar gray';
+  } else if (rem === 0) {
+    re.innerHTML = '<span>Үлдэгдэл авлага</span><span>Байхгүй ✓</span>';
+    re.className = 'calc-bar green';
+  } else {
+    re.innerHTML = `<span>Үлдэгдэл авлага</span><span>${fmt(rem)} ₮</span>`;
+    re.className = 'calc-bar red';
+  }
+}
+
+async function submitSale() {
+  const product  = document.getElementById('nProduct').value;
+  const qty      = parseInt(document.getElementById('nQty').value)     || 0;
+  const price    = parseInt(document.getElementById('nPrice').value)   || 0;
+  const advance  = parseInt(document.getElementById('nAdvance').value) || 0;
+
+  if (qty < 1)   { alert('Тоо ширхэг оруулна уу'); return; }
+  if (price < 1) { alert('Үнэ оруулна уу'); return; }
+
+  const r = await api('/sales', {
+    method: 'POST',
+    body: JSON.stringify({
+      date:           document.getElementById('nDate').value,
+      branch:         document.getElementById('nBranch').value,
+      product,
+      quantity:       qty,
+      unit_price:     price,
+      advance_paid:   advance,
+      customer_name:  document.getElementById('nCustomer').value.trim(),
+      customer_phone: document.getElementById('nPhone').value.trim(),
+      bank_account:   document.getElementById('nBank').value,
+      note:           document.getElementById('nNote').value.trim(),
+    }),
+  });
+
+  if (r.id) {
+    ['nQty','nAdvance','nCustomer','nPhone','nNote'].forEach(id => document.getElementById(id).value = id === 'nQty' ? '1' : '');
+    document.getElementById('nBranch').selectedIndex = 0;
+    onProductChange();
+    await loadSales();
+    showTab('dash');
+  } else {
+    alert(r.error || 'Алдаа гарлаа');
+  }
+}
+
+// ── Load sales ────────────────────────────────────────────
+function normalize(o) {
+  const remaining = parseInt(o.remaining_amount) || 0;
+  const status    = remaining === 0 ? 'completed' : 'receivable';
+  return {
+    id:                o.id,
+    date:              o.date || '',
+    branch:            o.branch || '',
+    product:           o.product || 'other',
+    quantity:          parseInt(o.quantity) || 1,
+    unit_price:        o.unit_price || 0,
+    total_amount:      o.total_amount || 0,
+    advance_paid:      o.advance_paid || 0,
+    remaining_amount:  remaining,
+    bank_account:      o.bank_account || '',
+    bank_account_name: o.bank_account_name || o.bank_account || '',
+    customer_name:     o.customer_name || '',
+    customer_phone:    o.customer_phone || '',
+    note:              o.note || '',
+    status,
+    created_by:        o.created_by || '',
+  };
+}
+
+async function loadSales() {
+  const raw = await api('/sales');
+  orders = raw.map(normalize);
+  updateRecBadge();
+}
+
+function updateRecBadge() {
+  const cnt = orders.filter(o => o.status === 'receivable').length;
+  const el  = document.getElementById('recBadge');
+  cnt > 0 ? (el.textContent = cnt, el.style.display = '') : (el.style.display = 'none');
+}
+
+function prodName(id) {
+  return productMap[id] || id || 'Бусад';
+}
+
+// ── Dashboard ─────────────────────────────────────────────
+function renderDash() {
+  const t   = today();
+  const mon = thisMonth();
+
+  // ONLY completed sales count in analytics
+  const done    = orders.filter(o => o.status === 'completed');
+  const todayD  = done.filter(o => o.date === t);
+  const monthD  = done.filter(o => o.date.slice(0,7) === mon);
+  const recvbl  = orders.filter(o => o.status === 'receivable');
+
+  const sum = arr => arr.reduce((s,o) => s + o.total_amount, 0);
+  const recSum = recvbl.reduce((s,o) => s + o.remaining_amount, 0);
 
   document.getElementById('dToday').textContent    = fmt(sum(todayD)) + ' ₮';
   document.getElementById('dTodaySub').textContent = todayD.length + ' борлуулалт';
@@ -278,13 +516,14 @@ async function load() {
   document.getElementById('dRec').textContent      = fmt(recSum) + ' ₮';
   document.getElementById('dRecSub').textContent   = recvbl.length + ' захиалга';
 
-  // 7 хоногийн график
+  // 7-day bar chart
   const days = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
     const ds  = d.toISOString().slice(0,10);
-    const tot = done.filter(o => o.date === ds).reduce((s,o) => s + (o.total_amount||0), 0);
-    days.push({ tot, lbl: ['Ня','Да','Мя','Лх','Пү','Ба','Бя'][d.getDay()] });
+    const tot = done.filter(o => o.date === ds).reduce((s,o) => s + o.total_amount, 0);
+    const lbl = ['Ня','Да','Мя','Лх','Пү','Ба','Бя'][d.getDay()];
+    days.push({ tot, lbl });
   }
   const mx = Math.max(...days.map(d => d.tot), 1);
   document.getElementById('dWeek').innerHTML = days.map(d => `
@@ -293,53 +532,153 @@ async function load() {
       <div class="wday-lbl">${d.lbl}</div>
     </div>`).join('');
 
-  // Бүтээгдэхүүний дүн (баар)
+  // Product breakdown (completed only)
   const byProd = {};
-  for (const o of done) byProd[o.product] = (byProd[o.product]||0) + (o.total_amount||0);
+  for (const o of done) {
+    byProd[o.product] = (byProd[o.product] || 0) + o.total_amount;
+  }
   const entries = Object.entries(byProd).sort((a,b) => b[1]-a[1]);
   const mxP = Math.max(...entries.map(e => e[1]), 1);
   document.getElementById('dProds').innerHTML = entries.length
-    ? entries.map(([id, tot]) => `<div class="bar-row">
+    ? entries.map(([id, tot]) => `
+      <div class="bar-row">
         <div class="bar-lbl">${prodName(id)}</div>
         <div class="bar-track"><div class="bar-fill" style="width:${Math.round(tot/mxP*100)}%"></div></div>
         <div class="bar-val">${fmt(tot)} ₮</div>
       </div>`).join('')
     : '<div class="empty">Бүртгэл байхгүй</div>';
-
-  renderRecent();
 }
 
-function renderRecent() {
-  const completed = allSales.filter(isCompleted).sort((a,b) => (b.date||'').localeCompare(a.date||''));
-  const el = document.getElementById('recentList');
-  if (!completed.length) { el.innerHTML = '<div class="empty">Бүртгэл байхгүй</div>'; return; }
-  el.innerHTML = completed.slice(0,30).map(o => `<div class="sale-row">
-    <div class="sale-info">
-      <div class="sale-product">${prodName(o.product)} <span class="sale-tag">✓</span></div>
-      <div class="sale-meta">${o.date} · ${(o.quantity||o.qty||0)} ш · ${o.customer_name || '—'}</div>
-    </div>
-    <div class="sale-amt">${fmt(o.total_amount || 0)} ₮</div>
-  </div>`).join('');
-}
+// ── Receivables ───────────────────────────────────────────
+function renderRec() {
+  const pending = orders
+    .filter(o => o.status === 'receivable')
+    .sort((a,b) => a.date.localeCompare(b.date));
 
-function renderPending() {
-  const pending = allSales.filter(s => !isCompleted(s) && (s.remaining_amount || 0) > 0)
-                          .sort((a,b) => (a.date||'').localeCompare(b.date||''));
-  const el = document.getElementById('pendingList');
+  const el = document.getElementById('recList');
   if (!pending.length) {
-    el.innerHTML = '<div class="empty">Урьдчилгаатай захиалга байхгүй</div>';
+    el.innerHTML = '<div class="no-rec">✓ Авлага байхгүй</div>';
     return;
   }
-  el.innerHTML = pending.map(o => `<div class="sale-row advance">
-    <div class="sale-info">
-      <div class="sale-product">${prodName(o.product)} <span class="sale-tag adv">ADV</span></div>
-      <div class="sale-meta">${o.date} · ${(o.quantity||o.qty||0)} ш · ${o.customer_name || '—'} · Үлд: ${fmt(o.remaining_amount)}₮</div>
-    </div>
-    <div class="sale-amt">${fmt(o.total_amount || 0)} ₮</div>
-  </div>`).join('');
+
+  el.innerHTML = pending.map(o => `
+    <div class="rec-card">
+      <div class="rec-top">
+        <div class="rec-name">${prodName(o.product)}</div>
+        <div class="rec-rem">
+          <div class="big">${fmt(o.remaining_amount)} ₮</div>
+          <div class="lbl">үлдэгдэл</div>
+        </div>
+      </div>
+      <div class="rec-meta">
+        ${o.customer_name || '—'}${o.customer_phone ? ' · ' + o.customer_phone : ''}<br>
+        ${o.date}${o.branch ? ' · ' + o.branch : ''} · ${o.quantity}ш × ${fmt(o.unit_price)}₮ = ${fmt(o.total_amount)}₮
+        ${o.advance_paid > 0 ? '<br>Авсан: ' + fmt(o.advance_paid) + '₮' : ''}
+        ${o.bank_account_name ? ' · ' + o.bank_account_name : ''}
+        ${o.note ? '<br>' + o.note : ''}
+      </div>
+      <div class="rec-actions">
+        <input class="rec-input" type="number" id="ri_${o.id}"
+          placeholder="Авсан дүн ₮" value="${o.remaining_amount}">
+        <button class="rec-btn" onclick="recordPayment('${o.id}')">Бүртгэх</button>
+      </div>
+    </div>`).join('');
 }
 
-load();
+async function recordPayment(id) {
+  const input   = document.getElementById('ri_' + id);
+  const amount  = parseInt(input.value) || 0;
+  if (amount <= 0) { alert('Дүн оруулна уу'); return; }
+
+  const r = await api('/sales/' + id, {
+    method: 'PUT',
+    body: JSON.stringify({ received_amount: amount }),
+  });
+  if (r.ok) { await loadSales(); renderRec(); renderDash(); }
+  else alert(r.error || 'Алдаа гарлаа');
+}
+
+// ── History ───────────────────────────────────────────────
+function setQF(mode) {
+  qfMode = mode;
+  document.querySelectorAll('.qf').forEach(el => el.classList.remove('active'));
+  document.getElementById('qf-' + mode).classList.add('active');
+  renderHistory();
+}
+
+function renderHistory() {
+  const search  = (document.getElementById('hSearch').value || '').toLowerCase();
+  const prodF   = document.getElementById('hProd').value;
+  const statusF = document.getElementById('hStatus').value;
+  const t       = today();
+  const mon     = thisMonth();
+
+  let list = [...orders];
+
+  if (qfMode === 'today') list = list.filter(o => o.date === t);
+  if (qfMode === 'week')  {
+    const ws = new Date(); ws.setDate(ws.getDate()-6);
+    const wss = ws.toISOString().slice(0,10);
+    list = list.filter(o => o.date >= wss);
+  }
+  if (qfMode === 'month') list = list.filter(o => o.date.slice(0,7) === mon);
+
+  if (prodF)   list = list.filter(o => o.product === prodF);
+  if (statusF) list = list.filter(o => o.status === statusF);
+  if (search)  list = list.filter(o =>
+    (o.customer_name||'').toLowerCase().includes(search) ||
+    (o.customer_phone||'').includes(search) ||
+    (o.note||'').toLowerCase().includes(search) ||
+    prodName(o.product).toLowerCase().includes(search) ||
+    (o.branch||'').toLowerCase().includes(search)
+  );
+
+  list.sort((a,b) => b.date.localeCompare(a.date));
+
+  // Update print subtitle
+  document.getElementById('printSubtitle').textContent =
+    'Борлуулалтын тайлан · ' + new Date().toLocaleDateString('mn');
+
+  const el = document.getElementById('histList');
+  if (!list.length) { el.innerHTML = '<div class="empty">Бүртгэл байхгүй</div>'; return; }
+
+  const completedTotal = list.filter(o=>o.status==='completed').reduce((s,o)=>s+o.total_amount,0);
+
+  el.innerHTML = list.map(o => {
+    const isComp = o.status === 'completed';
+    return `
+      <div class="hist-row">
+        <div class="hist-top">
+          <div class="hist-name">${prodName(o.product)}</div>
+          <div class="hist-amt" style="color:${isComp?'#2e7d32':'#e53935'}">${fmt(o.total_amount)} ₮</div>
+        </div>
+        <div class="hist-meta">
+          ${o.date}${o.branch ? ' · ' + o.branch : ''} · ${o.customer_name||'—'}${o.customer_phone ? ' · ' + o.customer_phone : ''}<br>
+          ${o.quantity}ш × ${fmt(o.unit_price)}₮${o.bank_account_name ? ' · ' + o.bank_account_name : ''}
+          ${o.advance_paid > 0 ? ' · урьдчилгаа: ' + fmt(o.advance_paid) + '₮' : ''}
+          ${!isComp ? ' · <span style="color:#e53935">үлдэгдэл: ' + fmt(o.remaining_amount) + '₮</span>' : ''}
+          ${o.note ? '<br>' + o.note : ''}
+        </div>
+        <span class="stag ${o.status}">${isComp ? 'Бүрэн төлсөн' : 'Авлага'}</span>
+      </div>`;
+  }).join('') +
+  `<div class="hist-footer">
+    <span>${list.length} бүртгэл · ${list.filter(o=>o.status==='completed').length} бүрэн төлсөн</span>
+    <span style="color:#2e7d32">${fmt(completedTotal)} ₮</span>
+  </div>`;
+}
+
+function doPrint() {
+  document.getElementById('printHeader').style.display = 'block';
+  window.print();
+  document.getElementById('printHeader').style.display = 'none';
+}
+
+// ── Init ─────────────────────────────────────────────────
+document.getElementById('nDate').value = today();
+
+Promise.all([loadMasters(), loadSales()]).then(() => renderDash());
 </script>
+<script src="/js/bottom-nav.js"></script>
 </body>
 </html>
