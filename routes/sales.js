@@ -91,9 +91,12 @@ router.post('/sales', (req, res) => {
 
   // Load price from products master — preserves historical price at time of sale
   const productDef = (db.products || []).find(p => p.id === product);
-  const unit_price = (!productDef || productDef.price === 0)
+  const noVat = req.body.vat_mode === 'without' || req.body.no_vat === true;
+  let unit_price = (!productDef || productDef.price === 0)
     ? parseInt(req.body.unit_price) || 0
     : productDef.price;
+  // Бараа НӨАТ-тэй үнэтэй. НӨАТ-гүй борлуулбал суурь үнэ (÷1.1).
+  if (noVat && productDef && productDef.price > 0) unit_price = Math.round(productDef.price / 1.1);
 
   if (!unit_price) return res.status(400).json({ error: 'Үнэ оруулна уу' });
 
@@ -123,6 +126,7 @@ router.post('/sales', (req, res) => {
     customer_phone:    customer_phone || '',
     note:              note || '',
     source_tx_id:      source_tx_id || null,   // банкны хуулгын гүйлгээтэй холбоо
+    vat_included:      !noVat,                 // НӨАТ-тэй эсэх
     status,
     archived:          false,
     created_by:        req.user.name,

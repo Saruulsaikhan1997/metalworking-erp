@@ -223,6 +223,14 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
       <select id="nProduct" onchange="onProductChange()"></select>
     </div>
 
+    <div class="field">
+      <label>НӨАТ</label>
+      <select id="nVatMode" onchange="onProductChange()">
+        <option value="with">НӨАТ-тэй</option>
+        <option value="without">НӨАТ-гүй</option>
+      </select>
+    </div>
+
     <div class="g2">
       <div class="field">
         <label>Тоо ширхэг</label>
@@ -407,13 +415,15 @@ function onProductChange() {
   const id   = document.getElementById('nProduct').value;
   const prod = products.find(p => p.id === id);
   const el   = document.getElementById('nPrice');
+  const withVat = document.getElementById('nVatMode').value !== 'without';
   if (!prod || prod.price === 0) {
     el.removeAttribute('readonly');
     el.value = '';
     el.placeholder = 'Үнэ оруулна уу';
   } else {
     el.setAttribute('readonly', true);
-    el.value = prod.price;
+    // Үнэ нь НӨАТ-тэй хадгалагдсан. НӨАТ-гүй бол суурь үнэ (÷1.1).
+    el.value = withVat ? prod.price : Math.round(prod.price / 1.1);
     el.placeholder = '';
   }
   calcTotal();
@@ -426,14 +436,19 @@ function calcTotal() {
   const total = qty * price;
   const rem   = Math.max(0, total - adv);
 
+  const withVat = document.getElementById('nVatMode').value !== 'without';
   document.getElementById('nTotal').innerHTML =
-    `<span>Нийт дүн (НӨАТ-тэй)</span><span>${fmt(total)} ₮</span>`;
+    `<span>Нийт дүн ${withVat ? '(НӨАТ-тэй)' : '(НӨАТ-гүй)'}</span><span>${fmt(total)} ₮</span>`;
 
-  // НӨАТ задаргаа (үнэ нь НӨАТ-тэй тул дотроос нь салгана)
-  const base = Math.round(total / 1.1);
-  const vat  = total - base;
-  document.getElementById('nVat').innerHTML =
-    `<span>НӨАТ-гүй: ${fmt(base)} ₮</span><span>НӨАТ (10%): ${fmt(vat)} ₮</span>`;
+  // НӨАТ задаргаа — НӨАТ-тэй бол дотроос нь салгана, эс бол НӨАТ 0
+  const nVatEl = document.getElementById('nVat');
+  if (withVat) {
+    const base = Math.round(total / 1.1);
+    document.getElementById('nVat').innerHTML =
+      `<span>НӨАТ-гүй: ${fmt(base)} ₮</span><span>НӨАТ (10%): ${fmt(total - base)} ₮</span>`;
+  } else {
+    nVatEl.innerHTML = `<span>НӨАТ-гүй борлуулалт</span><span>НӨАТ: 0 ₮</span>`;
+  }
 
   const re = document.getElementById('nRem');
   if (total === 0) {
@@ -554,6 +569,7 @@ async function submitSale() {
       bank_account:   document.getElementById('nBank').value,
       note:           document.getElementById('nNote').value.trim(),
       source_tx_id:   pendingTx ? pendingTx.id : null,
+      vat_mode:       document.getElementById('nVatMode').value,
     }),
   });
 
@@ -564,6 +580,7 @@ async function submitSale() {
     }
     ['nQty','nAdvance','nNote'].forEach(id => document.getElementById(id).value = id === 'nQty' ? '1' : '');
     document.getElementById('nBranch').selectedIndex = 0;
+    document.getElementById('nVatMode').value = 'with';
     document.getElementById('nRecSettle').value = '';
     document.getElementById('recAmtWrap').style.display = 'none';
     document.getElementById('nRecAmount').value = '';
