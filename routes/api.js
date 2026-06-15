@@ -593,6 +593,41 @@ router.get('/finance/codes', (req, res) => {
   res.json(MEMO_CODES);
 });
 
+// ── CLAUDE: хуваарилаагүй бөөн зардлууд (эзэн + хувьцаа эзэмшигч ХАРНА) ──
+// Тодорхойгүй/бөөн зардал банкны хуулгад CLAUDE кодоор орно. Cost Workspace-д
+// transaction_id-аар холбогдсон зардлын нийлбэрийг хасч "үлдэгдэл" гаргана
+// (derive-don't-store — шинэ table алга). Үлдэгдэл 0 болоход (бүрэн хуваарилагдсан)
+// жагсаалтаас унана. Хуваарилалт = эзэн Cost Workspace-аар (POST .../cost) хийнэ.
+router.get('/finance/claude-unallocated', (req, res) => {
+  if (!['admin', 'shareholder'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
+  const db = load();
+  // tx.id -> аль хэдийн хуваарилсан дүн (бүх cost workspace дээрх cost.transaction_id)
+  const allocated = {};
+  for (const ws of (db.import_cost_workspaces || [])) {
+    for (const c of (ws.costs || [])) {
+      if (c.transaction_id) allocated[c.transaction_id] = (allocated[c.transaction_id] || 0) + (c.amount_mnt || 0);
+    }
+  }
+  const list = (db.transactions || [])
+    .filter(t => t.code === 'CLAUDE' && !t.archived)
+    .map(t => {
+      const amount = Math.abs(t.amount || 0);
+      const alloc  = allocated[t.id] || 0;
+      return {
+        id: t.id,
+        date: t.date,
+        memo: t.note || t.description || t.raw_memo || '',
+        account_label: t.account_label || '',
+        amount,
+        allocated: alloc,
+        remaining: amount - alloc,
+      };
+    })
+    .filter(t => t.remaining > 0)   // бүрэн хуваарилагдсаныг хасна (derive)
+    .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  res.json(list);
+});
+
 // ── Phase B: Дотоод худалдан авалт (Finance → Module routing) ──
 // Зөвхөн УНШИХ. Санхүүгийн MAT_WH/MAT_PROD гүйлгээнээс автоматаар үүссэн
 // "хүлээгдэж буй дотоод худалдан авалт"-уудыг буцаана. Module хуудсууд

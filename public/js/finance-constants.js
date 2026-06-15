@@ -32,12 +32,14 @@ const FINANCE_CODES = {
   REFUND:   { type: 'refund',     color: 'amber',  label: 'Зардлын буцаалт (илүү төлсөн мөнгө буцсан)' },
   TRF:      { type: 'transfer',   color: 'gray',   label: 'Данс хооронд (дүнд орохгүй)' },
   OTHER:    { type: 'unknown',    color: 'blue',   label: 'Бусад' },
+  CLAUDE:   { type: 'expense',    color: 'purple', label: 'Хуваарилаагүй зардал (Claude задлах)' },
 };
 
 // Grouped for review screens
 const CODE_GROUPS = [
   { label: '\u{1F7E2} Орлого',  codes: ['SALE','REC','ADV','INV'], cls: 'income' },
   { label: '\u{1F535} Зарлага', codes: ['IMP','SAL','TRN','TRIP','EQP','ASSET','TAX','OFF','UTIL','MAT_WH','MAT_PROD','MAR','SUB','FEE'], cls: 'expense' },
+  { label: '\u{1F916} Claude задлах', codes: ['CLAUDE'], cls: 'special' },
   { label: '↩️ Буцаалт',   codes: ['REFUND'], cls: 'refund' },
   { label: '\u{1F504} Зээл',   codes: ['LOAN_IN','LOAN_OUT'], cls: 'loan' },
   { label: '⚪ Тусгай',     codes: ['TRF','OTHER'], cls: 'gray' },
@@ -45,7 +47,7 @@ const CODE_GROUPS = [
 
 // Derived arrays
 const INCOME_CODES  = ['SALE','REC','ADV','INV'];
-const EXPENSE_CODES = ['IMP','SAL','TRN','TRIP','EQP','ASSET','TAX','OFF','UTIL','MAT','MAT_WH','MAT_PROD','MAR','SUB','FEE','OTHER'];
+const EXPENSE_CODES = ['IMP','SAL','TRN','TRIP','EQP','ASSET','TAX','OFF','UTIL','MAT','MAT_WH','MAT_PROD','MAR','SUB','FEE','OTHER','CLAUDE'];
 const LOAN_CODES    = ['LOAN_IN','LOAN_OUT'];
 const SALES_CODES   = ['SALE','REC','ADV'];
 const REFUND_CODES  = ['REFUND'];
@@ -75,6 +77,7 @@ const CAT_LABELS = {
   REFUND:   '↩️ Зардлын буцаалт',
   LOAN_OUT: '\u{1F4E4} Зээл өгсөн',
   OTHER:    '\u{1F4E6} Бусад',
+  CLAUDE:   '\u{1F916} Claude задлах',
 };
 
 // Code examples for reference pages
@@ -103,6 +106,7 @@ const CODE_EXAMPLES = {
   FEE:      'FEE (автомат)',
   REFUND:   'REFUND: илүү төлсөн буцаалт',
   OTHER:    'OTHER: бусад',
+  CLAUDE:   'CLAUDE: агент бөөн төлбөр (задлах)',
 };
 
 // Helper functions
