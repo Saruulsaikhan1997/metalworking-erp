@@ -234,7 +234,8 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
       </div>
     </div>
 
-    <div class="calc-bar green" id="nTotal"><span>Нийт дүн</span><span>0 ₮</span></div>
+    <div class="calc-bar green" id="nTotal"><span>Нийт дүн (НӨАТ-тэй)</span><span>0 ₮</span></div>
+    <div class="calc-bar gray" id="nVat" style="font-weight:600;font-size:12px"><span>НӨАТ-гүй: 0 ₮</span><span>НӨАТ (10%): 0 ₮</span></div>
 
     <div class="field">
       <label>Мөнгө орсон данс</label>
@@ -426,7 +427,13 @@ function calcTotal() {
   const rem   = Math.max(0, total - adv);
 
   document.getElementById('nTotal').innerHTML =
-    `<span>Нийт дүн</span><span>${fmt(total)} ₮</span>`;
+    `<span>Нийт дүн (НӨАТ-тэй)</span><span>${fmt(total)} ₮</span>`;
+
+  // НӨАТ задаргаа (үнэ нь НӨАТ-тэй тул дотроос нь салгана)
+  const base = Math.round(total / 1.1);
+  const vat  = total - base;
+  document.getElementById('nVat').innerHTML =
+    `<span>НӨАТ-гүй: ${fmt(base)} ₮</span><span>НӨАТ (10%): ${fmt(vat)} ₮</span>`;
 
   const re = document.getElementById('nRem');
   if (total === 0) {
