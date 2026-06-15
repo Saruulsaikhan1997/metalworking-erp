@@ -104,8 +104,46 @@ router.post('/sales', (req, res) => {
   };
 
   db.sales.push(record);
+
+  // ── Сонгосон складаас барааг хасах (SALES_OUT хөдөлгөөн) ──
+  // branch = склад нэр → байршлын код руу хөрвүүлж, тухайн складын
+  // ижил нэртэй бараанаас зарагдсан тоог хасна.
+  const SALE_LOC_MAP = {
+    'Төв склад': 'central', 'Үйлдвэр': 'factory',
+    'Склад 1': 'plastic-center', 'Склад 2': 'warehouse-4',
+    'Склад 3': 'warehouse-5', 'Үзүүлэн': 'exhibition',
+  };
+  let inventory_deducted = false;
+  const locCode = SALE_LOC_MAP[branch];
+  const prodName = (productDef ? productDef.name : '').trim().toLowerCase();
+  if (locCode && qty > 0 && prodName) {
+    if (!db.inventory) db.inventory = [];
+    if (!db.inventory_log) db.inventory_log = [];
+    const invItem = db.inventory.find(i =>
+      (i.location || 'central') === locCode &&
+      (i.name || '').trim().toLowerCase() === prodName
+    );
+    if (invItem) {
+      const before = invItem.qty || 0;
+      invItem.qty = before - qty;            // оверселл бол сөрөг болж анхааруулна
+      invItem.updated_at = now;
+      const logId = Math.max(0, ...db.inventory_log.map(l => l.id || 0)) + 1;
+      db.inventory_log.push({
+        id: logId, item_id: invItem.id, item_code: invItem.code, item_name: invItem.name,
+        type: 'out', source: 'SALES_OUT', source_id: record.id, qty,
+        unit: invItem.unit, location_from: locCode, location_to: 'customer',
+        reason: null, note: 'Борлуулалт (' + (record.note || '') + ')',
+        by: req.user.name, by_role: req.user.role,
+        before_qty: before, after_qty: invItem.qty,
+        date: now.slice(0, 10), time: new Date().toTimeString().slice(0, 8), created_at: now,
+      });
+      record.inventory_item_id = invItem.id;
+      inventory_deducted = true;
+    }
+  }
+
   save(db);
-  res.json({ id: record.id });
+  res.json({ id: record.id, inventory_deducted });
 });
 
 router.put('/sales/:id', (req, res) => {
