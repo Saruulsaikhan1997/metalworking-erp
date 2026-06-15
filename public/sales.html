@@ -176,8 +176,8 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
     </div>
   </div>
   <div class="kpi-grid">
-    <div class="kpi dark">
-      <div class="lbl">Нийт орлого</div>
+    <div class="kpi dark" onclick="toggleAllDetail()" style="cursor:pointer">
+      <div class="lbl">Нийт орлого <span style="opacity:.6">▾</span></div>
       <div class="val" id="dAll">0 ₮</div>
       <div class="sub" id="dAllSub">0 борлуулалт</div>
     </div>
@@ -186,6 +186,11 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
       <div class="val" id="dRec">0 ₮</div>
       <div class="sub" id="dRecSub">0 захиалга</div>
     </div>
+  </div>
+
+  <div id="allDetailWrap" style="display:none">
+    <div class="sec">Нийт орлогын задаргаа</div>
+    <div class="card" id="allDetail"></div>
   </div>
 
   <div class="sec">Сүүлийн 7 хоног</div>
@@ -660,6 +665,28 @@ function renderDash() {
         <div class="bar-val">${fmt(tot)} ₮</div>
       </div>`).join('')
     : '<div class="empty">Бүртгэл байхгүй</div>';
+}
+
+// ── Нийт орлогын задаргаа (дарж задлах) ──
+function toggleAllDetail() {
+  const wrap = document.getElementById('allDetailWrap');
+  const show = wrap.style.display === 'none';
+  wrap.style.display = show ? '' : 'none';
+  if (show) renderAllDetail();
+}
+function renderAllDetail() {
+  const done = orders.filter(o => o.status === 'completed')
+    .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const el = document.getElementById('allDetail');
+  if (!done.length) { el.innerHTML = '<div class="empty">Бүртгэл байхгүй</div>'; return; }
+  el.innerHTML = done.map(o => `
+    <div class="hist-row">
+      <div class="hist-top">
+        <div class="hist-name">${prodName(o.product)}</div>
+        <div class="hist-amt">${fmt(o.total_amount)} ₮</div>
+      </div>
+      <div class="hist-meta">📅 ${o.date || '—'}${o.branch ? ' · ' + o.branch : ''} · ${o.quantity} ш</div>
+    </div>`).join('');
 }
 
 // ── Receivables ───────────────────────────────────────────

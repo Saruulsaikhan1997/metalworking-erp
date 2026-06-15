@@ -119,10 +119,13 @@ router.post('/sales', (req, res) => {
   if (locCode && qty > 0 && prodName) {
     if (!db.inventory) db.inventory = [];
     if (!db.inventory_log) db.inventory_log = [];
-    const invItem = db.inventory.find(i =>
-      (i.location || 'central') === locCode &&
-      (i.name || '').trim().toLowerCase() === prodName
-    );
+    // "Явган замын хавтан" = "Замын хавтан" — зам+хавтан барааг адил гэж үзнэ
+    const isPav = s => /зам/.test(s) && /хавтан/.test(s);
+    const invItem = db.inventory.find(i => {
+      const inName = (i.name || '').trim().toLowerCase();
+      return (i.location || 'central') === locCode &&
+        (inName === prodName || (isPav(inName) && isPav(prodName)));
+    });
     if (invItem) {
       const before = invItem.qty || 0;
       invItem.qty = before - qty;            // оверселл бол сөрөг болж анхааруулна
