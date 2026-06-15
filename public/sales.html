@@ -208,7 +208,7 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
         <input type="date" id="nDate">
       </div>
       <div class="field" style="margin-top:0">
-        <label>Салбар / борлуулагч</label>
+        <label>Аль складаас</label>
         <select id="nBranch"></select>
       </div>
     </div>
@@ -230,17 +230,6 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
     </div>
 
     <div class="calc-bar green" id="nTotal"><span>Нийт дүн</span><span>0 ₮</span></div>
-
-    <div class="g2">
-      <div class="field">
-        <label>Үйлчлүүлэгч</label>
-        <input type="text" id="nCustomer" placeholder="Нэр, байгууллага...">
-      </div>
-      <div class="field">
-        <label>Утас</label>
-        <input type="tel" id="nPhone" placeholder="99xxxxxx">
-      </div>
-    </div>
 
     <div class="field">
       <label>Мөнгө орсон данс</label>
@@ -368,9 +357,12 @@ async function loadMasters() {
   productMap = {};
   prods.forEach(p => { productMap[p.id] = p.name; });
 
-  // Product select
+  // Product select — одоогоор зөвхөн Замын хавтан + Жорлонгийн бүхээг
+  const SALE_KEYWORDS = /хавтан|бүхээг/i;
   const ps = document.getElementById('nProduct');
-  ps.innerHTML = prods.map(p =>
+  let saleProds = prods.filter(p => SALE_KEYWORDS.test(p.name || ''));
+  if (!saleProds.length) saleProds = prods;   // тааруулсан бараа байхгүй бол бүгдийг харуулна
+  ps.innerHTML = saleProds.map(p =>
     `<option value="${p.id}">${p.name}${p.price > 0 ? ' — ' + fmt(p.price) + '₮' : ''}</option>`
   ).join('');
 
@@ -382,10 +374,11 @@ async function loadMasters() {
     hProd.appendChild(o);
   });
 
-  // Branch select
+  // Склад / байршил — Үлдэгдэл (склад) хуудасны нэрс
   const bs = document.getElementById('nBranch');
+  const WAREHOUSES = ['Төв склад', 'Үйлдвэр', 'Склад 1', 'Склад 2', 'Склад 3', 'Үзүүлэн'];
   bs.innerHTML = '<option value="">— Сонгоно уу —</option>' +
-    branches.map(b => `<option value="${b.name}">${b.name}</option>`).join('');
+    WAREHOUSES.map(w => `<option value="${w}">${w}</option>`).join('');
 
   // Bank account select
   const bk = document.getElementById('nBank');
@@ -499,8 +492,6 @@ async function submitSale() {
       quantity:       qty,
       unit_price:     price,
       advance_paid:   advance,
-      customer_name:  document.getElementById('nCustomer').value.trim(),
-      customer_phone: document.getElementById('nPhone').value.trim(),
       bank_account:   document.getElementById('nBank').value,
       note:           document.getElementById('nNote').value.trim(),
       source_tx_id:   pendingTx ? pendingTx.id : null,
@@ -508,7 +499,7 @@ async function submitSale() {
   });
 
   if (r.id) {
-    ['nQty','nAdvance','nCustomer','nPhone','nNote'].forEach(id => document.getElementById(id).value = id === 'nQty' ? '1' : '');
+    ['nQty','nAdvance','nNote'].forEach(id => document.getElementById(id).value = id === 'nQty' ? '1' : '');
     document.getElementById('nBranch').selectedIndex = 0;
     onProductChange();
     pendingTx = null;

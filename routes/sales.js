@@ -5,11 +5,28 @@ const { authMiddleware, adminOnly } = require('../middleware/auth');
 const router = express.Router();
 router.use(authMiddleware);
 
+// ── Migration: "Замын хавтан" бүтээгдэхүүнийг үнэ 20000-аар бэлдэх (нэг удаа) ──
+function ensureSaleProducts(db) {
+  if (db.fix_pavement_price_v1) return;
+  if (!db.products) db.products = [];
+  // "зам" ба "хавтан" хоёуланг агуулсан бараа (Замын/Явган замын хавтан)
+  let p = db.products.find(x => /зам/i.test(x.name || '') && /хавтан/i.test(x.name || ''));
+  if (p) {
+    p.name  = 'Замын хавтан';
+    p.price = 20000;
+    p.active = true;
+  } else {
+    db.products.push({ id: 'pavement', name: 'Замын хавтан', price: 20000, active: true });
+  }
+  db.fix_pavement_price_v1 = true;
+}
+
 // ── БОРЛУУЛАЛТ ──
 router.get('/sales', (req, res) => {
   // Revenue is owner/sales data — factory engineers don't see it.
   if (req.user.role === 'engineer') return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
   const db = load();
+  ensureSaleProducts(db); save(db);
   // Exclude archived records from normal view
   const sales = (db.sales || []).filter(s => !s.archived);
   if (req.user.role === 'sales') return res.json(sales.filter(s => s.created_by === req.user.name));
