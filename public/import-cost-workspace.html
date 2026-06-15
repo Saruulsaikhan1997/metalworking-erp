@@ -138,8 +138,8 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
   <div class="hdr-top">
     <a class="hdr-back" id="backLink" href="/imports/orders">‹</a>
     <div style="flex:1">
-      <div class="hdr-title" id="hdrTitle">Cost Workspace</div>
-      <div class="hdr-sub" id="hdrSub">Барааны эцсийн өртөг — складад орсон</div>
+      <div class="hdr-title" id="hdrTitle">Складад орсон барааны эцсийн өртөг</div>
+      <div class="hdr-sub" id="hdrSub"></div>
     </div>
   </div>
 </div>
@@ -165,7 +165,7 @@ if (!token) window.location.href = '/';
 const params = new URLSearchParams(location.search);
 const orderId = params.get('order');
 const orderName = params.get('name');
-if (orderName) document.getElementById('hdrTitle').textContent = orderName;
+if (orderName) document.getElementById('hdrSub').textContent = orderName;
 
 async function api(path) {
   const r = await fetch('/api/import' + path, { headers: { 'Authorization': 'Bearer ' + token }});
@@ -458,8 +458,8 @@ function render(d) {
   DATA = d;
   const body = document.getElementById('body');
   if (d.error){ body.innerHTML = `<div class="empty">${esc(d.error)}</div>`; return; }
-  if (d.order && d.order.name && !orderName) document.getElementById('hdrTitle').textContent = d.order.name;
-  document.getElementById('hdrSub').textContent = (d.order && d.order.supplier ? d.order.supplier + ' · ' : '') + 'эцсийн өртөг';
+  const subParts = [d.order && d.order.name, d.order && d.order.supplier].filter(Boolean).join(' · ');
+  if (subParts) document.getElementById('hdrSub').textContent = subParts;
   body.innerHTML =
     `<div class="sec"><div class="sec-h">💳 Энэ бараанд төлсөн төлбөрүүд</div>${renderPayments(d)}</div>` +
     `<div class="sec"><div class="sec-h">📦 Эцсийн нэгж өртөг</div>${renderUnitCosts(d)}</div>` +
