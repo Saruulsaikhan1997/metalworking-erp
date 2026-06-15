@@ -29,15 +29,20 @@ function ensurePricesVat(db) {
   if (db.fix_prices_vat_v1) return;
   if (!db.products) db.products = [];
   if (!db.inventory) db.inventory = [];
-  const isPav = s => /зам/i.test(s || '') && /хавтан/i.test(s || '');
-  // Замын хавтан — НӨАТ-тэй 22,000
-  let pav = db.products.find(p => isPav(p.name));
-  if (pav) { pav.name = 'Замын хавтан'; pav.price = 22000; pav.active = true; }
-  else db.products.push({ id: 'pavement', name: 'Замын хавтан', price: 22000, active: true });
+  // "Замын хавтан", "Явган замын хавтан", "Явган хавтан" — бүгд нэг бараа
+  const isPav = s => /(зам|явган)/i.test(s || '') && /хавтан/i.test(s || '');
+  // Бүх зам/явган хавтан барааг нэгтгэх: эхнийг үлдээж, бусдыг идэвхгүй болгох
+  const pavs = db.products.filter(p => isPav(p.name));
+  if (pavs.length) {
+    pavs[0].name = 'Замын хавтан'; pavs[0].price = 22000; pavs[0].active = true;
+    for (let i = 1; i < pavs.length; i++) pavs[i].active = false;
+  } else {
+    db.products.push({ id: 'pavement', name: 'Замын хавтан', price: 22000, active: true });
+  }
   // Жорлон(гийн) бүхээг — НӨАТ-тэй 1,760,000
   const cab = db.products.find(p => /бүхээг/i.test(p.name || ''));
   if (cab) { cab.price = 1760000; cab.active = true; }
-  // Инвентар дахь зам+хавтан барааг "Замын хавтан" болгож нэгтгэх
+  // Инвентар дахь зам/явган хавтан барааг "Замын хавтан" болгож нэгтгэх
   db.inventory.forEach(i => { if (isPav(i.name)) i.name = 'Замын хавтан'; });
   db.fix_prices_vat_v1 = true;
 }
@@ -140,8 +145,8 @@ router.post('/sales', (req, res) => {
   if (locCode && qty > 0 && prodName) {
     if (!db.inventory) db.inventory = [];
     if (!db.inventory_log) db.inventory_log = [];
-    // "Явган замын хавтан" = "Замын хавтан" — зам+хавтан барааг адил гэж үзнэ
-    const isPav = s => /зам/.test(s) && /хавтан/.test(s);
+    // "Явган замын хавтан"/"Явган хавтан" = "Замын хавтан" — нэг бараа гэж үзнэ
+    const isPav = s => /(зам|явган)/.test(s) && /хавтан/.test(s);
     const invItem = db.inventory.find(i => {
       const inName = (i.name || '').trim().toLowerCase();
       return (i.location || 'central') === locCode &&
