@@ -237,7 +237,16 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
     </div>
 
     <div class="field">
-      <label>Авсан дүн ₮ &nbsp;<span style="color:#aaa;font-weight:400">(0 бол бүгд авлага)</span></label>
+      <label>🔗 Хуучин авлага барагдуулах <span style="color:#aaa;font-weight:400">(заавал биш)</span></label>
+      <select id="nRecSettle" onchange="onRecSettleChange()"><option value="">— Үгүй —</option></select>
+    </div>
+    <div class="field" id="recAmtWrap" style="display:none">
+      <label>Авлагад төлөх ₮</label>
+      <input type="number" id="nRecAmount" placeholder="0">
+    </div>
+
+    <div class="field">
+      <label>Шинэ бараанд авсан дүн ₮ &nbsp;<span style="color:#aaa;font-weight:400">(0 бол бүгд авлага)</span></label>
       <input type="number" id="nAdvance" placeholder="0" oninput="calcTotal()">
     </div>
 
@@ -459,8 +468,12 @@ async function loadIncome() {
 function classifyIncome(id, mode) {
   const t = incomeList.find(x => String(x.id) === String(id));
   if (!t) return;
-  pendingTx = { id: t.id, mode };
+  pendingTx = { id: t.id, mode, amount: t.amount || 0 };
   showTab('new');
+  renderRecSettleOptions();
+  document.getElementById('nRecSettle').value = '';
+  document.getElementById('recAmtWrap').style.display = 'none';
+  document.getElementById('nRecAmount').value = '';
   document.getElementById('nDate').value    = t.date || today();
   document.getElementById('nAdvance').value = t.amount || 0;
   document.getElementById('nNote').value    = t.memo || '';
@@ -474,6 +487,31 @@ function classifyIncome(id, mode) {
   window.scrollTo(0, 0);
 }
 
+// Хуучин авлагын сонголтыг дүүргэх (status=receivable)
+function renderRecSettleOptions() {
+  const sel = document.getElementById('nRecSettle');
+  if (!sel) return;
+  const recs = orders.filter(o => o.status === 'receivable' && (o.remaining_amount || 0) > 0);
+  sel.innerHTML = '<option value="">— Үгүй —</option>' + recs.map(o =>
+    `<option value="${o.id}">${(productMap[o.product] || o.product)} · Үлд: ${fmt(o.remaining_amount)}₮${o.branch ? ' · ' + o.branch : ''}</option>`
+  ).join('');
+}
+
+// Авлага сонгоход төлөх дүн + шинэ бараанд авсан дүнг автоматаар хуваах
+function onRecSettleChange() {
+  const recId = document.getElementById('nRecSettle').value;
+  const wrap  = document.getElementById('recAmtWrap');
+  if (!recId) { wrap.style.display = 'none'; document.getElementById('nRecAmount').value = ''; return; }
+  wrap.style.display = '';
+  const rec   = orders.find(o => String(o.id) === recId);
+  const txAmt = pendingTx ? (pendingTx.amount || 0) : 0;
+  const rem   = rec ? (rec.remaining_amount || 0) : 0;
+  const settle = txAmt ? Math.min(rem, txAmt) : rem;
+  document.getElementById('nRecAmount').value = settle;
+  if (txAmt) document.getElementById('nAdvance').value = Math.max(0, txAmt - settle);
+  calcTotal();
+}
+
 async function submitSale() {
   const product  = document.getElementById('nProduct').value;
   const qty      = parseInt(document.getElementById('nQty').value)     || 0;
@@ -483,6 +521,15 @@ async function submitSale() {
   if (qty < 1)   { alert('Тоо ширхэг оруулна уу'); return; }
   if (price < 1) { alert('Үнэ оруулна уу'); return; }
 
+  // 1) Хуучин авлага барагдуулах (гүйлгээний хэсэг)
+  const recId  = document.getElementById('nRecSettle').value;
+  const recAmt = parseInt(document.getElementById('nRecAmount').value) || 0;
+  if (recId && recAmt > 0) {
+    const rr = await api('/sales/' + recId, { method: 'PUT', body: JSON.stringify({ received_amount: recAmt }) });
+    if (!rr.ok) { alert('Авлага төлөхөд алдаа: ' + (rr.error || '')); return; }
+  }
+
+  // 2) Шинэ бараа борлуулалт
   const r = await api('/sales', {
     method: 'POST',
     body: JSON.stringify({
@@ -505,6 +552,9 @@ async function submitSale() {
     }
     ['nQty','nAdvance','nNote'].forEach(id => document.getElementById(id).value = id === 'nQty' ? '1' : '');
     document.getElementById('nBranch').selectedIndex = 0;
+    document.getElementById('nRecSettle').value = '';
+    document.getElementById('recAmtWrap').style.display = 'none';
+    document.getElementById('nRecAmount').value = '';
     onProductChange();
     pendingTx = null;
     document.getElementById('txBanner').style.display = 'none';
@@ -543,6 +593,7 @@ async function loadSales() {
   const raw = await api('/sales');
   orders = raw.map(normalize);
   updateRecBadge();
+  renderRecSettleOptions();
 }
 
 function updateRecBadge() {
