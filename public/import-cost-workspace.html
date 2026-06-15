@@ -145,7 +145,6 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 </div>
 
 <div id="body"></div>
-<div class="note">Сул нийцэл: бүх мөнгийг бараанд шингээх албагүй — зөрүү байж болно, систем зөвхөн анхааруулна. Складын өртгийн зөв байх нь №1 зорилго.</div>
 
 <div class="sheet-bg" id="sheet" onclick="if(event.target===this)closeSheet()">
   <div class="sheet">
@@ -306,6 +305,43 @@ function renderPayments(d) {
   return `<div class="card">${rows}</div>`;
 }
 
+// Read-only нэгж өртгийн хүснэгт (эцсийн өртөг). Засах хяналт БАЙХГҮЙ —
+// хуваарилалт нь Claude-тай ярилцаж API-аар хийгдэнэ; энэ дүр зөвхөн ХАРНА.
+function renderUnitCosts(d) {
+  const fin = d.status === 'finalized';
+  if (!d.lines || !d.lines.length) {
+    return `<div class="card"><div class="empty">Нэгж өртөг хараахан гараагүй.<br><span style="font-size:11px;color:var(--gray-400)">Зардал хуваарилагдсаны дараа нэр төрөл бүрийн эцсийн өртөг гарна.</span></div></div>`;
+  }
+  const body = d.lines.map(l => {
+    const stock = `${(l.stock_qty||0).toLocaleString()} ${unitMn(l.stock_unit)}`;
+    return `<tr>
+      <td class="l"><div class="l-name">${esc(l.name)}</div>${l.spec?`<div class="l-spec">${esc(l.spec)}</div>`:''}</td>
+      <td><span class="l-stock">${stock}</span></td>
+      <td><span class="l-unit">${fmt(l.unit_cost_stock)}</span><div class="l-unit-sub">₮/${unitMn(l.stock_unit)}</div></td>
+      <td><span class="l-total">${fmtShort(l.allocated_mnt)}</span></td>
+    </tr>`;
+  }).join('');
+  return `<div class="card" style="padding:10px 12px">
+    <table class="ltable">
+      <thead><tr><th class="l">Нэр төрөл</th><th>Тоо хэмжээ</th><th>Нэгж өртөг</th><th>Нийт</th></tr></thead>
+      <tbody>${body}</tbody>
+      <tfoot><tr><td class="l">Нийт</td><td></td><td></td><td><span class="l-total">${fmtShort(d.allocated_total_mnt)}</span></td></tr></tfoot>
+    </table>
+    <div class="basis">${fin ? '✅ Баталгаажсан эцсийн нэгж өртөг.' : '🟡 Урьдчилсан — бүх зардал хуваарилагдаж баталгаажаагүй байна.'}</div>
+  </div>`;
+}
+
+// Баталгаажуулах бар — түүхий → баталгаажсан (Cost Workspace finalize/reopen-г ашиглана)
+function renderConfirmBar(d) {
+  if (d.status === 'finalized') {
+    return `<div class="card editbar"><div class="eb-top"><span class="badge fin">✓ Баталгаажсан</span><button class="btn btn-ghost" onclick="doReopen()">Дахин нээх</button></div></div>`;
+  }
+  if (d.materialized) {
+    return `<div class="card editbar"><div class="eb-top"><span class="badge draft">🟡 Урьдчилсан (түүхий)</span><button class="btn btn-ok" onclick="doFinalize()">Баталгаажуулах ✓</button></div></div>`;
+  }
+  return `<div class="card"><div class="empty" style="padding:14px"><span style="font-size:11.5px">🟡 Түүхий хэлбэр — зардал бүрэн хуваарилагдаж, Claude-аар тэнцэл гарсны дараа баталгаажна.</span></div></div>`;
+}
+
 // ══════════════════════════════════════════
 //  Editing layer (writes go to db.import_cost_workspaces — склад хөндөгдөхгүй)
 // ══════════════════════════════════════════
@@ -423,13 +459,11 @@ function render(d) {
   const body = document.getElementById('body');
   if (d.error){ body.innerHTML = `<div class="empty">${esc(d.error)}</div>`; return; }
   if (d.order && d.order.name && !orderName) document.getElementById('hdrTitle').textContent = d.order.name;
-  if (d.order && d.order.supplier) document.getElementById('hdrSub').textContent = d.order.supplier + ' · складад орсон';
+  document.getElementById('hdrSub').textContent = (d.order && d.order.supplier ? d.order.supplier + ' · ' : '') + 'эцсийн өртөг';
   body.innerHTML =
-    `<div class="sec">${renderEditBar(d)}</div>` +
-    `<div class="sec">${renderRecon(d)}</div>` +
-    `<div class="sec"><div class="sec-h">📦 Нэр төрөл бүрийн өртөг (dual-unit)</div>${renderLines(d)}</div>` +
-    `<div class="sec"><div class="sec-h">🧾 Зардлууд</div>${renderCosts(d)}</div>` +
-    `<div class="sec"><div class="sec-h">💳 Холбогдсон банкны төлбөр</div>${renderPayments(d)}</div>`;
+    `<div class="sec"><div class="sec-h">💳 Энэ бараанд төлсөн төлбөрүүд</div>${renderPayments(d)}</div>` +
+    `<div class="sec"><div class="sec-h">📦 Эцсийн нэгж өртөг</div>${renderUnitCosts(d)}</div>` +
+    `<div class="sec">${renderConfirmBar(d)}</div>`;
 }
 async function load() {
   const body = document.getElementById('body');
