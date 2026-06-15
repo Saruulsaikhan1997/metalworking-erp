@@ -499,6 +499,10 @@ async function submitSale() {
   });
 
   if (r.id) {
+    const branchSel = document.getElementById('nBranch').value;
+    if (branchSel && r.inventory_deducted === false) {
+      alert('⚠️ Борлуулалт бүртгэгдлээ. Гэхдээ "' + branchSel + '"-д энэ бараа олдоогүй тул складаас хасагдсангүй.');
+    }
     ['nQty','nAdvance','nNote'].forEach(id => document.getElementById(id).value = id === 'nQty' ? '1' : '');
     document.getElementById('nBranch').selectedIndex = 0;
     onProductChange();
