@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+<title>Хуваарилаагүй зардал (Claude) — Метал воркинг Центр</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --brand:#6d28d9; --brand-dark:#5b21b6; --gray-50:#f9fafb; --gray-100:#f3f4f6; --gray-200:#e5e7eb; --gray-400:#9ca3af; --gray-600:#4b5563; --gray-900:#111827; }
+body { font-family:-apple-system,"Helvetica Neue",Arial,sans-serif; background:var(--gray-50); color:var(--gray-900); padding-bottom:40px; -webkit-font-smoothing:antialiased; }
+.id-bar { background:linear-gradient(135deg,#5b21b6 0%,#6d28d9 100%); color:#fff; padding:18px 16px 22px; border-radius:0 0 20px 20px; box-shadow:0 4px 12px rgba(91,33,182,0.2); }
+.id-top { display:flex; align-items:center; gap:12px; }
+.back-btn { font-size:20px; color:#fff; text-decoration:none; width:38px; height:38px; border-radius:11px; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.id-title { font-size:17px; font-weight:800; }
+.id-sub { font-size:11.5px; opacity:0.9; margin-top:3px; }
+.summary { margin:-14px 16px 0; background:#fff; border-radius:16px; padding:16px 18px; box-shadow:0 4px 16px rgba(0,0,0,0.08); border:1px solid var(--gray-200); position:relative; z-index:2; }
+.summary-lbl { font-size:11px; font-weight:700; color:var(--gray-400); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
+.summary-amt { font-size:24px; font-weight:900; color:var(--brand); letter-spacing:-0.5px; }
+.summary-meta { font-size:12px; color:var(--gray-600); margin-top:6px; }
+.note { margin:12px 16px 0; background:#f5f3ff; border:1px solid #ddd6fe; border-radius:12px; padding:11px 14px; font-size:11.5px; color:#5b21b6; line-height:1.5; }
+.section { padding:18px 16px 0; }
+.section-label { font-size:11px; font-weight:700; color:var(--gray-400); text-transform:uppercase; letter-spacing:1.3px; margin-bottom:10px; padding:0 4px; }
+.row { background:#fff; border-radius:14px; padding:14px 16px; margin-bottom:9px; box-shadow:0 2px 8px rgba(0,0,0,0.05); border:1px solid var(--gray-200); border-left:4px solid var(--brand); }
+.row-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.row-memo { font-size:14px; font-weight:700; color:var(--gray-900); line-height:1.35; word-break:break-word; }
+.row-date { font-size:11.5px; color:var(--gray-400); margin-top:4px; font-weight:600; }
+.row-amt { font-size:15px; font-weight:800; color:var(--brand); white-space:nowrap; }
+.row-prog { margin-top:10px; padding-top:9px; border-top:1px dashed var(--gray-200); font-size:11px; color:var(--gray-600); display:flex; justify-content:space-between; }
+.row-prog b { color:var(--brand-dark); }
+.empty { text-align:center; padding:48px 24px; color:var(--gray-400); }
+.empty-icon { font-size:44px; margin-bottom:12px; }
+.empty-title { font-size:15px; font-weight:700; color:var(--gray-600); }
+.empty-sub { font-size:12.5px; margin-top:6px; line-height:1.5; }
+.loading { text-align:center; padding:40px; color:var(--gray-400); font-size:13px; }
+</style>
+</head>
+<body>
+
+<div class="id-bar">
+  <div class="id-top">
+    <a class="back-btn" href="/finance">‹</a>
+    <div>
+      <div class="id-title">🤖 Хуваарилаагүй зардал</div>
+      <div class="id-sub">CLAUDE код · бараа бүрийн өртөг рүү хуваарилна</div>
+    </div>
+  </div>
+</div>
+
+<div class="summary">
+  <div class="summary-lbl">Хуваарилах үлдэгдэл</div>
+  <div class="summary-amt" id="totalAmt">— ₮</div>
+  <div class="summary-meta" id="totalMeta">Ачааллаж байна...</div>
+</div>
+
+<div class="note">
+  ℹ️ Эдгээр нь банкны хуулгад <b>CLAUDE</b> кодоор орсон бөөн/тодорхойгүй зардлууд (жишээ нь агентын нэгдсэн төлбөр). Эзэн Claude-тай ярилцаж эдгээрийг бараа бүрийн өртөг рүү хуваарилна. Бүрэн хуваарилагдсан нь жагсаалтаас автоматаар хасагдана. Энэ нь өртгийг зөв тооцох → ашгийг зөв тодорхойлох суурь.
+</div>
+
+<div class="section">
+  <div class="section-label">📋 Хуваарилах зардлууд</div>
+  <div id="list"><div class="loading">Ачааллаж байна...</div></div>
+</div>
+
+<script>
+const token = localStorage.getItem('token');
+if (!token) window.location.href = '/';
+
+function fmt(n) { return (Math.round(Number(n) || 0)).toLocaleString('en-US'); }
+function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function load() {
+  try {
+    const r = await fetch('/api/finance/claude-unallocated', { headers: { 'Authorization': 'Bearer ' + token } });
+    if (r.status === 401) { localStorage.clear(); window.location.href = '/'; return; }
+    if (r.status === 403) {
+      document.getElementById('totalMeta').textContent = 'Зөвшөөрөл хүрэлцэхгүй';
+      document.getElementById('list').innerHTML = '<div class="empty"><div class="empty-icon">🔒</div><div class="empty-title">Зөвхөн эзэн ба хувьцаа эзэмшигч</div><div class="empty-sub">Энэ хэсгийг харах эрх танд алга.</div></div>';
+      return;
+    }
+    if (!r.ok) throw new Error('failed');
+    const list = await r.json();
+
+    const total = list.reduce((s, t) => s + (Number(t.remaining) || 0), 0);
+    document.getElementById('totalAmt').textContent = fmt(total) + ' ₮';
+    document.getElementById('totalMeta').textContent = list.length + ' хуваарилаагүй гүйлгээ';
+
+    const el = document.getElementById('list');
+    if (!list.length) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">✅</div><div class="empty-title">Хуваарилаагүй зардал байхгүй</div><div class="empty-sub">Бүх CLAUDE зардал бараа бүрийн өртөг рүү хуваарилагдсан байна.</div></div>';
+      return;
+    }
+
+    el.innerHTML = list.map(t => {
+      const allocated = Number(t.allocated) || 0;
+      const partial = allocated > 0;
+      return `<div class="row">
+        <div class="row-top">
+          <div style="flex:1;min-width:0">
+            <div class="row-memo">${escapeHtml(t.memo) || '<span style="color:#9ca3af">(утга байхгүй)</span>'}</div>
+            <div class="row-date">📅 ${escapeHtml(t.date || '—')}${t.account_label ? ' · ' + escapeHtml(t.account_label) : ''}</div>
+          </div>
+          <div class="row-amt">${fmt(t.remaining)} ₮</div>
+        </div>
+        ${partial ? `<div class="row-prog"><span>Нийт ${fmt(t.amount)}₮</span><span>Хуваарилсан <b>${fmt(allocated)}₮</b></span></div>` : ''}
+      </div>`;
+    }).join('');
+  } catch (_) {
+    document.getElementById('totalMeta').textContent = 'Алдаа гарлаа';
+    document.getElementById('list').innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-title">Ачаалж чадсангүй</div><div class="empty-sub">Дахин оролдоно уу.</div></div>';
+  }
+}
+load();
+
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted || document.visibilityState === 'visible') load();
+});
+</script>
+</body>
+</html>

@@ -206,6 +206,12 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
       <div class="fin-amt" style="color:#b45309" id="totalLoanOut">— ₮</div>
       <div class="fin-sub" id="totalLoanOutSub">авлага</div>
     </a>
+    <a class="fin-btn" id="claudeCard" href="/claude-costs" style="display:none;border-left:4px solid #6d28d9">
+      <div class="fin-icon">🤖</div>
+      <div class="fin-title">Хуваарилаагүй (Claude)</div>
+      <div class="fin-amt" style="color:#6d28d9" id="claudeRemaining">— ₮</div>
+      <div class="fin-sub" id="claudeSub">хуваарилах зардал</div>
+    </a>
     <a class="fin-btn sales" href="/sales-entry">
       <div class="fin-icon">📊</div>
       <div class="fin-title">Борлуулалт</div>
@@ -229,6 +235,7 @@ if (!token) window.location.href = '/';
 
 if (['admin','shareholder','accountant'].includes(user.role)) document.getElementById('adminSection').style.display = '';
 if (user.role === 'admin') document.getElementById('adminImportSection').style.display = '';
+if (['admin','shareholder'].includes(user.role)) document.getElementById('claudeCard').style.display = '';
 
 async function api(path) {
   const r = await fetch('/api' + path, { headers: { 'Authorization': 'Bearer ' + token }});
@@ -320,6 +327,15 @@ async function load() {
   const loanOutActive = Math.max(0, loanOutSum - loanInSum);
   document.getElementById('totalLoanOut').textContent = fmt(loanOutActive) + ' ₮';
   document.getElementById('totalLoanOutSub').textContent = `${fmt(loanOutSum)} олгосон · ${fmt(loanInSum)} буцсан`;
+
+  // CLAUDE: хуваарилаагүй бөөн зардал (эзэн + хувьцаа эзэмшигч)
+  if (['admin','shareholder'].includes(user.role)) {
+    const claude = await api('/finance/claude-unallocated').catch(() => []);
+    const cList  = Array.isArray(claude) ? claude : [];
+    const cTotal = cList.reduce((s,t) => s + (t.remaining || 0), 0);
+    document.getElementById('claudeRemaining').textContent = fmt(cTotal) + ' ₮';
+    document.getElementById('claudeSub').textContent = cList.length + ' хуваарилаагүй';
+  }
 
 
   // NOTE: Per-account sum-vs-balance check was REMOVED.
