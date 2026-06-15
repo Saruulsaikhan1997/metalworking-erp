@@ -21,12 +21,33 @@ function ensureSaleProducts(db) {
   db.fix_pavement_price_v1 = true;
 }
 
+// ── Migration v2: НӨАТ-тэй үнэ + Замын хавтан нэгтгэл (нэг удаа) ──
+// Жорлон бүхээг → 1,760,000 (НӨАТ-тэй), Замын хавтан → 22,000 (НӨАТ-тэй).
+// "Явган замын хавтан" зэрэг зам+хавтан барааг (бараа + инвентар) "Замын
+// хавтан" болгож нэгтгэнэ.
+function ensurePricesVat(db) {
+  if (db.fix_prices_vat_v1) return;
+  if (!db.products) db.products = [];
+  if (!db.inventory) db.inventory = [];
+  const isPav = s => /зам/i.test(s || '') && /хавтан/i.test(s || '');
+  // Замын хавтан — НӨАТ-тэй 22,000
+  let pav = db.products.find(p => isPav(p.name));
+  if (pav) { pav.name = 'Замын хавтан'; pav.price = 22000; pav.active = true; }
+  else db.products.push({ id: 'pavement', name: 'Замын хавтан', price: 22000, active: true });
+  // Жорлон(гийн) бүхээг — НӨАТ-тэй 1,760,000
+  const cab = db.products.find(p => /бүхээг/i.test(p.name || ''));
+  if (cab) { cab.price = 1760000; cab.active = true; }
+  // Инвентар дахь зам+хавтан барааг "Замын хавтан" болгож нэгтгэх
+  db.inventory.forEach(i => { if (isPav(i.name)) i.name = 'Замын хавтан'; });
+  db.fix_prices_vat_v1 = true;
+}
+
 // ── БОРЛУУЛАЛТ ──
 router.get('/sales', (req, res) => {
   // Revenue is owner/sales data — factory engineers don't see it.
   if (req.user.role === 'engineer') return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
   const db = load();
-  ensureSaleProducts(db); save(db);
+  ensureSaleProducts(db); ensurePricesVat(db); save(db);
   // Exclude archived records from normal view
   const sales = (db.sales || []).filter(s => !s.archived);
   if (req.user.role === 'sales') return res.json(sales.filter(s => s.created_by === req.user.name));
