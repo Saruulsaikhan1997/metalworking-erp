@@ -321,6 +321,73 @@ function ensureTransferCleanupV3(db) {
   db.fix_pre_transfer_v3 = true;
 }
 
+// ── Migration v4: Үзүүлэн рүү явуулсан ч Үзүүлэнд ороогүй барааг нөхөх ──
+// Note/reason-д "үзүүлэн"/"uzuulen" гэж бичсэн ямар ч OUT хөдөлгөөнийг
+// (PRODUCTION_OUT ч мөн) Үзүүлэн байршилд кредит олгоно (нэг удаа).
+function ensureUzuulenCredit(db) {
+  if (db.fix_uzuulen_credit_v1) return;
+  if (!db.inventory) db.inventory = [];
+  if (!db.inventory_log) db.inventory_log = [];
+  const now = new Date();
+  const isUz = s => /uz[uü]ulen|үзүүлэн/i.test(s || '');
+  for (const l of [...db.inventory_log]) {
+    if (l.type !== 'out') continue;
+    if (!(isUz(l.note) || isUz(l.reason))) continue;
+    if (l.location_to === 'exhibition') continue;   // аль хэдийн зөв
+    const credited = db.inventory_log.some(x => x.type === 'in' && x.source_id === 'UZ-' + l.id);
+    if (credited) continue;
+    const src  = db.inventory.find(i => i.id === l.item_id);
+    const name = (src?.name || l.item_name || '').trim();
+    if (!name) continue;
+    let dest = db.inventory.find(i =>
+      i.id !== l.item_id &&
+      (i.location || 'central') === 'exhibition' &&
+      (i.name || '').trim().toLowerCase() === name.toLowerCase());
+    if (!dest) {
+      const newId = Math.max(0, ...db.inventory.map(i => i.id || 0)) + 1;
+      dest = {
+        id: newId, code: src?.code || '', name, category: src?.category || 'raw',
+        status: 'available', unit: src?.unit || l.unit || 'ш', location: 'exhibition',
+        qty: 0, threshold: 0, cost_per_unit: src?.cost_per_unit != null ? src.cost_per_unit : null,
+        active: true, has_manual_adjustment: false,
+        created_at: now.toISOString(), created_by: 'migration (Үзүүлэн нөхөлт)',
+      };
+      db.inventory.push(dest);
+    }
+    const before = dest.qty || 0;
+    dest.qty = before + (l.qty || 0);
+    dest.active = true;
+    const logId = Math.max(0, ...db.inventory_log.map(x => x.id || 0)) + 1;
+    db.inventory_log.push({
+      id: logId, item_id: dest.id, item_code: dest.code, item_name: dest.name,
+      type: 'in', source: 'TRANSFER', source_id: 'UZ-' + l.id, qty: l.qty,
+      unit: dest.unit, location_from: l.location_from || 'central', location_to: 'exhibition',
+      reason: null, note: 'Үзүүлэн нөхөлт (migration)', by: 'system', by_role: 'system',
+      before_qty: before, after_qty: dest.qty,
+      date: now.toISOString().slice(0,10), time: now.toTimeString().slice(0,8),
+      created_at: now.toISOString(),
+    });
+  }
+  db.fix_uzuulen_credit_v1 = true;
+}
+
+// ── Migration: UPVC хавтанг ширхэгээс м²-т хөрвүүлэх (1ш = 2.255м²) ──
+function ensureUpvcM2(db) {
+  if (db.fix_upvc_m2_v1) return;
+  if (!db.inventory) db.inventory = [];
+  const FACTOR = 2.255;
+  db.inventory.forEach(i => {
+    const u = (i.unit || '').toLowerCase().trim();
+    if (/upvc/i.test(i.name || '') && /хавтан/i.test(i.name || '') &&
+        (u === 'ш' || u === 'ширхэг' || u === '')) {
+      i.qty  = Math.round((i.qty || 0) * FACTOR * 100) / 100;
+      i.unit = 'м²';
+      i.updated_at = new Date().toISOString();
+    }
+  });
+  db.fix_upvc_m2_v1 = true;
+}
+
 // ── List items (enriched with received-lot breakdown for the warehouse view) ──
 // Read-only, additive enrichment: each item gets a `lots` array (profile name +
 // quantity in the item's OWN unit). NO cost/valuation fields are exposed here —
@@ -343,6 +410,8 @@ router.get('/inventory', (req, res) => {
   ensureTransferCleanup(db);
   ensureTransferCleanupV2(db);
   ensureTransferCleanupV3(db);
+  ensureUzuulenCredit(db);
+  ensureUpvcM2(db);
   save(db);
 
   // Sub-breakdown = received, non-sample import lots, grouped by inventory item.
