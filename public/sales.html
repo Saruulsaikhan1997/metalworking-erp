@@ -149,6 +149,29 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
 .print-header p  { font-size: 12px; color: #555; margin-top: 4px; }
 
 .print-btn { padding: 7px 13px; border: 1.5px solid #1a1a2e; border-radius: 8px; font-size: 11px; font-weight: 600; background: #fff; color: #1a1a2e; cursor: pointer; }
+
+/* Засаж болох мөр */
+.hist-row.editable { cursor: pointer; border-radius: 8px; transition: background .12s; }
+.hist-row.editable:hover { background: #f7f9ff; }
+.edit-pen { font-size: 11px; color: #6366f1; margin-left: 4px; }
+
+/* Засах modal */
+.edit-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: flex-end; justify-content: center; z-index: 1000; }
+.edit-overlay.show { display: flex; }
+.edit-modal { background: #fff; width: 100%; max-width: 480px; border-radius: 18px 18px 0 0; padding: 18px 18px 24px; max-height: 92vh; overflow-y: auto; box-shadow: 0 -6px 24px rgba(0,0,0,0.18); }
+.edit-modal h3 { font-size: 16px; font-weight: 700; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+.edit-close { font-size: 22px; color: #999; cursor: pointer; line-height: 1; padding: 0 4px; }
+.efield { margin-bottom: 12px; }
+.efield label { display: block; font-size: 11px; font-weight: 700; color: #555; margin-bottom: 5px; }
+.efield input, .efield select { width: 100%; padding: 11px 12px; border: 1.5px solid #e5e7eb; border-radius: 10px; font-size: 14px; font-family: inherit; background: #fff; color: #111; }
+.efield input:focus, .efield select:focus { outline: none; border-color: #6366f1; }
+.eg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ecalc { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; padding: 10px 12px; background: #f3f4f6; border-radius: 10px; margin-bottom: 12px; }
+.ebtns { display: flex; gap: 8px; margin-top: 6px; }
+.ebtn-save { flex: 1; padding: 13px; border: none; border-radius: 11px; background: #16a34a; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; }
+.ebtn-save:disabled { opacity: 0.5; }
+.ebtn-del { padding: 13px 16px; border: 1.5px solid #fecaca; border-radius: 11px; background: #fff; color: #dc2626; font-size: 13px; font-weight: 700; cursor: pointer; }
+.emsg { font-size: 12px; font-weight: 700; text-align: center; margin-top: 10px; min-height: 15px; }
 </style>
 </head>
 <body>
@@ -331,6 +354,54 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
   </button>
 </div>
 
+<!-- Борлуулалт засах modal (зөвхөн admin) -->
+<div class="edit-overlay" id="editOverlay" onclick="if(event.target===this)closeEditSale()">
+  <div class="edit-modal">
+    <h3>Борлуулалт засах <span class="edit-close" onclick="closeEditSale()">×</span></h3>
+    <div class="efield">
+      <label>Огноо</label>
+      <input type="date" id="eDate">
+    </div>
+    <div class="efield">
+      <label>Бараа</label>
+      <select id="eProduct"></select>
+    </div>
+    <div class="efield">
+      <label>Аль складаас</label>
+      <select id="eBranch"></select>
+    </div>
+    <div class="eg2">
+      <div class="efield">
+        <label>Тоо ширхэг</label>
+        <input type="number" id="eQty" min="0" oninput="eCalc()">
+      </div>
+      <div class="efield">
+        <label>Нэгж үнэ ₮</label>
+        <input type="number" id="ePrice" min="0" oninput="eCalc()">
+      </div>
+    </div>
+    <div class="ecalc"><span>Нийт дүн</span><span id="eTotal">0 ₮</span></div>
+    <div class="efield">
+      <label>Авсан дүн ₮</label>
+      <input type="number" id="eAdvance" min="0" oninput="eCalc()">
+    </div>
+    <div class="ecalc"><span>Үлдэгдэл авлага</span><span id="eRem">0 ₮</span></div>
+    <div class="efield">
+      <label>Мөнгө орсон данс</label>
+      <select id="eBank"></select>
+    </div>
+    <div class="efield">
+      <label>Тайлбар</label>
+      <input type="text" id="eNote" placeholder="">
+    </div>
+    <div class="ebtns">
+      <button class="ebtn-save" id="eSave" onclick="saveEditSale()">Хадгалах</button>
+      <button class="ebtn-del" onclick="deleteEditSale()">Устгах</button>
+    </div>
+    <div class="emsg" id="eMsg"></div>
+  </div>
+</div>
+
 <script>
 const token = localStorage.getItem('token');
 const user  = JSON.parse(localStorage.getItem('user') || '{}');
@@ -355,7 +426,10 @@ function thisMonth(){ return new Date().toISOString().slice(0,7); }
 let orders     = [];
 let products   = [];
 let productMap = {};   // id → display name lookup
+let banks      = [];   // bank accounts (засах формд ашиглана)
 let qfMode     = 'month';
+// Склад / байршил — Үлдэгдэл (склад) хуудасны нэрстэй ижил
+const WAREHOUSES = ['Төв склад', 'Үйлдвэр', 'ТЭЦ 4 склад', '7 буудал склад', 'Склад 3', 'Үзүүлэн'];
 
 // ── Tab switching ─────────────────────────────────────────
 function showTab(name) {
@@ -370,11 +444,12 @@ function showTab(name) {
 
 // ── Load master data ──────────────────────────────────────
 async function loadMasters() {
-  const [prods, branches, banks] = await Promise.all([
+  const [prods, branches, bankList] = await Promise.all([
     api('/products'),
     api('/branches'),
     api('/bank-accounts'),
   ]);
+  banks = Array.isArray(bankList) ? bankList : [];
 
   products   = prods;
   productMap = {};
@@ -399,7 +474,6 @@ async function loadMasters() {
 
   // Склад / байршил — Үлдэгдэл (склад) хуудасны нэрс
   const bs = document.getElementById('nBranch');
-  const WAREHOUSES = ['Төв склад', 'Үйлдвэр', 'ТЭЦ 4 склад', '7 буудал склад', 'Склад 3', 'Үзүүлэн'];
   bs.innerHTML = '<option value="">— Сонгоно уу —</option>' +
     WAREHOUSES.map(w => `<option value="${w}">${w}</option>`).join('');
 
@@ -703,10 +777,11 @@ function renderAllDetail() {
     .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   const el = document.getElementById('allDetail');
   if (!done.length) { el.innerHTML = '<div class="empty">Бүртгэл байхгүй</div>'; return; }
+  const canEdit = user.role === 'admin';
   el.innerHTML = done.map(o => `
-    <div class="hist-row">
+    <div class="hist-row${canEdit ? ' editable' : ''}"${canEdit ? ` onclick="openEditSale('${o.id}')"` : ''}>
       <div class="hist-top">
-        <div class="hist-name">${prodName(o.product)}</div>
+        <div class="hist-name">${prodName(o.product)}${canEdit ? ' <span class="edit-pen">✎</span>' : ''}</div>
         <div class="hist-amt">${fmt(o.total_amount)} ₮</div>
       </div>
       <div class="hist-meta">📅 ${o.date || '—'}${o.branch ? ' · ' + o.branch : ''} · ${o.quantity} ш</div>
@@ -808,12 +883,13 @@ function renderHistory() {
 
   const completedTotal = list.filter(o=>o.status==='completed').reduce((s,o)=>s+o.total_amount,0);
 
+  const canEdit = user.role === 'admin';
   el.innerHTML = list.map(o => {
     const isComp = o.status === 'completed';
     return `
-      <div class="hist-row">
+      <div class="hist-row${canEdit ? ' editable' : ''}"${canEdit ? ` onclick="openEditSale('${o.id}')"` : ''}>
         <div class="hist-top">
-          <div class="hist-name">${prodName(o.product)}</div>
+          <div class="hist-name">${prodName(o.product)}${canEdit ? ' <span class="edit-pen">✎</span>' : ''}</div>
           <div class="hist-amt" style="color:${isComp?'#2e7d32':'#e53935'}">${fmt(o.total_amount)} ₮</div>
         </div>
         <div class="hist-meta">
@@ -830,6 +906,120 @@ function renderHistory() {
     <span>${list.length} бүртгэл · ${list.filter(o=>o.status==='completed').length} бүрэн төлсөн</span>
     <span style="color:#2e7d32">${fmt(completedTotal)} ₮</span>
   </div>`;
+}
+
+// ── Борлуулалт засах (зөвхөн admin) ───────────────────────
+let editingId = null;
+function openEditSale(id) {
+  if (user.role !== 'admin') return;
+  const o = orders.find(x => String(x.id) === String(id));
+  if (!o) return;
+  editingId = id;
+
+  // Бараа — бүх бүтээгдэхүүн (засахдаа аль ч барааг сонгож болно)
+  const ep = document.getElementById('eProduct');
+  let prodOpts = products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+  if (o.product && !products.some(p => p.id === o.product))
+    prodOpts = `<option value="${o.product}">${prodName(o.product)}</option>` + prodOpts;
+  ep.innerHTML = prodOpts; ep.value = o.product || '';
+
+  // Салбар — складын нэрс (бичлэгийн одоогийн утга жагсаалтад байхгүй бол нэмнэ)
+  const eb = document.getElementById('eBranch');
+  let whs = [...WAREHOUSES];
+  if (o.branch && !whs.includes(o.branch)) whs.unshift(o.branch);
+  eb.innerHTML = '<option value="">— Сонгоно уу —</option>' +
+    whs.map(w => `<option value="${w}">${w}</option>`).join('');
+  eb.value = o.branch || '';
+
+  // Банк
+  const ek = document.getElementById('eBank');
+  ek.innerHTML = '<option value="">— Үгүй —</option>' +
+    banks.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+  ek.value = o.bank_account || '';
+
+  document.getElementById('eDate').value    = o.date || '';
+  document.getElementById('eQty').value     = o.quantity || 0;
+  document.getElementById('ePrice').value   = o.unit_price || 0;
+  document.getElementById('eAdvance').value = o.advance_paid || 0;
+  document.getElementById('eNote').value    = o.note || '';
+  document.getElementById('eMsg').textContent = '';
+  eCalc();
+  document.getElementById('editOverlay').classList.add('show');
+}
+function closeEditSale() {
+  document.getElementById('editOverlay').classList.remove('show');
+  editingId = null;
+}
+function eCalc() {
+  const qty = parseInt(document.getElementById('eQty').value) || 0;
+  const pr  = parseInt(document.getElementById('ePrice').value) || 0;
+  const adv = parseInt(document.getElementById('eAdvance').value) || 0;
+  const total = qty * pr;
+  const rem   = Math.max(0, total - adv);
+  document.getElementById('eTotal').textContent = fmt(total) + ' ₮';
+  document.getElementById('eRem').textContent   = fmt(rem) + ' ₮';
+}
+async function refreshAfterEdit() {
+  await loadSales();
+  renderDash();
+  const wrap = document.getElementById('allDetailWrap');
+  if (wrap && wrap.style.display !== 'none') renderAllDetail();
+  if (document.getElementById('panel-hist').classList.contains('active')) renderHistory();
+  if (document.getElementById('panel-rec').classList.contains('active'))  renderRec();
+}
+async function saveEditSale() {
+  if (!editingId) return;
+  const qty = parseInt(document.getElementById('eQty').value) || 0;
+  const pr  = parseInt(document.getElementById('ePrice').value) || 0;
+  const adv = parseInt(document.getElementById('eAdvance').value) || 0;
+  const total = qty * pr;
+  const rem   = Math.max(0, total - adv);
+  const bankId = document.getElementById('eBank').value;
+  const bankDef = banks.find(a => a.id === bankId);
+  const btn = document.getElementById('eSave');
+  const msg = document.getElementById('eMsg');
+  btn.disabled = true; msg.style.color = '#94a3b8'; msg.textContent = '⏳ Хадгалж байна...';
+  const body = {
+    date:              document.getElementById('eDate').value,
+    product:           document.getElementById('eProduct').value,
+    branch:            document.getElementById('eBranch').value,
+    quantity:          qty,
+    unit_price:        pr,
+    total_amount:      total,
+    advance_paid:      adv,
+    remaining_amount:  rem,
+    bank_account:      bankId,
+    bank_account_name: bankDef ? bankDef.name : '',
+    note:              document.getElementById('eNote').value.trim(),
+  };
+  try {
+    const r = await api('/sales/' + editingId, { method: 'PUT', body: JSON.stringify(body) });
+    if (r && (r.ok || r.status)) {
+      closeEditSale();
+      await refreshAfterEdit();
+    } else {
+      msg.style.color = '#dc2626'; msg.textContent = (r && r.error) || 'Алдаа гарлаа';
+    }
+  } catch (e) {
+    msg.style.color = '#dc2626'; msg.textContent = 'Сүлжээний алдаа';
+  } finally { btn.disabled = false; }
+}
+async function deleteEditSale() {
+  if (!editingId) return;
+  if (!confirm('Энэ борлуулалтыг устгах уу? (архивлагдана)')) return;
+  const msg = document.getElementById('eMsg');
+  msg.style.color = '#94a3b8'; msg.textContent = '⏳ Устгаж байна...';
+  try {
+    const r = await api('/sales/' + editingId, { method: 'DELETE', body: JSON.stringify({ reason: 'Засах хэсгээс устгасан' }) });
+    if (r && r.ok) {
+      closeEditSale();
+      await refreshAfterEdit();
+    } else {
+      msg.style.color = '#dc2626'; msg.textContent = (r && r.error) || 'Алдаа гарлаа';
+    }
+  } catch (e) {
+    msg.style.color = '#dc2626'; msg.textContent = 'Сүлжээний алдаа';
+  }
 }
 
 function doPrint() {
