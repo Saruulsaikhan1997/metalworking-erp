@@ -140,7 +140,7 @@ router.post('/sales', (req, res) => {
   // ижил нэртэй бараанаас зарагдсан тоог хасна.
   const SALE_LOC_MAP = {
     'Төв склад': 'central', 'Үйлдвэр': 'factory',
-    'Склад 1': 'plastic-center', 'Склад 2': 'warehouse-4',
+    'ТЭЦ 4 склад': 'plastic-center', '7 буудал склад': 'warehouse-4',
     'Склад 3': 'warehouse-5', 'Үзүүлэн': 'exhibition',
   };
   let inventory_deducted = false;
@@ -151,10 +151,12 @@ router.post('/sales', (req, res) => {
     if (!db.inventory_log) db.inventory_log = [];
     // "Явган замын хавтан"/"Явган хавтан" = "Замын хавтан" — нэг бараа гэж үзнэ
     const isPav = s => /(зам|явган)/.test(s) && /хавтан/.test(s);
+    // "Жорлон бүхээг"/"Жорлонгийн бүхээг" — нэр зөрсөн ч нэг бараа гэж үзнэ
+    const isCab = s => /бүхээг/.test(s);
     const invItem = db.inventory.find(i => {
       const inName = (i.name || '').trim().toLowerCase();
       return (i.location || 'central') === locCode &&
-        (inName === prodName || (isPav(inName) && isPav(prodName)));
+        (inName === prodName || (isPav(inName) && isPav(prodName)) || (isCab(inName) && isCab(prodName)));
     });
     if (invItem) {
       const before = invItem.qty || 0;
