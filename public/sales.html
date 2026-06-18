@@ -396,7 +396,7 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
     </div>
     <div class="ebtns">
       <button class="ebtn-save" id="eSave" onclick="saveEditSale()">Хадгалах</button>
-      <button class="ebtn-del" onclick="deleteEditSale()">Устгах</button>
+      <button class="ebtn-del" id="eDelBtn" onclick="deleteEditSale()">Устгах</button>
     </div>
     <div class="emsg" id="eMsg"></div>
   </div>
@@ -777,7 +777,7 @@ function renderAllDetail() {
     .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   const el = document.getElementById('allDetail');
   if (!done.length) { el.innerHTML = '<div class="empty">Бүртгэл байхгүй</div>'; return; }
-  const canEdit = user.role === 'admin';
+  const canEdit = ['admin', 'manager'].includes(user.role);
   el.innerHTML = done.map(o => `
     <div class="hist-row${canEdit ? ' editable' : ''}"${canEdit ? ` onclick="openEditSale('${o.id}')"` : ''}>
       <div class="hist-top">
@@ -883,7 +883,7 @@ function renderHistory() {
 
   const completedTotal = list.filter(o=>o.status==='completed').reduce((s,o)=>s+o.total_amount,0);
 
-  const canEdit = user.role === 'admin';
+  const canEdit = ['admin', 'manager'].includes(user.role);
   el.innerHTML = list.map(o => {
     const isComp = o.status === 'completed';
     return `
@@ -911,10 +911,13 @@ function renderHistory() {
 // ── Борлуулалт засах (зөвхөн admin) ───────────────────────
 let editingId = null;
 function openEditSale(id) {
-  if (user.role !== 'admin') return;
+  if (!['admin', 'manager'].includes(user.role)) return;
   const o = orders.find(x => String(x.id) === String(id));
   if (!o) return;
   editingId = id;
+
+  // Устгах нь зөвхөн admin (нягтлан бичилт устгах) — менежерт нуугдана
+  document.getElementById('eDelBtn').style.display = user.role === 'admin' ? '' : 'none';
 
   // Бараа — бүх бүтээгдэхүүн (засахдаа аль ч барааг сонгож болно)
   const ep = document.getElementById('eProduct');

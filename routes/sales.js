@@ -230,7 +230,7 @@ router.put('/sales/:id', (req, res) => {
   } else if (req.body.mark_completed) {
     order.remaining_amount = 0;
     order.status           = 'completed';
-  } else if (req.user.role === 'admin') {
+  } else if (['admin', 'manager'].includes(req.user.role)) {
     // Хуучин утгууд (инвентар тааруулахад хэрэгтэй)
     const oldBranch = order.branch, oldProduct = order.product;
     const oldQty    = parseInt(order.quantity) || 0;
