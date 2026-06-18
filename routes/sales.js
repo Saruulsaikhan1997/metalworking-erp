@@ -112,8 +112,20 @@ router.get('/sales', (req, res) => {
   if (req.user.role === 'engineer') return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
   const db = load();
   ensureSaleProducts(db); ensurePricesVat(db); save(db);
+  // Эх гүйлгээ (ангилахаас өмнөх банкны хуулга) — source_tx_id-тэй бичлэгт хавсаргана.
+  const txById = new Map((db.transactions || []).map(t => [String(t.id), t]));
+  const withTx = s => {
+    if (s.source_tx_id == null) return s;
+    const t = txById.get(String(s.source_tx_id));
+    if (!t) return s;
+    return { ...s, source_tx: {
+      id: t.id, date: t.date,
+      memo: t.note || t.description || t.raw_memo || '',
+      amount: t.amount || 0,
+    } };
+  };
   // Exclude archived records from normal view
-  const sales = (db.sales || []).filter(s => !s.archived);
+  const sales = (db.sales || []).filter(s => !s.archived).map(withTx);
   if (req.user.role === 'sales') return res.json(sales.filter(s => s.created_by === req.user.name));
   res.json(sales);
 });
