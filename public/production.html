@@ -109,6 +109,16 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 .flow-qty span { font-size: 10px; font-weight: 600; color: var(--gray-400); }
 .flow-empty { font-size: 11.5px; color: var(--gray-400); padding: 7px 4px; }
 
+/* Хийсэн бараа нэмэх форм */
+.produce-card { background: #fff; border-radius: 14px; padding: 16px 18px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); border: 1px solid var(--gray-200); border-left: 4px solid #16a34a; }
+.produce-row { margin-bottom: 12px; }
+.produce-row label { display: block; font-size: 11px; font-weight: 700; color: var(--gray-600); margin-bottom: 5px; }
+.produce-row select, .produce-row input { width: 100%; padding: 11px 12px; border: 1.5px solid var(--gray-200); border-radius: 10px; font-size: 14px; font-family: inherit; color: var(--gray-900); background: #fff; }
+.produce-row select:focus, .produce-row input:focus { outline: none; border-color: #16a34a; }
+.produce-btn { width: 100%; padding: 13px; border: none; border-radius: 11px; background: #16a34a; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; }
+.produce-btn:disabled { opacity: 0.5; cursor: default; }
+.produce-msg { font-size: 12px; font-weight: 700; text-align: center; margin-top: 10px; min-height: 16px; }
+
 .settings-link {
   display: block; text-align: center;
   margin: 24px 16px 0; padding: 10px;
@@ -127,6 +137,31 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
       <div class="id-title">🔥 Үйлдвэрлэл</div>
       <div class="id-sub">Төлөвлөгөө, гүйцэтгэл, гаралт</div>
     </div>
+  </div>
+</div>
+
+<!-- Хийсэн бараа нэмэх — үйлдвэрт хийсэн бэлэн бүтээгдэхүүн бүртгэнэ. -->
+<div class="section" id="produceSection">
+  <div class="section-label">🏭 Хийсэн бараа нэмэх</div>
+  <div class="produce-card">
+    <div class="produce-row">
+      <label>Бүтээгдэхүүн</label>
+      <select id="pdProduct"></select>
+    </div>
+    <div class="produce-row">
+      <label>Тоо хэмжээ (ширхэг)</label>
+      <input type="number" id="pdQty" inputmode="numeric" min="1" placeholder="0">
+    </div>
+    <div class="produce-row">
+      <label>Огноо</label>
+      <input type="date" id="pdDate">
+    </div>
+    <div class="produce-row">
+      <label>Тэмдэглэл (заавал биш)</label>
+      <input type="text" id="pdNote" placeholder="Жишээ: 1-р ээлж">
+    </div>
+    <button class="produce-btn" id="pdBtn" onclick="addProduced()">＋ Хийсэн бараа бүртгэх</button>
+    <div class="produce-msg" id="pdMsg"></div>
   </div>
 </div>
 
@@ -393,6 +428,47 @@ async function sendToWarehouse(id) {
   }
 }
 
+// ── Хийсэн бараа нэмэх ──
+// Одоогоор зөвхөн нэг бараа. Шинэ бараа нэмэхдээ энэ жагсаалтад нэмнэ.
+const PRODUCED_PRODUCTS = ['Жорлонгийн бүхээг'];
+function initProduceForm() {
+  const sel = document.getElementById('pdProduct');
+  sel.innerHTML = PRODUCED_PRODUCTS.map(n => `<option value="${n}">${n}</option>`).join('');
+  document.getElementById('pdDate').value = new Date().toISOString().slice(0, 10);
+}
+async function addProduced() {
+  const product = document.getElementById('pdProduct').value;
+  const qty     = parseInt(document.getElementById('pdQty').value) || 0;
+  const date    = document.getElementById('pdDate').value || new Date().toISOString().slice(0, 10);
+  const note    = document.getElementById('pdNote').value.trim();
+  const btn     = document.getElementById('pdBtn');
+  const msg     = document.getElementById('pdMsg');
+  if (!product || qty <= 0) { msg.style.color = '#dc2626'; msg.textContent = 'Бараа болон тоо хэмжээ оруулна уу'; return; }
+  btn.disabled = true; msg.style.color = '#94a3b8'; msg.textContent = '⏳ Хадгалж байна...';
+  try {
+    const r = await fetch('/api/production', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product, qty, unit: 'ш', date, note })
+    });
+    const data = await r.json().catch(() => ({}));
+    if (r.ok && data.id) {
+      msg.style.color = '#16a34a';
+      msg.textContent = `✅ ${product} ${fmt(qty)}ш бүртгэгдлээ — доорх "Үйлдвэрт хийсэн"-ээс склад руу өгнө`;
+      document.getElementById('pdQty').value = '';
+      document.getElementById('pdNote').value = '';
+      loadMaterialFlow();
+    } else {
+      msg.style.color = '#dc2626'; msg.textContent = data.error || 'Алдаа гарлаа';
+    }
+  } catch (e) {
+    msg.style.color = '#dc2626'; msg.textContent = 'Сүлжээний алдаа';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+initProduceForm();
 loadInternalPurchases();
 loadMaterialFlow();
 </script>

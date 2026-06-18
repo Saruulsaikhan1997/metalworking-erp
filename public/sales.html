@@ -399,7 +399,7 @@ async function loadMasters() {
 
   // Склад / байршил — Үлдэгдэл (склад) хуудасны нэрс
   const bs = document.getElementById('nBranch');
-  const WAREHOUSES = ['Төв склад', 'Үйлдвэр', 'Склад 1', 'Склад 2', 'Склад 3', 'Үзүүлэн'];
+  const WAREHOUSES = ['Төв склад', 'Үйлдвэр', 'ТЭЦ 4 склад', '7 буудал склад', 'Склад 3', 'Үзүүлэн'];
   bs.innerHTML = '<option value="">— Сонгоно уу —</option>' +
     WAREHOUSES.map(w => `<option value="${w}">${w}</option>`).join('');
 
