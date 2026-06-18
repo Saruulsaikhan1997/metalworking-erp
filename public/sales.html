@@ -172,6 +172,11 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
 .ebtn-save:disabled { opacity: 0.5; }
 .ebtn-del { padding: 13px 16px; border: 1.5px solid #fecaca; border-radius: 11px; background: #fff; color: #dc2626; font-size: 13px; font-weight: 700; cursor: pointer; }
 .emsg { font-size: 12px; font-weight: 700; text-align: center; margin-top: 10px; min-height: 15px; }
+.src-tx { background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 10px; padding: 9px 12px; margin-bottom: 14px; font-size: 12px; color: #3730a3; line-height: 1.5; }
+.src-tx b { color: #1e1b4b; }
+.src-tx .src-lbl { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #6366f1; display: block; margin-bottom: 3px; }
+/* Авлага картын эх гүйлгээ мөр */
+.rec-srctx { font-size: 11px; color: #6366f1; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #e0e7ff; }
 </style>
 </head>
 <body>
@@ -358,6 +363,7 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
 <div class="edit-overlay" id="editOverlay" onclick="if(event.target===this)closeEditSale()">
   <div class="edit-modal">
     <h3>Борлуулалт засах <span class="edit-close" onclick="closeEditSale()">×</span></h3>
+    <div class="src-tx" id="eSrcTx" style="display:none"></div>
     <div class="efield">
       <label>Огноо</label>
       <input type="date" id="eDate">
@@ -687,6 +693,8 @@ function normalize(o) {
     customer_name:     o.customer_name || '',
     customer_phone:    o.customer_phone || '',
     note:              o.note || '',
+    source_tx_id:      o.source_tx_id || null,
+    source_tx:         o.source_tx || null,   // ангилахаас өмнөх эх гүйлгээ
     status,
     created_by:        o.created_by || '',
   };
@@ -816,6 +824,7 @@ function renderRec() {
         ${o.bank_account_name ? ' · ' + o.bank_account_name : ''}
         ${o.note ? '<br>' + o.note : ''}
       </div>
+      ${o.source_tx ? `<div class="rec-srctx">🔗 Эх гүйлгээ: <b>${fmt(o.source_tx.amount)}₮</b> · ${o.source_tx.date || '—'} · ${escapeHtml(o.source_tx.memo) || '(утга байхгүй)'}</div>` : ''}
       <div class="rec-actions">
         <input class="rec-input" type="number" id="ri_${o.id}"
           placeholder="Авсан дүн ₮" value="${o.remaining_amount}">
@@ -946,6 +955,19 @@ function openEditSale(id) {
   document.getElementById('eAdvance').value = o.advance_paid || 0;
   document.getElementById('eNote').value    = o.note || '';
   document.getElementById('eMsg').textContent = '';
+
+  // Эх гүйлгээ (ангилахаас өмнөх банкны хуулга) — байвал харуулна
+  const stx = document.getElementById('eSrcTx');
+  if (o.source_tx) {
+    stx.style.display = '';
+    stx.innerHTML = '<span class="src-lbl">🔗 Эх гүйлгээ (ангилахаас өмнө)</span>'
+      + '<b>' + fmt(o.source_tx.amount) + ' ₮</b> · ' + (o.source_tx.date || '—')
+      + '<br>' + (escapeHtml(o.source_tx.memo) || '<span style="color:#9ca3af">(утга байхгүй)</span>');
+  } else {
+    stx.style.display = 'none';
+    stx.innerHTML = '';
+  }
+
   eCalc();
   document.getElementById('editOverlay').classList.add('show');
 }
