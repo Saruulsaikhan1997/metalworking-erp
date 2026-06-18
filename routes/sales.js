@@ -47,6 +47,65 @@ function ensurePricesVat(db) {
   db.fix_prices_vat_v1 = true;
 }
 
+// ── Складаас бараа хасах нийтлэг логик (POST/PUT/DELETE дундын) ──
+const SALE_LOC_MAP = {
+  'Төв склад': 'central', 'Үйлдвэр': 'factory',
+  'ТЭЦ 4 склад': 'plastic-center', '7 буудал склад': 'warehouse-4',
+  'Склад 3': 'warehouse-5', 'Үзүүлэн': 'exhibition',
+};
+// "Явган замын хавтан"/"Явган хавтан" = "Замын хавтан"; "Жорлон(гийн) бүхээг" — нэг бараа
+const isPav = s => /(зам|явган)/.test(s) && /хавтан/.test(s);
+const isCab = s => /бүхээг/.test(s);
+
+// Бараа id → нэр
+function prodNameById(db, id) {
+  const p = (db.products || []).find(x => x.id === id);
+  return p ? p.name : '';
+}
+
+// Салбар(склад) + барааны нэрэнд тохирох инвентар мөрийг олох.
+// itemId өгсөн бол эхлээд түүгээр (хуучин хасалтыг яг буцаахад) хайна.
+function findSaleInvItem(db, branch, productName, itemId) {
+  if (!db.inventory) db.inventory = [];
+  if (itemId != null) {
+    const byId = db.inventory.find(i => String(i.id) === String(itemId));
+    if (byId) return byId;
+  }
+  const locCode = SALE_LOC_MAP[branch];
+  const pn = (productName || '').trim().toLowerCase();
+  if (!locCode || !pn) return null;
+  return db.inventory.find(i => {
+    const inName = (i.name || '').trim().toLowerCase();
+    return (i.location || 'central') === locCode &&
+      (inName === pn || (isPav(inName) && isPav(pn)) || (isCab(inName) && isCab(pn)));
+  });
+}
+
+// Инвентар хөдөлгөөн бичих. deltaOut>0 = складаас хасах (out),
+// deltaOut<0 = складад буцаах (in). qty/лог автоматаар бодогдоно.
+function logInvMove(db, item, deltaOut, { source, source_id, note, user, branch }) {
+  if (!item || !deltaOut) return;
+  if (!db.inventory_log) db.inventory_log = [];
+  const now    = new Date();
+  const before = item.qty || 0;
+  item.qty     = before - deltaOut;       // оверселл бол сөрөг болж анхааруулна
+  item.updated_at = now.toISOString();
+  const out    = deltaOut > 0;
+  const locCode = SALE_LOC_MAP[branch] || item.location || 'central';
+  const logId  = Math.max(0, ...db.inventory_log.map(l => l.id || 0)) + 1;
+  db.inventory_log.push({
+    id: logId, item_id: item.id, item_code: item.code, item_name: item.name,
+    type: out ? 'out' : 'in', source, source_id, qty: Math.abs(deltaOut),
+    unit: item.unit,
+    location_from: out ? locCode : 'customer',
+    location_to:   out ? 'customer' : locCode,
+    reason: null, note,
+    by: user.name, by_role: user.role,
+    before_qty: before, after_qty: item.qty,
+    date: now.toISOString().slice(0, 10), time: now.toTimeString().slice(0, 8), created_at: now.toISOString(),
+  });
+}
+
 // ── БОРЛУУЛАЛТ ──
 router.get('/sales', (req, res) => {
   // Revenue is owner/sales data — factory engineers don't see it.
@@ -138,43 +197,15 @@ router.post('/sales', (req, res) => {
   // ── Сонгосон складаас барааг хасах (SALES_OUT хөдөлгөөн) ──
   // branch = склад нэр → байршлын код руу хөрвүүлж, тухайн складын
   // ижил нэртэй бараанаас зарагдсан тоог хасна.
-  const SALE_LOC_MAP = {
-    'Төв склад': 'central', 'Үйлдвэр': 'factory',
-    'ТЭЦ 4 склад': 'plastic-center', '7 буудал склад': 'warehouse-4',
-    'Склад 3': 'warehouse-5', 'Үзүүлэн': 'exhibition',
-  };
   let inventory_deducted = false;
-  const locCode = SALE_LOC_MAP[branch];
-  const prodName = (productDef ? productDef.name : '').trim().toLowerCase();
-  if (locCode && qty > 0 && prodName) {
-    if (!db.inventory) db.inventory = [];
-    if (!db.inventory_log) db.inventory_log = [];
-    // "Явган замын хавтан"/"Явган хавтан" = "Замын хавтан" — нэг бараа гэж үзнэ
-    const isPav = s => /(зам|явган)/.test(s) && /хавтан/.test(s);
-    // "Жорлон бүхээг"/"Жорлонгийн бүхээг" — нэр зөрсөн ч нэг бараа гэж үзнэ
-    const isCab = s => /бүхээг/.test(s);
-    const invItem = db.inventory.find(i => {
-      const inName = (i.name || '').trim().toLowerCase();
-      return (i.location || 'central') === locCode &&
-        (inName === prodName || (isPav(inName) && isPav(prodName)) || (isCab(inName) && isCab(prodName)));
+  const invItem = findSaleInvItem(db, branch, productDef ? productDef.name : '');
+  if (invItem && qty > 0) {
+    logInvMove(db, invItem, qty, {
+      source: 'SALES_OUT', source_id: record.id,
+      note: 'Борлуулалт (' + (record.note || '') + ')', user: req.user, branch,
     });
-    if (invItem) {
-      const before = invItem.qty || 0;
-      invItem.qty = before - qty;            // оверселл бол сөрөг болж анхааруулна
-      invItem.updated_at = now;
-      const logId = Math.max(0, ...db.inventory_log.map(l => l.id || 0)) + 1;
-      db.inventory_log.push({
-        id: logId, item_id: invItem.id, item_code: invItem.code, item_name: invItem.name,
-        type: 'out', source: 'SALES_OUT', source_id: record.id, qty,
-        unit: invItem.unit, location_from: locCode, location_to: 'customer',
-        reason: null, note: 'Борлуулалт (' + (record.note || '') + ')',
-        by: req.user.name, by_role: req.user.role,
-        before_qty: before, after_qty: invItem.qty,
-        date: now.slice(0, 10), time: new Date().toTimeString().slice(0, 8), created_at: now,
-      });
-      record.inventory_item_id = invItem.id;
-      inventory_deducted = true;
-    }
+    record.inventory_item_id = invItem.id;
+    inventory_deducted = true;
   }
 
   save(db);
@@ -200,8 +231,37 @@ router.put('/sales/:id', (req, res) => {
     order.remaining_amount = 0;
     order.status           = 'completed';
   } else if (req.user.role === 'admin') {
+    // Хуучин утгууд (инвентар тааруулахад хэрэгтэй)
+    const oldBranch = order.branch, oldProduct = order.product;
+    const oldQty    = parseInt(order.quantity) || 0;
+    const oldItemId = order.inventory_item_id;
+
     const updated = { ...order, ...req.body };
     updated.status = (parseInt(updated.remaining_amount) || 0) === 0 ? 'completed' : 'receivable';
+
+    // ── Складыг засвартай дагуулж тааруулах ──
+    // Хуучин хасалтыг буцааж, шинэ салбар/бараа/тоогоор дахин хасна.
+    const newQty = parseInt(updated.quantity) || 0;
+    // 1) хуучин хасалтыг буцаах (хасагдсан байсан бол)
+    const oldItem = findSaleInvItem(db, oldBranch, prodNameById(db, oldProduct), oldItemId);
+    if (oldItem && oldQty > 0 && oldItemId != null) {
+      logInvMove(db, oldItem, -oldQty, {
+        source: 'SALES_EDIT', source_id: order.id,
+        note: 'Засвар: хуучин хасалт буцаасан', user: req.user, branch: oldBranch,
+      });
+    }
+    // 2) шинэ утгаар хасах
+    const newItem = findSaleInvItem(db, updated.branch, prodNameById(db, updated.product));
+    if (newItem && newQty > 0) {
+      logInvMove(db, newItem, newQty, {
+        source: 'SALES_OUT', source_id: order.id,
+        note: 'Засвар: шинэ хасалт', user: req.user, branch: updated.branch,
+      });
+      updated.inventory_item_id = newItem.id;
+    } else {
+      delete updated.inventory_item_id;
+    }
+
     db.sales[idx] = updated;
   }
 
@@ -218,6 +278,20 @@ router.delete('/sales/:id', adminOnly, (req, res) => {
   rec.archived_by     = req.user.name;
   rec.archived_at     = new Date().toISOString();
   rec.archive_reason  = req.body.reason || '';
+
+  // Устгахад складаас хасагдсан барааг буцаах (хасагдсан байсан бол)
+  const q = parseInt(rec.quantity) || 0;
+  if (rec.inventory_item_id != null && q > 0) {
+    const item = findSaleInvItem(db, rec.branch, prodNameById(db, rec.product), rec.inventory_item_id);
+    if (item) {
+      logInvMove(db, item, -q, {
+        source: 'SALES_DELETE', source_id: rec.id,
+        note: 'Борлуулалт устгасан — складад буцаасан', user: req.user, branch: rec.branch,
+      });
+      rec.inventory_returned = true;
+    }
+  }
+
   save(db);
   res.json({ ok: true });
 });
