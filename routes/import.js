@@ -137,6 +137,8 @@ router.get('/unassigned-payments', (req, res) => {
   const projects = db.import_projects || [];
 
   const linked = new Set(ledger.map(c => c.transaction_id).filter(Boolean));
+  // Cost Workspace-д хуваарилагдсан төлбөрийг ч "холбогдсон" гэж тооцно (derive-don't-store).
+  for (const w of (db.import_cost_workspaces || [])) for (const c of (w.costs || [])) if (c.transaction_id) linked.add(c.transaction_id);
 
   const payments = txs
     .filter(t => t.code === 'IMP' && !t.archived && !linked.has(t.id))
@@ -211,13 +213,17 @@ router.get('/orders-tracker', (req, res) => {
     is_final: t.import_final === true
   });
 
+  // Cost Workspace-д хуваарилагдсан төлбөрийг ч "хуваарилсан" гэж тооцно (derive-don't-store).
+  const wsLinked = new Set();
+  for (const w of (db.import_cost_workspaces || [])) for (const c of (w.costs || [])) if (c.transaction_id) wsLinked.add(c.transaction_id);
+
   const paymentsByOrder = {};
   const unassigned = [];
   for (const t of txs) {
     if (t.code !== 'IMP' || t.archived) continue;
     const oid = orderOf(t);
     if (oid) (paymentsByOrder[oid] = paymentsByOrder[oid] || []).push(toPayment(t));
-    else unassigned.push(toPayment(t));
+    else if (!wsLinked.has(t.id)) unassigned.push(toPayment(t));
   }
   Object.values(paymentsByOrder).forEach(a => a.sort((x, y) => (x.date || '').localeCompare(y.date || '')));
   unassigned.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
