@@ -125,9 +125,19 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
     <a class="hdr-back" href="/dashboard">‹</a>
     <div style="flex:1">
       <div class="hdr-title">Импортын бараа</div>
+      <div class="hdr-sub">Захиалга → төлбөр → складад орсон</div>
     </div>
   </div>
+  <a class="hdr-detail" href="/imports">📊 Ачилт &amp; landed cost →</a>
 </div>
+
+<div class="stats">
+  <div class="st active"><div class="st-v" id="stActive">0</div><div class="st-l">Идэвхтэй</div></div>
+  <div class="st done"><div class="st-v" id="stDone">0</div><div class="st-l">Складад орсон</div></div>
+  <div class="st unas"><div class="st-v" id="stUnas">0</div><div class="st-l">Хуваарилаагүй</div></div>
+</div>
+
+<div id="inboxWrap"></div>
 
 <div class="tabs">
   <div class="tab on" id="tabActive" onclick="switchTab('active')">📦 Идэвхтэй захиалга <span class="cnt" id="cntActive">0</span></div>
@@ -206,8 +216,12 @@ async function load() {
 }
 
 function render() {
+  document.getElementById('stActive').textContent = data.active.length;
+  document.getElementById('stDone').textContent = data.done.length;
+  document.getElementById('stUnas').textContent = data.unassigned.length;
   document.getElementById('cntActive').textContent = data.active.length;
   document.getElementById('cntDone').textContent = data.done.length;
+  renderInbox();
   renderList('active');
   renderList('done');
 }
