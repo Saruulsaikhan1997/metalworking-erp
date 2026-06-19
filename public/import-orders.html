@@ -307,6 +307,9 @@ function switchTab(t) {
   document.getElementById('activeList').style.display = t === 'active' ? 'block' : 'none';
   document.getElementById('doneList').style.display = t === 'done' ? 'block' : 'none';
   document.getElementById('doneHeading').style.display = t === 'done' ? 'block' : 'none';
+  // Хуваарилаагүй импортын төлбөр (inbox) нь зөвхөн дашбоард (Идэвхтэй) дээр гарна —
+  // "Складад орсон барааны эцсийн өртөг" модуль дотор харагдахгүй.
+  document.getElementById('inboxWrap').style.display = t === 'done' ? 'none' : '';
 }
 
 async function toggleFinal(orderId, txId, makeFinal) {
