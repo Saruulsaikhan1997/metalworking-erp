@@ -217,6 +217,10 @@ router.get('/orders-tracker', (req, res) => {
   const wsLinked = new Set();
   for (const w of (db.import_cost_workspaces || [])) for (const c of (w.costs || [])) if (c.transaction_id) wsLinked.add(c.transaction_id);
 
+  // Cost Workspace баталгаажсан (status='finalized') бол захиалга "дууссан" → "Складад орсон барааны эцсийн өртөг" таб руу автоматаар шилжинэ.
+  const wsFinalized = {};
+  for (const w of (db.import_cost_workspaces || [])) if (w.status === 'finalized') wsFinalized[w.order_id] = w.finalized_at || true;
+
   const paymentsByOrder = {};
   const unassigned = [];
   for (const t of txs) {
@@ -231,7 +235,8 @@ router.get('/orders-tracker', (req, res) => {
   const mapOrder = (p) => {
     const pays = paymentsByOrder[p.id] || [];
     const finals = pays.filter(x => x.is_final);
-    const done = finals.length > 0;
+    const wsFinal = wsFinalized[p.id];
+    const done = finals.length > 0 || !!wsFinal;
     return {
       id: p.id,
       code: p.code,
@@ -243,7 +248,7 @@ router.get('/orders-tracker', (req, res) => {
       payment_count: pays.length,
       total_paid_mnt: pays.reduce((s, x) => s + (x.amount || 0), 0),
       done,
-      done_at: done ? finals.map(f => f.date).sort().slice(-1)[0] : null
+      done_at: done ? (finals.length ? finals.map(f => f.date).sort().slice(-1)[0] : (typeof wsFinal === 'string' ? wsFinal.slice(0, 10) : null)) : null
     };
   };
 
