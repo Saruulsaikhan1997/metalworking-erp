@@ -177,6 +177,9 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
 .src-tx .src-lbl { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #6366f1; display: block; margin-bottom: 3px; }
 /* Авлага картын эх гүйлгээ мөр */
 .rec-srctx { font-size: 11px; color: #6366f1; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #e0e7ff; }
+/* Авлага картыг дарж засах (дээд хэсэг) */
+.rec-head.editable { cursor: pointer; border-radius: 8px; margin: -4px -4px 0; padding: 4px; transition: background .12s; }
+.rec-head.editable:hover { background: #f7f9ff; }
 </style>
 </head>
 <body>
@@ -808,23 +811,26 @@ function renderRec() {
     return;
   }
 
+  const canEdit = ['admin', 'manager'].includes(user.role);
   el.innerHTML = pending.map(o => `
     <div class="rec-card">
-      <div class="rec-top">
-        <div class="rec-name">${prodName(o.product)}</div>
-        <div class="rec-rem">
-          <div class="big">${fmt(o.remaining_amount)} ₮</div>
-          <div class="lbl">үлдэгдэл</div>
+      <div class="rec-head${canEdit ? ' editable' : ''}"${canEdit ? ` onclick="openEditSale('${o.id}')"` : ''}>
+        <div class="rec-top">
+          <div class="rec-name">${prodName(o.product)}${canEdit ? ' <span class="edit-pen">✎</span>' : ''}</div>
+          <div class="rec-rem">
+            <div class="big">${fmt(o.remaining_amount)} ₮</div>
+            <div class="lbl">үлдэгдэл</div>
+          </div>
         </div>
+        <div class="rec-meta">
+          ${o.customer_name || '—'}${o.customer_phone ? ' · ' + o.customer_phone : ''}<br>
+          ${o.date}${o.branch ? ' · ' + o.branch : ''} · ${o.quantity}ш × ${fmt(o.unit_price)}₮ = ${fmt(o.total_amount)}₮
+          ${o.advance_paid > 0 ? '<br>Авсан: ' + fmt(o.advance_paid) + '₮' : ''}
+          ${o.bank_account_name ? ' · ' + o.bank_account_name : ''}
+          ${o.note ? '<br>' + o.note : ''}
+        </div>
+        ${o.source_tx ? `<div class="rec-srctx">🔗 Эх гүйлгээ: <b>${fmt(o.source_tx.amount)}₮</b> · ${o.source_tx.date || '—'} · ${escapeHtml(o.source_tx.memo) || '(утга байхгүй)'}</div>` : ''}
       </div>
-      <div class="rec-meta">
-        ${o.customer_name || '—'}${o.customer_phone ? ' · ' + o.customer_phone : ''}<br>
-        ${o.date}${o.branch ? ' · ' + o.branch : ''} · ${o.quantity}ш × ${fmt(o.unit_price)}₮ = ${fmt(o.total_amount)}₮
-        ${o.advance_paid > 0 ? '<br>Авсан: ' + fmt(o.advance_paid) + '₮' : ''}
-        ${o.bank_account_name ? ' · ' + o.bank_account_name : ''}
-        ${o.note ? '<br>' + o.note : ''}
-      </div>
-      ${o.source_tx ? `<div class="rec-srctx">🔗 Эх гүйлгээ: <b>${fmt(o.source_tx.amount)}₮</b> · ${o.source_tx.date || '—'} · ${escapeHtml(o.source_tx.memo) || '(утга байхгүй)'}</div>` : ''}
       <div class="rec-actions">
         <input class="rec-input" type="number" id="ri_${o.id}"
           placeholder="Авсан дүн ₮" value="${o.remaining_amount}">
