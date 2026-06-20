@@ -275,10 +275,6 @@ function orderCard(o, isDone) {
         ? `<a class="meta-link" href="/imports/cost-workspace?order=${encodeURIComponent(o.id)}&name=${encodeURIComponent(o.name)}">📊 Эцсийн өртөг харах →</a>`
         : `<a class="meta-link" href="/imports/cost-workspace?order=${encodeURIComponent(o.id)}&name=${encodeURIComponent(o.name)}">🧾 Зардал харах →</a>`}
     </div>
-    <div class="exp-btn" onclick="toggleExp('${o.id}')">${open ? '▴ Төлбөрүүд хаах' : '▾ Төлбөрүүд харах (' + o.payment_count + ')'}</div>
-    <div class="pays ${open ? 'open' : ''}">
-      ${o.payments.length ? o.payments.map(p => payRow(p, o.id)).join('') : '<div class="pays-empty">Төлбөр бүртгэгдээгүй</div>'}
-    </div>
   </div>`;
 }
 
