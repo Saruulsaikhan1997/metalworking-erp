@@ -271,7 +271,9 @@ function orderCard(o, isDone) {
     <div class="c-meta">
       <span>💳 ${o.payment_count} төлбөр</span>
       ${isDone ? `<span class="badge-done">✓ Складад орсон${o.done_at ? ' · ' + esc(o.done_at) : ''}</span>` : ''}
-      ${isDone ? `<a class="meta-link" href="/imports/cost-workspace?order=${encodeURIComponent(o.id)}&name=${encodeURIComponent(o.name)}">📊 Эцсийн өртөг харах →</a>` : ''}
+      ${isDone
+        ? `<a class="meta-link" href="/imports/cost-workspace?order=${encodeURIComponent(o.id)}&name=${encodeURIComponent(o.name)}">📊 Эцсийн өртөг харах →</a>`
+        : `<a class="meta-link" href="/imports/cost-workspace?order=${encodeURIComponent(o.id)}&name=${encodeURIComponent(o.name)}">🧾 Зардал харах →</a>`}
     </div>
     <div class="exp-btn" onclick="toggleExp('${o.id}')">${open ? '▴ Төлбөрүүд хаах' : '▾ Төлбөрүүд харах (' + o.payment_count + ')'}</div>
     <div class="pays ${open ? 'open' : ''}">
