@@ -488,9 +488,11 @@ router.post('/internal-purchase/:id/route', (req, res) => {
       p.inventory_item_id = id;
     }
   } else {
-    // Үйлдвэрлэл → энэ хуудсанд үлдэнэ (pending хэвээр). Өмнө склад руу орсон
-    // байсан бол тэр барааг нуух.
-    p.status = 'pending';
+    // Үйлдвэрлэл → үйлдвэрлэлийн материал болж шилжсэн тул pending feed-ээс гарна
+    // (status='routed'). Склад руу бараа үүсгэхгүй — Үйлдвэрлэл хуудасны
+    // "Материалын урсгал → Худалдан авсан материал"-д харагдана. Өмнө склад руу
+    // (Эд хогшил/Засвар) орсон байсан бол тэр барааг нуух.
+    p.status = 'routed';
     if (p.inventory_item_id) {
       const item = db.inventory.find(i => i.id === p.inventory_item_id);
       if (item) item.active = false;
@@ -498,7 +500,7 @@ router.post('/internal-purchase/:id/route', (req, res) => {
   }
 
   save(db);
-  res.json({ ok: true, destination, category: cat || null });
+  res.json({ ok: true, destination, category: cat || null, routed: true });
 });
 
 // ── Create item (catalog only — qty always starts at 0) ──
