@@ -458,13 +458,17 @@ function afterSave(d){ if(d && d.error){ alert(d.error); return; } closeSheet();
 function renderCostBreakdown(d) {
   const costs = d.costs || [];
   if (!costs.length) return '<div class="card"><div class="empty">Зардал бүртгэгдээгүй.</div></div>';
+  const total = costs.reduce((s, c) => s + (c.amount_mnt || 0), 0);
   const rows = costs.map(c => `<div class="crow">
     <span class="tag ${c.tag}"></span>
     <div class="crow-l"><div class="crow-type">${esc(typeMn(c.type))}</div>${c.note?`<div class="crow-note">${esc(c.note)}</div>`:''}</div>
     <div class="crow-amt">${fmt(c.amount_mnt)}</div>
   </div>`).join('');
   return `<div class="card">${rows}
-    <div class="csub"><span class="g">🟢 Бараанд: ${fmt(d.capitalize_total_mnt)}</span><span class="p">⚪ Ерөнхий: ${fmt(d.period_total_mnt)}</span></div>
+    <div class="crow" style="border-top:2px solid var(--gray-300);margin-top:4px;padding-top:10px">
+      <div class="crow-l"><div class="crow-type" style="font-weight:800">НИЙТ ЗАРДАЛ (${costs.length} мөр)</div></div>
+      <div class="crow-amt" style="font-weight:800;font-size:14px">${fmt(total)}</div>
+    </div>
   </div>`;
 }
 
