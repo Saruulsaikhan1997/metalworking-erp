@@ -47,6 +47,88 @@ function ensurePricesVat(db) {
   db.fix_prices_vat_v1 = true;
 }
 
+// ── Migration: буруу борлуулалтыг склад хоорондын шилжүүлэг болгож засах ──
+// 2026-06-20-нд Нярав-Менежер "Жорлонгийн бүхээг"-ийг Төв складаас БОРЛУУЛАЛТ
+// (SALES_OUT → customer) болгож хассан нь үнэндээ склад хоорондын ШИЛЖҮҮЛЭГ
+// байх ёстой байсан: 2ш → 7 буудал (warehouse-4), 1ш → ТЭЦ 4 (plastic-center).
+// Засвар: тухайн SALES_OUT-уудыг TRANSFER (out) болгож, очих складад кредит
+// (TRANSFER in) олгож, харгалзах борлуулалтын бичлэгийг архивлана. Төв складын
+// хасалт хэвээр (бараа Төв складаас гарсан нь зөв) — зөвхөн очих тал нэмэгдэнэ.
+function fixBuheegSaleToTransfer(db) {
+  if (db.fix_buheeg_transfer_v1) return;
+  if (!db.inventory) db.inventory = [];
+  if (!db.inventory_log) db.inventory_log = [];
+
+  // Дэлгэц дээрх before/after-аар нарийн тааруулна (буруу бичлэг хальтрахаас сэргийлж).
+  const targets = [
+    { qty: 2, before: 15, after: 13, dest: 'warehouse-4'   }, // 7 буудал склад
+    { qty: 1, before: 16, after: 15, dest: 'plastic-center' }, // ТЭЦ 4 склад
+  ];
+  const now = new Date();
+
+  for (const t of targets) {
+    const log = db.inventory_log.find(l =>
+      l.source === 'SALES_OUT' &&
+      /бүхээг/i.test(l.item_name || '') &&
+      (l.location_from || 'central') === 'central' &&
+      l.date === '2026-06-20' &&
+      (l.qty || 0) === t.qty &&
+      (l.before_qty || 0) === t.before &&
+      (l.after_qty || 0) === t.after);
+    if (!log) continue;
+
+    // 1) SALES_OUT-ийг TRANSFER (out) болгож, чиглэлийг очих склад болгох
+    log.source = 'TRANSFER';
+    log.location_to = t.dest;
+    log.note = 'Склад шилжүүлэг (борлуулалт→шилжүүлэг залруулсан)';
+
+    // 2) Очих складад барааг нэмэх (байхгүй бол үүсгэх) + TRANSFER (in) лог
+    const name    = (log.item_name || 'Жорлонгийн бүхээг').trim();
+    const srcItem = db.inventory.find(i => i.id === log.item_id);
+    let dest = db.inventory.find(i =>
+      (i.location || 'central') === t.dest &&
+      (i.name || '').trim().toLowerCase() === name.toLowerCase());
+    if (!dest) {
+      const newId = Math.max(0, ...db.inventory.map(i => i.id || 0)) + 1;
+      dest = {
+        id: newId, code: log.item_code || (srcItem ? srcItem.code : '') || '',
+        name, category: srcItem ? srcItem.category : 'finished', status: 'available',
+        unit: log.unit || (srcItem ? srcItem.unit : 'ш') || 'ш', location: t.dest,
+        qty: 0, threshold: 0,
+        cost_per_unit: srcItem && srcItem.cost_per_unit != null ? srcItem.cost_per_unit : null,
+        active: true, has_manual_adjustment: false,
+        created_at: now.toISOString(), created_by: 'migration (борлуулалт→шилжүүлэг)',
+      };
+      db.inventory.push(dest);
+    }
+    const before = dest.qty || 0;
+    dest.qty = before + t.qty;
+    dest.active = true;
+    dest.updated_at = now.toISOString();
+    const inLogId = Math.max(0, ...db.inventory_log.map(x => x.id || 0)) + 1;
+    db.inventory_log.push({
+      id: inLogId, item_id: dest.id, item_code: dest.code, item_name: dest.name,
+      type: 'in', source: 'TRANSFER', source_id: 'LOG-' + log.id, qty: t.qty,
+      unit: dest.unit, location_from: 'central', location_to: t.dest,
+      reason: null, note: 'Шилжүүлэг (борлуулалт залруулсан)', by: 'system', by_role: 'system',
+      before_qty: before, after_qty: dest.qty,
+      date: now.toISOString().slice(0, 10), time: now.toTimeString().slice(0, 8),
+      created_at: now.toISOString(),
+    });
+
+    // 3) Харгалзах борлуулалтын бичлэгийг архивлах (орлогоос хасна)
+    const sale = (db.sales || []).find(s => String(s.id) === String(log.source_id));
+    if (sale && !sale.archived) {
+      sale.archived       = true;
+      sale.archived_by    = 'system';
+      sale.archived_at    = now.toISOString();
+      sale.archive_reason = 'Буруу борлуулалт — склад хоорондын шилжүүлэг байх ёстой байсан (migration)';
+    }
+  }
+
+  db.fix_buheeg_transfer_v1 = true;
+}
+
 // ── Складаас бараа хасах нийтлэг логик (POST/PUT/DELETE дундын) ──
 const SALE_LOC_MAP = {
   'Төв склад': 'central', 'Үйлдвэр': 'factory',
@@ -111,7 +193,7 @@ router.get('/sales', (req, res) => {
   // Revenue is owner/sales data — factory engineers don't see it.
   if (req.user.role === 'engineer') return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
   const db = load();
-  ensureSaleProducts(db); ensurePricesVat(db); save(db);
+  ensureSaleProducts(db); ensurePricesVat(db); fixBuheegSaleToTransfer(db); save(db);
   // Эх гүйлгээ (ангилахаас өмнөх банкны хуулга) — source_tx_id-тэй бичлэгт хавсаргана.
   const txById = new Map((db.transactions || []).map(t => [String(t.id), t]));
   const withTx = s => {
