@@ -321,7 +321,7 @@ function renderLent() {
   for (const t of loanOuts) {
     const acct = normalizeAccount(t.counterparty);
     const key = acct || (t.description || 'Тодорхойгүй').trim();
-    const label = t.description || acct || 'Тодорхойгүй';
+    const label = t.note || t.description || acct || 'Тодорхойгүй';
     const entry = getOrCreate(key, label);
     entry.given += t.amount;
     entry.txs.push(t);
@@ -334,7 +334,7 @@ function renderLent() {
       byParty[key].txs.push(t);
     } else {
       // Orphan return (no matching loan out) — show separately
-      getOrCreate(key, t.description || acct || 'Тодорхойгүй');
+      getOrCreate(key, t.note || t.description || acct || 'Тодорхойгүй');
       byParty[key].returned += t.amount;
       byParty[key].txs.push(t);
     }
@@ -389,7 +389,7 @@ function renderHistory() {
     return `<div class="loan-card ${isIn ? 'lent' : ''}" style="padding:12px 16px">
       <div class="loan-top" style="margin-bottom:6px">
         <div>
-          <div class="loan-name" style="font-size:13px">${t.code === 'LOAN_IN' ? '📥' : '📤'} ${t.description || '—'}</div>
+          <div class="loan-name" style="font-size:13px">${t.code === 'LOAN_IN' ? '📥' : '📤'} ${t.note || t.description || '—'}</div>
           <div class="loan-meta">${t.date}${t.time ? ' · ' + t.time : ''} · ${(t.account_label||'').replace(' (Касс)','').replace(' (Компани)','')}</div>
         </div>
         <div style="font-size:14px;font-weight:800;color:${isIn ? '#059669' : '#c62828'}">${isIn ? '+' : '−'}${fmt(t.amount)}₮</div>
