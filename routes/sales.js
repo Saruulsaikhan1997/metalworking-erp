@@ -274,7 +274,7 @@ router.post('/sales', (req, res) => {
     advance_paid:      adv,
     remaining_amount,
     bank_account:      bank_account || '',
-    bank_account_name: bankDef ? bankDef.name : (bank_account || ''), // snapshot
+    bank_account_name: bank_account === 'cash' ? 'Бэлэн (касс)' : (bankDef ? bankDef.name : (bank_account || '')), // snapshot
     customer_name:     customer_name || '',
     customer_phone:    customer_phone || '',
     note:              note || '',
