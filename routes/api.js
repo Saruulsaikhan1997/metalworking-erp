@@ -569,9 +569,10 @@ router.put('/finance/transactions/:id', adminOnly, (req, res) => {
     tx.needs_review = !req.body.code || !MEMO_CODES[req.body.code];
   }
   if ('note' in req.body) tx.note = req.body.note;
+  if ('counterparty' in req.body) tx.counterparty = req.body.counterparty; // admin засвар: гүйлгээг зөв харьцагч/зээлийн данс руу холбох
   syncInternalPurchases(db); // Phase B: код өөрчлөгдөхөд intake-ийг дагуулж шинэчлэх/цуцлах/сэргээх
   save(db);
-  res.json({ ok: true, code: tx.code, needs_review: tx.needs_review });
+  res.json({ ok: true, code: tx.code, needs_review: tx.needs_review, counterparty: tx.counterparty });
 });
 
 // Archive a transaction (for phantom/duplicate entries)
