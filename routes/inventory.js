@@ -388,6 +388,64 @@ function ensureUpvcM2(db) {
   db.fix_upvc_m2_v1 = true;
 }
 
+// ── Migration: "Yongding төмрийн материал" (кг лумп) → хоолойн төрлүүд ширхэгээр ──
+// Анх кг-аар (алдаатай) бүртгэсэн төмрийг бодит ширхэг тоогоор хөрвүүлнэ.
+// Анхны импортын кг (2026-06-02, хасагдахаас өмнө): 80×80×1.2=2280, 40×40×1=1580,
+// 40×20×1=3680. Нэгж өртөг = (кг/ширхэг) × Yongding-ийн кг өртөг → нийт өртөг
+// (тус бүрийн) хадгалагдана. Үлдсэн кг (ган хавтан) КГ ХЭВЭЭР үлдэнэ — Yongding
+// лумп нь "Ган хавтан 25×2×6000" болж 3 хоолойн кг хасагдсан үлдэгдэлтэй болно.
+function ensureYongdingToPieces(db) {
+  if (db.fix_yongding_to_pieces_v1) return;
+  if (!db.inventory) db.inventory = [];
+  const yong = db.inventory.find(i =>
+    (i.code || '').toUpperCase() === 'TEMR-YONGDING' ||
+    /yongding|төмрийн материал/i.test(i.name || ''));
+  if (!yong) { db.fix_yongding_to_pieces_v1 = true; return; } // байхгүй бол алгасна
+  const costKg = Number(yong.cost_per_unit) || 2736;
+  const PIPES = [
+    { name: 'Хоолой 80×80×1.2×6м', code: 'TEMR-80X80', kg: 2280, pcs: 125 },
+    { name: 'Хоолой 40×40×1×6м',   code: 'TEMR-40X40', kg: 1580, pcs: 162 },
+    { name: 'Хоолой 40×20×1×6м',   code: 'TEMR-40X20', kg: 3680, pcs: 640 },
+  ];
+  const now = new Date().toISOString();
+  for (const p of PIPES) {
+    const costPer = Math.round((p.kg / p.pcs) * costKg); // ₮/ширхэг (өртөг хадгалах)
+    let item = db.inventory.find(i =>
+      (i.code || '').toUpperCase() === p.code ||
+      (i.name || '').trim().toLowerCase() === p.name.toLowerCase());
+    if (!item) {
+      const id = Math.max(0, ...db.inventory.map(i => i.id || 0)) + 1;
+      db.inventory.push({
+        id, code: p.code, name: p.name, category: yong.category || 'raw',
+        status: 'available', unit: 'ширхэг', location: yong.location || 'central',
+        qty: p.pcs, threshold: 0,
+        cost_per_unit: costPer, total_value: costPer * p.pcs,
+        active: true, has_manual_adjustment: false,
+        created_at: now, created_by: 'migration (кг→ширхэг хөрвүүлэлт)',
+        source_item_id: yong.id,
+      });
+    } else {
+      item.unit = 'ширхэг';
+      item.qty = p.pcs;
+      item.cost_per_unit = costPer;
+      item.total_value = costPer * p.pcs;
+      item.active = true;
+      item.updated_at = now;
+    }
+  }
+  // Yongding лумпаас 3 хоолойн кг-г хасаж, үлдэгдлийг ган хавтан болгож КГ ХЭВЭЭР
+  // үлдээх. Жишээ: 7864кг − (2280+1580+3680=7540) = 324кг ган хавтан.
+  const pipeKg = PIPES.reduce((s, p) => s + p.kg, 0); // 7540
+  const ganQty = Math.max(0, (Number(yong.qty) || 0) - pipeKg);
+  yong.name        = 'Ган хавтан 25×2×6000';
+  yong.qty         = ganQty;
+  yong.unit        = 'кг';
+  yong.total_value = Math.round(ganQty * costKg);
+  yong.active      = ganQty > 0;
+  yong.updated_at  = now;
+  db.fix_yongding_to_pieces_v1 = true;
+}
+
 // ── List items (enriched with received-lot breakdown for the warehouse view) ──
 // Read-only, additive enrichment: each item gets a `lots` array (profile name +
 // quantity in the item's OWN unit). NO cost/valuation fields are exposed here —
@@ -412,6 +470,7 @@ router.get('/inventory', (req, res) => {
   ensureTransferCleanupV3(db);
   ensureUzuulenCredit(db);
   ensureUpvcM2(db);
+  ensureYongdingToPieces(db);
   save(db);
 
   // Sub-breakdown = received, non-sample import lots, grouped by inventory item.
@@ -806,3 +865,4 @@ router.post('/production/:id/to-warehouse', (req, res) => {
 });
 
 module.exports = router;
+module.exports.ensureYongdingToPieces = ensureYongdingToPieces; // тестэд зориулж нээв
