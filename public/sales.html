@@ -219,6 +219,19 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
     </div>
   </div>
 
+  <div class="kpi-grid" style="grid-template-columns:1fr">
+    <div class="kpi" id="cashKpi" onclick="toggleCashDetail()" style="cursor:pointer;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff">
+      <div class="lbl">💵 Бэлэн орлого <span style="opacity:.7">▾</span></div>
+      <div class="val" id="dCash">0 ₮</div>
+      <div class="sub" id="dCashSub">0 борлуулалт</div>
+    </div>
+  </div>
+
+  <div id="cashDetailWrap" style="display:none">
+    <div class="sec">Бэлэн орлогын задаргаа</div>
+    <div class="card" id="cashDetail"></div>
+  </div>
+
   <div id="allDetailWrap" style="display:none">
     <div class="sec">Нийт орлогын задаргаа</div>
     <div class="card" id="allDetail"></div>
@@ -488,7 +501,8 @@ async function loadMasters() {
 
   // Bank account select
   const bk = document.getElementById('nBank');
-  bk.innerHTML = banks.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+  bk.innerHTML = '<option value="cash">💵 Бэлэн (касс)</option>' +
+    banks.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
 
   onProductChange();
 }
@@ -743,6 +757,11 @@ function renderDash() {
   document.getElementById('dRec').textContent      = fmt(recSum) + ' ₮';
   document.getElementById('dRecSub').textContent   = recvbl.length + ' захиалга';
 
+  // 💵 Бэлэн орлого — бэлнээр (касс) төлсөн дууссан борлуулалтын нийлбэр
+  const cashD = done.filter(o => o.bank_account === 'cash');
+  document.getElementById('dCash').textContent    = fmt(sum(cashD)) + ' ₮';
+  document.getElementById('dCashSub').textContent = cashD.length + ' борлуулалт';
+
   // 7-day bar chart
   const days = [];
   for (let i = 6; i >= 0; i--) {
@@ -796,6 +815,29 @@ function renderAllDetail() {
         <div class="hist-amt">${fmt(o.total_amount)} ₮</div>
       </div>
       <div class="hist-meta">📅 ${o.date || '—'}${o.branch ? ' · ' + o.branch : ''} · ${o.quantity} ш</div>
+    </div>`).join('');
+}
+
+// ── 💵 Бэлэн орлогын задаргаа (дарж задлах) ──
+function toggleCashDetail() {
+  const wrap = document.getElementById('cashDetailWrap');
+  const show = wrap.style.display === 'none';
+  wrap.style.display = show ? '' : 'none';
+  if (show) renderCashDetail();
+}
+function renderCashDetail() {
+  const cash = orders.filter(o => o.status === 'completed' && o.bank_account === 'cash')
+    .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const el = document.getElementById('cashDetail');
+  if (!cash.length) { el.innerHTML = '<div class="empty">Бэлэн борлуулалт байхгүй</div>'; return; }
+  const canEdit = ['admin', 'manager'].includes(user.role);
+  el.innerHTML = cash.map(o => `
+    <div class="hist-row${canEdit ? ' editable' : ''}"${canEdit ? ` onclick="openEditSale('${o.id}')"` : ''}>
+      <div class="hist-top">
+        <div class="hist-name">${prodName(o.product)}${canEdit ? ' <span class="edit-pen">✎</span>' : ''}</div>
+        <div class="hist-amt">${fmt(o.total_amount)} ₮</div>
+      </div>
+      <div class="hist-meta">📅 ${o.date || '—'}${o.branch ? ' · ' + o.branch : ''} · ${o.quantity} ш · 💵 Бэлэн</div>
     </div>`).join('');
 }
 
@@ -951,7 +993,7 @@ function openEditSale(id) {
 
   // Банк
   const ek = document.getElementById('eBank');
-  ek.innerHTML = '<option value="">— Үгүй —</option>' +
+  ek.innerHTML = '<option value="">— Үгүй —</option><option value="cash">💵 Бэлэн (касс)</option>' +
     banks.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
   ek.value = o.bank_account || '';
 
@@ -1020,7 +1062,7 @@ async function saveEditSale() {
     advance_paid:      adv,
     remaining_amount:  rem,
     bank_account:      bankId,
-    bank_account_name: bankDef ? bankDef.name : '',
+    bank_account_name: bankId === 'cash' ? 'Бэлэн (касс)' : (bankDef ? bankDef.name : ''),
     note:              document.getElementById('eNote').value.trim(),
   };
   try {
