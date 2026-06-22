@@ -973,8 +973,8 @@ function openEditSale(id) {
   if (!o) return;
   editingId = id;
 
-  // Устгах нь зөвхөн admin (нягтлан бичилт устгах) — менежерт нуугдана
-  document.getElementById('eDelBtn').style.display = user.role === 'admin' ? '' : 'none';
+  // Устгах нь admin болон manager (Нярав-Менежер)-т харагдана
+  document.getElementById('eDelBtn').style.display = ['admin', 'manager'].includes(user.role) ? '' : 'none';
 
   // Бараа — бүх бүтээгдэхүүн (засахдаа аль ч барааг сонгож болно)
   const ep = document.getElementById('eProduct');

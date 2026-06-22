@@ -364,7 +364,8 @@ router.put('/sales/:id', (req, res) => {
 });
 
 // Soft delete — never permanently removes accounting records
-router.delete('/sales/:id', adminOnly, (req, res) => {
+router.delete('/sales/:id', (req, res) => {
+  if (!['admin', 'manager'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
   const db  = load();
   const rec = (db.sales || []).find(s => String(s.id) === String(req.params.id));
   if (!rec) return res.status(404).json({ error: 'Олдсонгүй' });
