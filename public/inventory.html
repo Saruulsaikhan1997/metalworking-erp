@@ -503,6 +503,17 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
           <span style="font-size:11px;font-weight:800;color:#1e40af;text-transform:uppercase;letter-spacing:.7px">Ширхэгийн тооцоолуур</span>
         </div>
         <div style="padding:12px 14px">
+          <!-- Хоолойн төрөл — импортын кг ÷ ширхэг = 1 ширхэгийн жин (автоматаар бөглөнө) -->
+          <div style="margin-bottom:10px">
+            <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px">Хоолойн төрөл</div>
+            <select id="calc-profile" onchange="onCalcProfile()"
+              style="width:100%;padding:10px 12px;border:1.5px solid #bae6fd;border-radius:8px;font-size:14px;font-weight:700;color:#1e3a5f;outline:none;background:#fff">
+              <option value="">— сонгох —</option>
+              <option value="18.24">Хоолой 80×80×1.2 — 18.24 кг/ш (2280÷125)</option>
+              <option value="9.753">Хоолой 40×40×1 — 9.75 кг/ш (1580÷162)</option>
+              <option value="5.75">Хоолой 40×20×1 — 5.75 кг/ш (3680÷640)</option>
+            </select>
+          </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
             <div>
               <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px">Тоо ширхэг <span style="color:#c62828">*</span></div>
@@ -1849,6 +1860,15 @@ function calcDimWeight() {
     // Хана бүхий дөрвөлжин хоолой: 2×(W+H-2t)×t×L×7.85/1,000,000
     const kg = 2 * (w + h - 2 * t) * t * l * 7.85 / 1e6;
     document.getElementById('calc-unit-weight').value = kg.toFixed(3);
+    updateCalc();
+  }
+}
+
+// Хоолойн төрөл сонгоход 1 ширхэгийн жинг (кг) автоматаар бөглөнө
+function onCalcProfile() {
+  const v = parseFloat(document.getElementById('calc-profile').value) || 0;
+  if (v > 0) {
+    document.getElementById('calc-unit-weight').value = v;
     updateCalc();
   }
 }
