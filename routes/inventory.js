@@ -446,6 +446,30 @@ function ensureYongdingToPieces(db) {
   db.fix_yongding_to_pieces_v1 = true;
 }
 
+// ── Migration: Yongding/Ган хавтан item-ийн импортын lot ("хийцлэл") задаргааг ──
+// кг-ээс ширхэгт харуулах. Хийцлэл ХЭВЭЭР, зөвхөн хоолойн профайлуудын тоог ширхэг
+// болгоно (80×80=125, 40×40=162, 40×20=640). Ган хавтан (25×2) кг хэвээр.
+// Non-destructive: lot-д `pieces` талбар нэмнэ (units/өртөг хөндөхгүй) — enrichment
+// үүнийг уншиж ширхэгээр харуулна.
+function ensureYongdingLotsToPieces(db) {
+  if (db.fix_yongding_lots_pieces_v1) return;
+  const yong = (db.inventory || []).find(i => (i.code || '').toUpperCase() === 'TEMR-YONGDING');
+  if (yong && Array.isArray(db.import_lots)) {
+    const MAP = [
+      { re: /80\s*[×xX]\s*80/, pcs: 125 },
+      { re: /40\s*[×xX]\s*40/, pcs: 162 },
+      { re: /40\s*[×xX]\s*20/, pcs: 640 },
+    ];
+    for (const l of db.import_lots) {
+      if (l.inventory_item_id !== yong.id) continue;
+      const name = (l.product && l.product.name) || '';
+      const hit = MAP.find(x => x.re.test(name));
+      if (hit) l.pieces = hit.pcs; // ган хавтан хөндөгдөхгүй (кг хэвээр)
+    }
+  }
+  db.fix_yongding_lots_pieces_v1 = true;
+}
+
 // ── List items (enriched with received-lot breakdown for the warehouse view) ──
 // Read-only, additive enrichment: each item gets a `lots` array (profile name +
 // quantity in the item's OWN unit). NO cost/valuation fields are exposed here —
@@ -471,6 +495,7 @@ router.get('/inventory', (req, res) => {
   ensureUzuulenCredit(db);
   ensureUpvcM2(db);
   ensureYongdingToPieces(db);
+  ensureYongdingLotsToPieces(db);
   save(db);
 
   // Sub-breakdown = received, non-sample import lots, grouped by inventory item.
@@ -482,6 +507,14 @@ router.get('/inventory', (req, res) => {
     const lots = recvLots
       .filter(l => l.inventory_item_id === item.id)
       .map(l => {
+        // Ширхэгээр харуулах дисплэй override (Yongding хоолой migration)
+        if (l.pieces != null) {
+          return {
+            name: l.product?.name || l.product_code || '—',
+            spec: l.product?.spec || '',
+            qty: l.pieces, unit: 'ширхэг', status: l.warehouse_status,
+          };
+        }
         const cands = [l.units?.primary, l.units?.secondary].filter(c => c && c.qty != null);
         const pick = cands.find(c => _normUnit(c.unit) === target);
         let qty, unit;
