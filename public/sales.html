@@ -409,6 +409,14 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
     </div>
     <div class="ecalc"><span>Үлдэгдэл авлага</span><span id="eRem">0 ₮</span></div>
     <div class="efield">
+      <label>🔗 Хуучин авлага барагдуулах <span style="color:#aaa;font-weight:400">(заавал биш)</span></label>
+      <select id="eRecSettle" onchange="onEditRecSettleChange()"><option value="">— Үгүй —</option></select>
+    </div>
+    <div class="efield" id="eRecAmtWrap" style="display:none">
+      <label>Авлагад төлөх ₮</label>
+      <input type="number" id="eRecAmount" min="0" placeholder="0">
+    </div>
+    <div class="efield">
       <label>Мөнгө орсон данс</label>
       <select id="eBank"></select>
     </div>
@@ -1004,6 +1012,12 @@ function openEditSale(id) {
   document.getElementById('eNote').value    = o.note || '';
   document.getElementById('eMsg').textContent = '';
 
+  // 🔗 Хуучин авлага барагдуулах сонголт (өөр бичлэгийн авлага руу мөнгө төлөх)
+  renderEditRecSettleOptions();
+  document.getElementById('eRecSettle').value = '';
+  document.getElementById('eRecAmtWrap').style.display = 'none';
+  document.getElementById('eRecAmount').value = '';
+
   // Эх гүйлгээ (ангилахаас өмнөх банкны хуулга) — байвал харуулна
   const stx = document.getElementById('eSrcTx');
   if (o.source_tx) {
@@ -1032,6 +1046,23 @@ function eCalc() {
   document.getElementById('eTotal').textContent = fmt(total) + ' ₮';
   document.getElementById('eRem').textContent   = fmt(rem) + ' ₮';
 }
+// 🔗 Засах формоос өөр бичлэгийн авлага барагдуулах
+function renderEditRecSettleOptions() {
+  const sel = document.getElementById('eRecSettle');
+  if (!sel) return;
+  const recs = orders.filter(o => o.status === 'receivable' && (o.remaining_amount || 0) > 0 && String(o.id) !== String(editingId));
+  sel.innerHTML = '<option value="">— Үгүй —</option>' + recs.map(o =>
+    `<option value="${o.id}">${(productMap[o.product] || o.product)} · Үлд: ${fmt(o.remaining_amount)}₮${o.branch ? ' · ' + o.branch : ''}</option>`
+  ).join('');
+}
+function onEditRecSettleChange() {
+  const recId = document.getElementById('eRecSettle').value;
+  const wrap  = document.getElementById('eRecAmtWrap');
+  if (!recId) { wrap.style.display = 'none'; document.getElementById('eRecAmount').value = ''; return; }
+  wrap.style.display = '';
+  const rec = orders.find(o => String(o.id) === recId);
+  document.getElementById('eRecAmount').value = rec ? (rec.remaining_amount || 0) : 0;
+}
 async function refreshAfterEdit() {
   await loadSales();
   renderDash();
@@ -1052,6 +1083,18 @@ async function saveEditSale() {
   const btn = document.getElementById('eSave');
   const msg = document.getElementById('eMsg');
   btn.disabled = true; msg.style.color = '#94a3b8'; msg.textContent = '⏳ Хадгалж байна...';
+
+  // 🔗 Хуучин авлага барагдуулах — өөр бичлэг рүү мөнгө төлөх (энэ борлуулалтаас тусдаа)
+  const recSettleId  = document.getElementById('eRecSettle').value;
+  const recSettleAmt = parseInt(document.getElementById('eRecAmount').value) || 0;
+  if (recSettleId && recSettleAmt > 0) {
+    const rr = await api('/sales/' + recSettleId, { method: 'PUT', body: JSON.stringify({ received_amount: recSettleAmt }) });
+    if (!rr || (!rr.ok && !rr.status)) {
+      msg.style.color = '#dc2626'; msg.textContent = 'Авлага төлөхөд алдаа: ' + ((rr && rr.error) || '');
+      btn.disabled = false; return;
+    }
+  }
+
   const body = {
     date:              document.getElementById('eDate').value,
     product:           document.getElementById('eProduct').value,
