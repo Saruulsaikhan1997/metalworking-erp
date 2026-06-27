@@ -121,6 +121,17 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 .produce-btn:disabled { opacity: 0.5; cursor: default; }
 .produce-msg { font-size: 12px; font-weight: 700; text-align: center; margin-top: 10px; min-height: 16px; }
 
+/* Нийт хийсэн бүтээгдэхүүн */
+.total-card { background: #fff; border-radius: 14px; padding: 6px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); border: 1px solid var(--gray-200); border-left: 4px solid var(--brand); }
+.total-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--gray-100); }
+.total-row:last-child { border-bottom: none; }
+.total-name { font-size: 13px; font-weight: 600; color: var(--gray-900); }
+.total-qty { font-size: 15px; font-weight: 800; color: var(--brand-dark); white-space: nowrap; }
+.total-qty span { font-size: 11px; font-weight: 600; color: var(--gray-400); }
+.total-row.total-grand { border-top: 2px solid var(--gray-200); }
+.total-row.total-grand .total-name { font-weight: 800; text-transform: uppercase; letter-spacing: .5px; font-size: 12px; color: var(--brand-dark); }
+.total-row.total-grand .total-qty { font-size: 18px; }
+
 .settings-link {
   display: block; text-align: center;
   margin: 24px 16px 0; padding: 10px;
@@ -165,6 +176,12 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
     <button class="produce-btn" id="pdBtn" onclick="addProduced()">＋ Хийсэн бараа бүртгэх</button>
     <div class="produce-msg" id="pdMsg"></div>
   </div>
+</div>
+
+<!-- Нийт хийсэн бүтээгдэхүүн (бүртгэсэн үйлдвэрлэлийн нийлбэр). Хоосон бол нуугдана. -->
+<div class="section" id="totalSection" style="display:none">
+  <div class="section-label">📊 Нийт хийсэн бүтээгдэхүүн</div>
+  <div class="total-card" id="totalList"></div>
 </div>
 
 <!-- Phase B: Санхүүгээс чиглүүлсэн дотоод худалдан авалт (зөвхөн унших). Хоосон бол нуугдана. -->
@@ -376,6 +393,25 @@ async function loadMaterialFlow() {
   renderFlowLogs('flowOutList', outs, 'Складаас үйлдвэрт гаргасан бараа байхгүй');
   renderProduced('flowInList', pending);
   renderWarehoused();
+  renderProducedTotal();
+}
+
+// Нийт хийсэн бүтээгдэхүүн — бүртгэсэн бүх үйлдвэрлэлийг бараагаар нэгтгэж нийлбэрийг харуулна.
+function renderProducedTotal() {
+  const sec = document.getElementById('totalSection');
+  const el  = document.getElementById('totalList');
+  if (!sec || !el) return;
+  if (!PRODS.length) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  const byProd = {};
+  PRODS.forEach(p => { const n = p.product || '—'; byProd[n] = (byProd[n] || 0) + (parseInt(p.qty) || 0); });
+  const entries = Object.entries(byProd).sort((a, b) => b[1] - a[1]);
+  const unit  = (PRODS[0] && PRODS[0].unit) || 'ш';
+  const grand = entries.reduce((s, [, v]) => s + v, 0);
+  el.innerHTML = entries.map(([n, v]) =>
+    `<div class="total-row"><span class="total-name">${n}</span><span class="total-qty">${fmt(v)} <span>${unit}</span></span></div>`
+  ).join('') +
+  `<div class="total-row total-grand"><span class="total-name">Нийт хийсэн</span><span class="total-qty">${fmt(grand)} <span>${unit}</span></span></div>`;
 }
 // Санхүүгээс "Үйлдвэрлэл" рүү шилжүүлсэн (routed) дотоод худалдан авалт = үйлдвэрт
 // орж ирсэн худалдан авсан материал. Зөвхөн унших — феедээс шилжиж ирсэн мөрүүд.
