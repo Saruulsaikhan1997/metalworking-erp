@@ -47,6 +47,17 @@ function ensurePricesVat(db) {
   db.fix_prices_vat_v1 = true;
 }
 
+// ── Migration: "Замын хавтан" суурь үнийг 16,000 (НӨАТ-гүй) болгох (нэг удаа) ──
+// price талбар нь НӨАТ-ТЭЙ үнээр хадгалагддаг (sales.html ÷1.1-ээр суурь үнэ
+// гаргадаг). Тиймээс НӨАТ-гүй суурь 16,000 = НӨАТ-тэй 16,000 × 1.1 = 17,600.
+function ensurePavementPrice16k(db) {
+  if (db.fix_pavement_price_16k_v2) return;
+  if (!db.products) db.products = [];
+  const isPav = s => /(зам|явган)/i.test(s || '') && /хавтан/i.test(s || '');
+  db.products.forEach(p => { if (isPav(p.name)) p.price = 17600; });
+  db.fix_pavement_price_16k_v2 = true;
+}
+
 // ── Migration: буруу борлуулалтыг склад хоорондын шилжүүлэг болгож засах ──
 // 2026-06-20-нд Нярав-Менежер "Жорлонгийн бүхээг"-ийг Төв складаас БОРЛУУЛАЛТ
 // (SALES_OUT → customer) болгож хассан нь үнэндээ склад хоорондын ШИЛЖҮҮЛЭГ
@@ -193,7 +204,7 @@ router.get('/sales', (req, res) => {
   // Revenue is owner/sales data — factory engineers don't see it.
   if (req.user.role === 'engineer') return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
   const db = load();
-  ensureSaleProducts(db); ensurePricesVat(db); fixBuheegSaleToTransfer(db); save(db);
+  ensureSaleProducts(db); ensurePricesVat(db); ensurePavementPrice16k(db); fixBuheegSaleToTransfer(db); save(db);
   // Эх гүйлгээ (ангилахаас өмнөх банкны хуулга) — source_tx_id-тэй бичлэгт хавсаргана.
   const txById = new Map((db.transactions || []).map(t => [String(t.id), t]));
   const withTx = s => {
