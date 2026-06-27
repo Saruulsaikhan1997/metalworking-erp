@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
-<title>Өр төлбөр — Метал ворkинг Центр</title>
+<title>Зээл (өгсөн/авсан) — Метал ворkинг Центр</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -86,49 +86,7 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 .ls-val.red { color: #c62828; }
 .ls-val.green { color: #059669; }
 
-/* Schedule rows */
-.schedule { border-top: 1px solid var(--gray-200); margin-top: 10px; padding-top: 10px; }
-.schedule-lbl { font-size: 10px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
-.sch-row {
-  display: flex; justify-content: space-between; align-items: center; gap: 10px;
-  padding: 10px 0; border-bottom: 1px solid var(--gray-100);
-}
-.sch-row:last-child { border-bottom: none; }
-.sch-info { flex: 1; }
-.sch-date { font-size: 12px; font-weight: 700; color: var(--gray-900); }
-.sch-note { font-size: 10.5px; color: var(--gray-400); margin-top: 2px; }
-.sch-amt { font-size: 13px; font-weight: 800; color: var(--gray-900); }
-.sch-amt.paid { color: #059669; text-decoration: line-through; }
-.sch-actions { display: flex; gap: 6px; }
-.btn-mark {
-  padding: 7px 12px; background: #059669; color: #fff;
-  border: none; border-radius: 8px; font-size: 11px; font-weight: 700;
-  cursor: pointer;
-}
-.btn-mark:active { opacity: 0.85; }
-.btn-unmark {
-  padding: 6px 10px; background: #fff; color: var(--gray-400);
-  border: 1px solid var(--gray-200); border-radius: 8px; font-size: 11px; font-weight: 600;
-  cursor: pointer;
-}
-.sch-paid-tag {
-  display: inline-block; font-size: 9.5px; font-weight: 700;
-  padding: 2px 7px; border-radius: 4px;
-  background: #d1fae5; color: #065f46;
-  margin-left: 6px;
-}
-
-.sch-row.overdue { background: #fef2f2; border-radius: 8px; padding: 10px; border-bottom: none; }
-.sch-row.upcoming { background: #fffbeb; border-radius: 8px; padding: 10px; border-bottom: none; }
-
 .empty { text-align: center; color: var(--gray-400); padding: 30px 20px; font-size: 13px; }
-
-.coming-soon {
-  background: #fffbeb; border: 1px dashed #f59e0b;
-  border-radius: 12px; padding: 16px;
-  text-align: center; color: #92400e;
-  font-size: 12px; line-height: 1.6;
-}
 </style>
 </head>
 <body>
@@ -137,39 +95,37 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
   <div class="id-top">
     <a class="id-back" href="/finance">‹</a>
     <div style="flex:1">
-      <div class="id-title">🔁 Хөрөнгө оруулалт · Зээл</div>
-      <div class="id-sub">Хөрөнгө оруулалт, олгосон зээл</div>
+      <div class="id-title">🔁 Зээл (өгсөн/авсан)</div>
+      <div class="id-sub">Бусдад өгсөн ба бусдаас авсан зээл</div>
     </div>
   </div>
   <div class="summary-grid">
     <div class="sum-card">
-      <div class="sum-lbl">📥 Хөрөнгө оруулалт</div>
-      <div class="sum-val" id="sumRecv">— ₮</div>
-      <div class="sum-sub" id="sumRecvSub">оруулагч</div>
+      <div class="sum-lbl">📤 Зээл өгсөн</div>
+      <div class="sum-val" id="sumGiven">— ₮</div>
+      <div class="sum-sub" id="sumGivenSub">авах үлдэгдэл</div>
     </div>
     <div class="sum-card">
-      <div class="sum-lbl">📤 Бид өгсөн</div>
-      <div class="sum-val" id="sumLent">— ₮</div>
-      <div class="sum-sub" id="sumLentSub">үлдсэн авах</div>
+      <div class="sum-lbl">📥 Зээл авсан</div>
+      <div class="sum-val" id="sumReceived">— ₮</div>
+      <div class="sum-sub" id="sumReceivedSub">өгөх үлдэгдэл</div>
     </div>
   </div>
 </div>
 
-<div id="alerts"></div>
-
 <div class="section">
   <div class="tabs-row">
-    <button class="tab-pill active" id="t-recv" onclick="showTab('recv')">📥 Хөрөнгө оруулалт</button>
-    <button class="tab-pill" id="t-lent" onclick="showTab('lent')">📤 Бид өгсөн</button>
+    <button class="tab-pill active" id="t-given" onclick="showTab('given')">📤 Зээл өгсөн</button>
+    <button class="tab-pill" id="t-received" onclick="showTab('received')">📥 Зээл авсан</button>
     <button class="tab-pill" id="t-history" onclick="showTab('history')">📋 Гүйлгээний түүх</button>
   </div>
 
-  <div id="panel-recv" class="panel active">
-    <div id="recvList"></div>
+  <div id="panel-given" class="panel active">
+    <div id="givenList"></div>
   </div>
 
-  <div id="panel-lent" class="panel">
-    <div id="lentList"></div>
+  <div id="panel-received" class="panel">
+    <div id="receivedList"></div>
   </div>
 
   <div id="panel-history" class="panel">
@@ -192,10 +148,7 @@ async function api(path, opts = {}) {
   return r.json();
 }
 function fmt(n) { return Number(n||0).toLocaleString('mn-MN'); }
-function today() { return new Date().toISOString().slice(0,10); }
-function daysUntil(d) { return Math.ceil((new Date(d) - new Date()) / 86400000); }
 
-let loansReceived = [];
 let allTx = [];
 
 function showTab(name) {
@@ -206,153 +159,54 @@ function showTab(name) {
   if (name === 'history') renderHistory();
 }
 
-async function markPaid(loanId, scheduleIdx) {
-  if (user.role !== 'admin') { alert('Зөвхөн админ төлбөрийн төлөв өөрчилнө'); return; }
-  if (!confirm('Энэ төлбөрийг төлсөн гэж тэмдэглэх үү?')) return;
-  const r = await api(`/finance/loans-received/${loanId}/mark-paid`, {
-    method: 'PUT',
-    body: JSON.stringify({ schedule_index: scheduleIdx })
-  });
-  if (r.ok) { await load(); }
-  else alert(r.error || 'Алдаа гарлаа');
-}
-
-async function unmarkPaid(loanId, scheduleIdx) {
-  if (user.role !== 'admin') return;
-  if (!confirm('Төлсөн гэсэн тэмдэглэгээг буцаах уу?')) return;
-  const r = await api(`/finance/loans-received/${loanId}/unmark-paid`, {
-    method: 'PUT',
-    body: JSON.stringify({ schedule_index: scheduleIdx })
-  });
-  if (r.ok) await load();
-}
-
-function renderRecv() {
-  const el = document.getElementById('recvList');
-  if (!loansReceived.length) {
-    el.innerHTML = '<div class="empty">Хөрөнгө оруулалт бүртгэгдээгүй</div>';
-    return;
-  }
-  el.innerHTML = loansReceived.map(l => {
-    const sched = l.interest_schedule || [];
-    const paidAmt = sched.filter(s => s.paid).reduce((s,x) => s+x.amount, 0);
-    const remainingInterest = (l.interest_total || 0) - paidAmt;
-    const remainingTotal = (l.principal || 0) + remainingInterest;
-
-    return `<div class="loan-card">
-      <div class="loan-top">
-        <div>
-          <div class="loan-name">${l.lender}</div>
-          <div class="loan-meta">Огноо: ${l.principal_received_date} · Хугацаа: ${l.term_years} жил${l.term_end ? ' (' + l.term_end + ')' : ''}</div>
-        </div>
-        <span class="loan-status ${remainingInterest === 0 ? 'done' : 'active'}">${remainingInterest === 0 ? '✓ Ашиг төлсөн' : 'ИДЭВХТЭЙ'}</span>
-      </div>
-
-      <div class="loan-stats">
-        <div class="ls-item">
-          <div class="ls-lbl">Хөрөнгө оруулалт</div>
-          <div class="ls-val">${fmt(l.principal)}₮</div>
-        </div>
-        <div class="ls-item">
-          <div class="ls-lbl">Тохирсон ашиг</div>
-          <div class="ls-val">${fmt(l.interest_total)}₮</div>
-        </div>
-        <div class="ls-item">
-          <div class="ls-lbl">Төлсөн ашиг</div>
-          <div class="ls-val green">${fmt(paidAmt)}₮</div>
-        </div>
-        <div class="ls-item">
-          <div class="ls-lbl">Үлдсэн ашиг</div>
-          <div class="ls-val red">${fmt(remainingInterest)}₮</div>
-        </div>
-      </div>
-
-      ${l.note ? `<div style="font-size:11px;color:#666;margin-bottom:10px;padding:8px 10px;background:#fffbeb;border-radius:8px;border-left:3px solid #f59e0b">💡 ${l.note}</div>` : ''}
-
-      <div class="schedule">
-        <div class="schedule-lbl">Ашгийн төлбөрийн график</div>
-        ${sched.map((s, i) => {
-          const days = daysUntil(s.date);
-          const overdue = !s.paid && days < 0;
-          const upcoming = !s.paid && days >= 0 && days <= 30;
-          const cls = overdue ? 'overdue' : upcoming ? 'upcoming' : '';
-          return `<div class="sch-row ${cls}">
-            <div class="sch-info">
-              <div class="sch-date">${s.date}${s.paid ? '<span class="sch-paid-tag">✓ ТӨЛСӨН</span>' : overdue ? ` <span style="color:#dc2626;font-size:10px">⚠️ ${Math.abs(days)} хоног хоцорсон</span>` : upcoming ? ` <span style="color:#92400e;font-size:10px">📅 ${days} хоногт</span>` : ''}</div>
-              <div class="sch-note">${s.note || ''}</div>
-            </div>
-            <div class="sch-amt ${s.paid ? 'paid' : ''}">${fmt(s.amount)}₮</div>
-            <div class="sch-actions">
-              ${s.paid
-                ? (user.role === 'admin' ? `<button class="btn-unmark" onclick="unmarkPaid(${l.id},${i})">↺</button>` : '')
-                : (user.role === 'admin' ? `<button class="btn-mark" onclick="markPaid(${l.id},${i})">✓ Төлсөн</button>` : '')}
-            </div>
-          </div>`;
-        }).join('')}
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function renderLent() {
-  // Group LOAN_OUT/LOAN_IN by COUNTERPARTY ACCOUNT (not by description)
-  // This correctly groups multiple loans to the same person, even with different memos.
+// LOAN_OUT/LOAN_IN-ийг ХАРЬЦАГЧийн дансаар бүлэглэнэ (нэг хүний олон зээлийг нэгтгэнэ)
+function groupByParty() {
   const loanOuts = allTx.filter(t => t.code === 'LOAN_OUT');
   const loanIns  = allTx.filter(t => t.code === 'LOAN_IN');
 
   function normalizeAccount(acc) {
     if (!acc) return '';
-    // Strip MN prefix and country code to match short bank account numbers
-    // e.g., "MN620005005070327212" ↔ "5070327212"
     const s = String(acc).trim();
-    if (s.length >= 16 && /^MN/i.test(s)) {
-      // Last 10 digits typically match the short form
-      return s.slice(-10);
-    }
+    if (s.length >= 16 && /^MN/i.test(s)) return s.slice(-10);
     return s;
   }
-
   const byParty = {};
   function getOrCreate(key, label) {
-    if (!byParty[key]) byParty[key] = { label, given: 0, returned: 0, txs: [] };
+    if (!byParty[key]) byParty[key] = { key, label, given: 0, returned: 0, txs: [] };
     return byParty[key];
   }
-
   for (const t of loanOuts) {
     const acct = normalizeAccount(t.counterparty);
     const key = acct || (t.description || 'Тодорхойгүй').trim();
-    const label = t.note || t.description || acct || 'Тодорхойгүй';
-    const entry = getOrCreate(key, label);
+    const entry = getOrCreate(key, t.note || t.description || acct || 'Тодорхойгүй');
     entry.given += t.amount;
     entry.txs.push(t);
   }
   for (const t of loanIns) {
     const acct = normalizeAccount(t.counterparty);
     const key = acct || (t.description || 'Тодорхойгүй').trim();
-    if (byParty[key]) {
-      byParty[key].returned += t.amount;
-      byParty[key].txs.push(t);
-    } else {
-      // Orphan return (no matching loan out) — show separately
-      getOrCreate(key, t.note || t.description || acct || 'Тодорхойгүй');
-      byParty[key].returned += t.amount;
-      byParty[key].txs.push(t);
-    }
+    const entry = getOrCreate(key, t.note || t.description || acct || 'Тодорхойгүй');
+    entry.returned += t.amount;
+    entry.txs.push(t);
   }
+  return Object.values(byParty).map(l => ({ ...l, net: l.given - l.returned }));
+}
 
-  const list = Object.entries(byParty);
-  const el = document.getElementById('lentList');
-  if (!list.length) {
-    el.innerHTML = '<div class="empty">Өгсөн зээл бүртгэгдээгүй</div>';
-    return;
-  }
+function partyMeta(l) {
+  const lastDate = l.txs.map(t => t.date).filter(Boolean).sort().pop() || '—';
+  const accountDisplay = /^\d{8,}$/.test(l.key) ? `Данс ${l.key}` : l.key;
+  return { lastDate, accountDisplay };
+}
 
-  el.innerHTML = list.map(([key, l]) => {
+// ЗЭЭЛ ӨГСӨН: бид бусдад өгсөн (given >= returned → авлага)
+function renderGiven() {
+  const list = groupByParty().filter(l => l.given > 0 && l.given >= l.returned);
+  const el = document.getElementById('givenList');
+  if (!list.length) { el.innerHTML = '<div class="empty">Өгсөн зээл байхгүй</div>'; return; }
+  el.innerHTML = list.map(l => {
     const remaining = l.given - l.returned;
     const status = remaining <= 0 ? 'done' : 'active';
-    const lastDate = l.txs.map(t => t.date).sort().pop();
-    // Display name: counterparty account + short description from latest loan
-    const accountDisplay = /^\d{8,}$/.test(key) ? `Данс ${key}` : key;
+    const { lastDate, accountDisplay } = partyMeta(l);
     return `<div class="loan-card lent">
       <div class="loan-top">
         <div>
@@ -379,6 +233,44 @@ function renderLent() {
   }).join('');
 }
 
+// ЗЭЭЛ АВСАН: бид бусдаас авсан (returned > given → өглөг)
+function renderReceived() {
+  const list = groupByParty().filter(l => l.returned > l.given);
+  const el = document.getElementById('receivedList');
+  if (!list.length) {
+    el.innerHTML = '<div class="empty">Бид одоогоор зээл аваагүй байна</div>';
+    return;
+  }
+  el.innerHTML = list.map(l => {
+    const owed = l.returned - l.given;
+    const status = owed <= 0 ? 'done' : 'active';
+    const { lastDate, accountDisplay } = partyMeta(l);
+    return `<div class="loan-card">
+      <div class="loan-top">
+        <div>
+          <div class="loan-name">${l.label}</div>
+          <div class="loan-meta">${accountDisplay !== l.label ? accountDisplay + ' · ' : ''}Сүүлийн гүйлгээ: ${lastDate}</div>
+        </div>
+        <span class="loan-status ${status}">${status === 'done' ? '✓ ТӨЛСӨН' : '🔴 ИДЭВХТЭЙ'}</span>
+      </div>
+      <div class="loan-stats">
+        <div class="ls-item">
+          <div class="ls-lbl">Авсан дүн</div>
+          <div class="ls-val">${fmt(l.returned)}₮</div>
+        </div>
+        <div class="ls-item">
+          <div class="ls-lbl">Төлсөн</div>
+          <div class="ls-val green">${fmt(l.given)}₮</div>
+        </div>
+        <div class="ls-item" style="grid-column:1 / -1">
+          <div class="ls-lbl">Өгөх үлдэгдэл</div>
+          <div class="ls-val ${owed > 0 ? 'red' : 'green'}">${fmt(Math.max(0, owed))}₮</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function renderHistory() {
   const loanTx = allTx.filter(t => ['LOAN_IN','LOAN_OUT'].includes(t.code))
                       .sort((a,b) => (b.date||'').localeCompare(a.date||''));
@@ -389,7 +281,7 @@ function renderHistory() {
     return `<div class="loan-card ${isIn ? 'lent' : ''}" style="padding:12px 16px">
       <div class="loan-top" style="margin-bottom:6px">
         <div>
-          <div class="loan-name" style="font-size:13px">${t.code === 'LOAN_IN' ? '📥' : '📤'} ${t.note || t.description || '—'}</div>
+          <div class="loan-name" style="font-size:13px">${isIn ? '📥' : '📤'} ${t.note || t.description || '—'}</div>
           <div class="loan-meta">${t.date}${t.time ? ' · ' + t.time : ''} · ${(t.account_label||'').replace(' (Касс)','').replace(' (Компани)','')}</div>
         </div>
         <div style="font-size:14px;font-weight:800;color:${isIn ? '#059669' : '#c62828'}">${isIn ? '+' : '−'}${fmt(t.amount)}₮</div>
@@ -398,53 +290,25 @@ function renderHistory() {
   }).join('');
 }
 
-function renderAlerts() {
-  let html = '';
-  // Loan received alerts
-  for (const l of loansReceived) {
-    const sched = l.interest_schedule || [];
-    for (let i = 0; i < sched.length; i++) {
-      if (sched[i].paid) continue;
-      const days = daysUntil(sched[i].date);
-      if (days < 0) {
-        html += `<div class="alert">⚠️ <b>${l.lender}</b> ашгийн төлбөр <b>${Math.abs(days)} хоног</b> хоцорсон: ${fmt(sched[i].amount)}₮ (${sched[i].date})</div>`;
-      } else if (days <= 14) {
-        html += `<div class="alert warning">📅 <b>${l.lender}</b> ашгийн төлбөр ${days} хоногт: ${fmt(sched[i].amount)}₮ (${sched[i].date})</div>`;
-      }
-    }
-  }
-  document.getElementById('alerts').innerHTML = html ? `<div class="section">${html}</div>` : '';
-}
-
 function renderSummary() {
-  // Received: outstanding total
-  // Хөрөнгө оруулалт: зөвхөн principal харуулна
-  let investTotal = 0;
-  let profitTotal = 0;
-  let profitPaid = 0;
-  for (const l of loansReceived) {
-    investTotal += (l.principal || 0);
-    profitTotal += (l.interest_total || 0);
-    profitPaid += (l.interest_schedule || []).filter(s => s.paid).reduce((s,x) => s+x.amount, 0);
-  }
-  document.getElementById('sumRecv').textContent = fmt(investTotal) + ' ₮';
-  document.getElementById('sumRecvSub').textContent = loansReceived.length + ' оруулагч · ашиг ' + fmt(profitTotal - profitPaid) + '₮ үлдсэн';
+  const parties = groupByParty();
+  const givenSum = allTx.filter(t => t.code === 'LOAN_OUT').reduce((s,t)=>s+t.amount,0);
+  const inSum    = allTx.filter(t => t.code === 'LOAN_IN').reduce((s,t)=>s+t.amount,0);
 
-  // Lent: outstanding
-  const loanOutSum = allTx.filter(t => t.code === 'LOAN_OUT').reduce((s,t)=>s+t.amount,0);
-  const loanInSum  = allTx.filter(t => t.code === 'LOAN_IN').reduce((s,t)=>s+t.amount,0);
-  const lentOutstanding = Math.max(0, loanOutSum - loanInSum);
-  document.getElementById('sumLent').textContent = fmt(lentOutstanding) + ' ₮';
-  document.getElementById('sumLentSub').textContent = fmt(loanOutSum) + '₮ өгөөд ' + fmt(loanInSum) + '₮ буцаасан';
+  const givenOutstanding = parties.filter(l => l.net > 0).reduce((s,l) => s + l.net, 0);
+  document.getElementById('sumGiven').textContent = fmt(givenOutstanding) + ' ₮';
+  document.getElementById('sumGivenSub').textContent = fmt(givenSum) + '₮ өгөөд ' + fmt(inSum) + '₮ буцсан';
+
+  const receivedOutstanding = parties.filter(l => l.net < 0).reduce((s,l) => s - l.net, 0);
+  document.getElementById('sumReceived').textContent = fmt(receivedOutstanding) + ' ₮';
+  document.getElementById('sumReceivedSub').textContent = receivedOutstanding > 0 ? 'төлөх үлдэгдэл' : 'зээл аваагүй';
 }
 
 async function load() {
-  loansReceived = await api('/finance/loans-received') || [];
   allTx = await api('/finance/transactions') || [];
   renderSummary();
-  renderAlerts();
-  renderRecv();
-  renderLent();
+  renderGiven();
+  renderReceived();
 }
 load();
 </script>

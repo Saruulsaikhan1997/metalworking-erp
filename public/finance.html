@@ -200,9 +200,15 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
       <div class="fin-amt expense" id="totalExpense">— ₮</div>
       <div class="fin-sub" id="totalExpenseSub">энэ сар</div>
     </a>
+    <a class="fin-btn" id="investmentCard" href="/investment" style="display:none;border-left:3px solid #6d28d9">
+      <div class="fin-icon">💼</div>
+      <div class="fin-title">Хөрөнгө оруулалт</div>
+      <div class="fin-amt" style="color:#6d28d9" id="totalInvestment">— ₮</div>
+      <div class="fin-sub" id="totalInvestmentSub">ашиг үлдсэн</div>
+    </a>
     <a class="fin-btn loan-out" href="/loans" style="border-left:3px solid #f59e0b">
-      <div class="fin-icon">📤</div>
-      <div class="fin-title">Олгосон зээл</div>
+      <div class="fin-icon">🔁</div>
+      <div class="fin-title">Зээл (өгсөн/авсан)</div>
       <div class="fin-amt" style="color:#b45309" id="totalLoanOut">— ₮</div>
       <div class="fin-sub" id="totalLoanOutSub">авлага</div>
     </a>
@@ -236,6 +242,7 @@ if (!token) window.location.href = '/';
 if (['admin','shareholder','accountant'].includes(user.role)) document.getElementById('adminSection').style.display = '';
 if (user.role === 'admin') document.getElementById('adminImportSection').style.display = '';
 if (['admin','shareholder'].includes(user.role)) document.getElementById('claudeCard').style.display = '';
+if (['admin','shareholder'].includes(user.role)) document.getElementById('investmentCard').style.display = '';
 
 async function api(path) {
   const r = await fetch('/api' + path, { headers: { 'Authorization': 'Bearer ' + token }});
@@ -327,6 +334,17 @@ async function load() {
   const loanOutActive = Math.max(0, loanOutSum - loanInSum);
   document.getElementById('totalLoanOut').textContent = fmt(loanOutActive) + ' ₮';
   document.getElementById('totalLoanOutSub').textContent = `${fmt(loanOutSum)} олгосон · ${fmt(loanInSum)} буцсан`;
+
+  // Хөрөнгө оруулалт карт (admin/shareholder) — loans_received-ээс
+  if (['admin','shareholder'].includes(user.role)) {
+    const lr = await api('/finance/loans-received').catch(() => []);
+    const lrList = Array.isArray(lr) ? lr : [];
+    const principal   = lrList.reduce((s,l) => s + (l.principal||0), 0);
+    const profitTotal = lrList.reduce((s,l) => s + (l.interest_total||0), 0);
+    const profitPaid  = lrList.reduce((s,l) => s + (l.interest_schedule||[]).filter(x=>x.paid).reduce((a,x)=>a+x.amount,0), 0);
+    document.getElementById('totalInvestment').textContent = fmt(principal) + ' ₮';
+    document.getElementById('totalInvestmentSub').textContent = fmt(profitTotal - profitPaid) + '₮ ашиг үлдсэн';
+  }
 
   // CLAUDE: хуваарилаагүй бөөн зардал (эзэн + хувьцаа эзэмшигч)
   if (['admin','shareholder'].includes(user.role)) {
