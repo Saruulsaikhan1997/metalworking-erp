@@ -1255,12 +1255,13 @@ function renderBranchCards(items) {
     branches[loc].count++;
     branches[loc].qty += Number(i.qty) || 0;
   });
-  // Бүх 5 байршлыг харуул (өгөгдөлгүй ч гэсэн)
-  Object.keys(LOC_LABEL).forEach(loc => { if (!branches[loc]) branches[loc] = { count: 0, qty: 0 }; });
   const fmt = n => Number(n).toLocaleString('en-US');
   const el = document.getElementById('branch-cards');
   if (!el) return;
-  el.innerHTML = Object.entries(LOC_LABEL).map(([loc, label]) => {
+  // Зөвхөн бараатай складыг харуул (Төв склад үргэлж харагдана). Хоосон склад нуугдана.
+  el.innerHTML = Object.entries(LOC_LABEL)
+    .filter(([loc]) => loc === 'central' || (branches[loc] && branches[loc].count > 0))
+    .map(([loc, label]) => {
     const d = branches[loc] || { count: 0, qty: 0 };
     const isActive = stockLocFilter === loc;
     return `<div onclick="setLocFilter('${loc}')"
