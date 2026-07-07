@@ -185,18 +185,23 @@ function showSTab(name) {
 }
 
 // ── Products ──────────────────────────────────────────────
+let allProducts = [];
 async function loadProducts() {
   const list = await api('/products');
+  allProducts = Array.isArray(list) ? list : [];
   const el   = document.getElementById('prodList');
   if (!list.length) { el.innerHTML = '<div class="empty">Бүтээгдэхүүн байхгүй</div>'; return; }
   el.innerHTML = list.map(p => `
     <div class="list-row ${p.active === false ? 'inactive' : ''}">
       <div class="lr-main">
         <div class="lr-name">${p.name}</div>
-        <div class="lr-sub"><span class="tag ${p.active !== false ? 'active' : 'inactive'}">${p.active !== false ? 'Идэвхтэй' : 'Идэвхгүй'}</span></div>
+        <div class="lr-sub">
+          <span class="tag ${p.active !== false ? 'active' : 'inactive'}">${p.active !== false ? 'Идэвхтэй' : 'Идэвхгүй'}</span>
+          ${(p.bundle_ids && p.bundle_ids.length) ? `<span class="tag" style="background:#e0e7ff;color:#3730a3">🔗 ${p.bundle_ids.length} холбоотой бараа</span>` : ''}
+        </div>
       </div>
       <div class="lr-price">${p.price > 0 ? fmt(p.price) + ' ₮' : '—'}</div>
-      <button class="act-btn edit" onclick="editProduct('${p.id}','${escQ(p.name)}',${p.price})">Засах</button>
+      <button class="act-btn edit" onclick="editProduct('${p.id}')">Засах</button>
       ${p.active !== false
         ? `<button class="act-btn disable" onclick="toggleProduct('${p.id}', false)">Хаах</button>`
         : `<button class="act-btn enable"  onclick="toggleProduct('${p.id}', true)">Нээх</button>`}
@@ -301,14 +306,31 @@ async function saveModal() {
   closeModal();
 }
 
-function editProduct(id, name, price) {
+function editProduct(id) {
+  const prod = allProducts.find(p => p.id === id);
+  if (!prod) return;
+  const bundleIds = new Set(prod.bundle_ids || []);
+  const otherProds = allProducts.filter(p => p.id !== id);
+  const bundleHtml = otherProds.length ? `
+    <div class="field">
+      <label>🔗 Хамт зарагддаг бараа <span style="color:#aaa;font-weight:400">(заавал биш — сонговол борлуулалтад автоматаар нэмэгдэнэ)</span></label>
+      <div style="max-height:160px;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;padding:8px">
+        ${otherProds.map(p => `
+          <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-weight:400">
+            <input type="checkbox" class="ep-bundle" value="${p.id}" ${bundleIds.has(p.id) ? 'checked' : ''}>
+            ${p.name}
+          </label>`).join('')}
+      </div>
+    </div>` : '';
   openModal('Бүтээгдэхүүн засах', `
-    <div class="field"><label>Нэр</label><input id="ep_name" value="${name}"></div>
-    <div class="field"><label>Үнэ ₮</label><input id="ep_price" type="number" value="${price}"></div>`,
+    <div class="field"><label>Нэр</label><input id="ep_name" value="${prod.name}"></div>
+    <div class="field"><label>Үнэ ₮</label><input id="ep_price" type="number" value="${prod.price}"></div>
+    ${bundleHtml}`,
     async () => {
       const n = document.getElementById('ep_name').value.trim();
       const p = parseInt(document.getElementById('ep_price').value) || 0;
-      await api('/products/' + id, { method: 'PUT', body: JSON.stringify({ name: n, price: p }) });
+      const bundle_ids = Array.from(document.querySelectorAll('.ep-bundle:checked')).map(cb => cb.value);
+      await api('/products/' + id, { method: 'PUT', body: JSON.stringify({ name: n, price: p, bundle_ids }) });
       loadProducts();
     }
   );

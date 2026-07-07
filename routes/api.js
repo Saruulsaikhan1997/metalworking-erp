@@ -57,10 +57,13 @@ router.get('/dashboard', (req, res) => {
 // ── Migration: "Суултуур" бүтээгдэхүүн нэмэх (нэг удаа) ──
 // НӨАТ-гүй суурь үнэ 1,600,000₮ × 1.1 = 1,760,000₮ (НӨАТ-тэй хадгалах конвенц,
 // бусад бараатай адил — sales.html НӨАТ-гүй горимд ÷1.1 хийж суурь үнийг гаргана).
+// Анхаар: "Суултуур" ба "Саарал суултуур" хоёр ӨӨР бараа тул "саарал"-тай
+// хосолсон нэрийг энд "аль хэдийн байгаа" гэж бүү тоо.
 function ensureSuultuurProduct(db) {
   if (db.add_suultuur_v1) return;
   if (!db.products) db.products = [];
-  if (!db.products.some(p => /суултуур/i.test(p.name || ''))) {
+  const plainExists = db.products.some(p => /суултуур/i.test(p.name || '') && !/саарал/i.test(p.name || ''));
+  if (!plainExists) {
     db.products.push({ id: 'suultuur', name: 'Суултуур', price: 1760000, active: true });
   }
   db.add_suultuur_v1 = true;

@@ -74,6 +74,16 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
 .save-btn { width: 100%; padding: 13px; background: #1a1a2e; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 14px; }
 .save-btn:active { opacity: 0.85; }
 
+.add-line-btn { width: 100%; padding: 10px; background: #eef2ff; color: #3730a3; border: 1.5px dashed #a5b4fc; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 10px; }
+.add-line-btn:active { opacity: 0.85; }
+
+.cart-row { display: flex; align-items: center; gap: 6px; padding: 8px 0; border-bottom: 1px solid #eee; }
+.cart-row:last-child { border-bottom: none; }
+.cart-name { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cart-row input[type="number"] { width: 68px; padding: 6px 7px; border: 1.5px solid #e0e0e0; border-radius: 6px; font-size: 12px; }
+.cart-line-total { width: 84px; text-align: right; font-size: 12px; font-weight: 700; color: #1a1a2e; }
+.cart-remove { background: none; border: none; color: #c62828; font-size: 16px; cursor: pointer; padding: 0 4px; }
+
 /* ── Шинэ SALE орлого (банкны хуулга → ангилах) ── */
 .inc-card { background:#fff; border-radius:12px; padding:12px 14px; margin-bottom:9px; box-shadow:0 1px 4px rgba(0,0,0,0.07); border-left:4px solid #43a047; }
 .inc-top { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
@@ -273,6 +283,14 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
       </div>
     </div>
 
+    <button type="button" class="add-line-btn" onclick="addProductToInvoice()">+ Сагсанд нэмэх</button>
+
+    <!-- Сагс: сонгосон бараа + автоматаар нэмэгдсэн холбоотой (bundle) бараанууд -->
+    <div class="field" id="nCartWrap" style="display:none">
+      <label>Сагсанд орсон бараа</label>
+      <div id="nCartList"></div>
+    </div>
+
     <div class="calc-bar green" id="nTotal"><span>Нийт дүн (НӨАТ-тэй)</span><span>0 ₮</span></div>
     <div class="calc-bar gray" id="nVat" style="font-weight:600;font-size:12px"><span>НӨАТ-гүй: 0 ₮</span><span>НӨАТ (10%): 0 ₮</span></div>
 
@@ -445,6 +463,9 @@ let products   = [];
 let productMap = {};   // id → display name lookup
 let banks      = [];   // bank accounts (засах формд ашиглана)
 let qfMode     = 'month';
+// Сагс: сонгосон бараа + автоматаар нэмэгдсэн холбоотой (bundle) бараанууд.
+// Мөр бүр = { productId, name, qty, price }.
+let invoiceCart = [];
 // Склад / байршил — Үлдэгдэл (склад) хуудасны нэрстэй ижил
 const WAREHOUSES = ['Төв склад', 'Үйлдвэр', 'ТЭЦ 4 склад', '7 буудал склад', 'Склад 3', 'Үзүүлэн'];
 
@@ -521,11 +542,86 @@ function onProductChange() {
   calcTotal();
 }
 
+// Барааг (болон холбоотой bundle бараануудыг) сагсанд нэмнэ.
+// Дүрэм: 1) Үндсэн бараа эхэлж нэмэгдэнэ. 2) Холбоотой бараанууд шууд араас нь
+// нэмэгдэнэ. 3) Тухайн бараа сагсанд аль хэдийн байвал мөр давхардуулахгүй,
+// зөвхөн тоо ширхэгийг нь нэмэгдүүлнэ.
+function addLineToCart(prod, qty, price) {
+  const existing = invoiceCart.find(l => l.productId === prod.id);
+  if (existing) {
+    existing.qty += qty;
+  } else {
+    invoiceCart.push({ productId: prod.id, name: prod.name, qty, price });
+  }
+}
+
+function addProductToInvoice() {
+  const id  = document.getElementById('nProduct').value;
+  const qty = parseInt(document.getElementById('nQty').value) || 0;
+  const price = parseInt(document.getElementById('nPrice').value) || 0;
+  if (!id)      { alert('Бараа сонгоно уу'); return; }
+  if (qty < 1)  { alert('Тоо ширхэг оруулна уу'); return; }
+  if (price < 1) { alert('Үнэ оруулна уу'); return; }
+  const prod = products.find(p => p.id === id);
+  if (!prod) return;
+  const withVat = document.getElementById('nVatMode').value !== 'without';
+
+  // 1) Үндсэн бараа
+  addLineToCart(prod, qty, price);
+
+  // 2) Холбоотой (bundle) бараанууд — үндсэн бараатай ижил тоо ширхэгээр
+  (prod.bundle_ids || []).forEach(bid => {
+    const bundleProd = products.find(p => p.id === bid);
+    if (!bundleProd) return;
+    const bPrice = bundleProd.price > 0
+      ? (withVat ? bundleProd.price : Math.round(bundleProd.price / 1.1))
+      : 0;
+    addLineToCart(bundleProd, qty, bPrice);
+  });
+
+  document.getElementById('nQty').value = 1;
+  renderCart();
+  calcTotal();
+}
+
+function renderCart() {
+  const wrap = document.getElementById('nCartWrap');
+  const list = document.getElementById('nCartList');
+  if (!invoiceCart.length) {
+    wrap.style.display = 'none';
+    list.innerHTML = '';
+    return;
+  }
+  wrap.style.display = '';
+  list.innerHTML = invoiceCart.map((l, i) => `
+    <div class="cart-row">
+      <div class="cart-name">${l.name}</div>
+      <input type="number" min="1" value="${l.qty}" onchange="updateCartQty(${i}, this.value)">
+      <input type="number" min="0" value="${l.price}" onchange="updateCartPrice(${i}, this.value)">
+      <div class="cart-line-total">${fmt(l.qty * l.price)}₮</div>
+      <button type="button" class="cart-remove" onclick="removeCartLine(${i})">✕</button>
+    </div>`).join('');
+}
+
+function updateCartQty(i, v) {
+  invoiceCart[i].qty = Math.max(1, parseInt(v) || 0);
+  renderCart();
+  calcTotal();
+}
+function updateCartPrice(i, v) {
+  invoiceCart[i].price = parseInt(v) || 0;
+  renderCart();
+  calcTotal();
+}
+function removeCartLine(i) {
+  invoiceCart.splice(i, 1);
+  renderCart();
+  calcTotal();
+}
+
 function calcTotal() {
-  const qty   = parseInt(document.getElementById('nQty').value)     || 0;
-  const price = parseInt(document.getElementById('nPrice').value)   || 0;
   const adv   = parseInt(document.getElementById('nAdvance').value) || 0;
-  const total = qty * price;
+  const total = invoiceCart.reduce((s, l) => s + (l.qty || 0) * (l.price || 0), 0);
   const rem   = Math.max(0, total - adv);
 
   const withVat = document.getElementById('nVatMode').value !== 'without';
@@ -632,15 +728,13 @@ function onRecSettleChange() {
 }
 
 async function submitSale() {
-  const product  = document.getElementById('nProduct').value;
-  const qty      = parseInt(document.getElementById('nQty').value)     || 0;
-  const price    = parseInt(document.getElementById('nPrice').value)   || 0;
-  const advance  = parseInt(document.getElementById('nAdvance').value) || 0;
+  if (!invoiceCart.length) { alert('Сагсанд бараа нэмнэ үү'); return; }
+  for (const l of invoiceCart) {
+    if ((l.qty || 0) < 1)   { alert(l.name + ': тоо ширхэг буруу байна'); return; }
+    if ((l.price || 0) < 1) { alert(l.name + ': үнэ оруулна уу'); return; }
+  }
 
-  if (qty < 1)   { alert('Тоо ширхэг оруулна уу'); return; }
-  if (price < 1) { alert('Үнэ оруулна уу'); return; }
-
-  // 1) Хуучин авлага барагдуулах (гүйлгээний хэсэг)
+  // 1) Хуучин авлага барагдуулах (гүйлгээний хэсэг — сагснаас тусдаа)
   const recId  = document.getElementById('nRecSettle').value;
   const recAmt = parseInt(document.getElementById('nRecAmount').value) || 0;
   if (recId && recAmt > 0) {
@@ -648,42 +742,54 @@ async function submitSale() {
     if (!rr.ok) { alert('Авлага төлөхөд алдаа: ' + (rr.error || '')); return; }
   }
 
-  // 2) Шинэ бараа борлуулалт
-  const r = await api('/sales', {
-    method: 'POST',
-    body: JSON.stringify({
-      date:           document.getElementById('nDate').value,
-      branch:         document.getElementById('nBranch').value,
-      product,
-      quantity:       qty,
-      unit_price:     price,
-      advance_paid:   advance,
-      bank_account:   document.getElementById('nBank').value,
-      note:           document.getElementById('nNote').value.trim(),
-      source_tx_id:   pendingTx ? pendingTx.id : null,
-      vat_mode:       document.getElementById('nVatMode').value,
-    }),
-  });
+  // 2) Сагсан дахь бараа тус бүрээр борлуулалт бүртгэнэ. Авсан дүнг (urьдчилгаа)
+  // мөрүүд рүү дараалан хуваарилж, нэг мөрийн дүнг нөхмөгц дараагийн мөр рүү шилжинэ.
+  const date         = document.getElementById('nDate').value;
+  const branch       = document.getElementById('nBranch').value;
+  const bank_account = document.getElementById('nBank').value;
+  const note         = document.getElementById('nNote').value.trim();
+  const vat_mode     = document.getElementById('nVatMode').value;
+  let advanceLeft    = parseInt(document.getElementById('nAdvance').value) || 0;
 
-  if (r.id) {
-    const branchSel = document.getElementById('nBranch').value;
-    if (branchSel && r.inventory_deducted === false) {
-      alert('⚠️ Борлуулалт бүртгэгдлээ. Гэхдээ "' + branchSel + '"-д энэ бараа олдоогүй тул складаас хасагдсангүй.');
+  for (const l of invoiceCart) {
+    const lineTotal   = l.qty * l.price;
+    const lineAdvance = Math.min(advanceLeft, lineTotal);
+    advanceLeft -= lineAdvance;
+
+    const r = await api('/sales', {
+      method: 'POST',
+      body: JSON.stringify({
+        date, branch,
+        product:        l.productId,
+        quantity:       l.qty,
+        unit_price:     l.price,
+        advance_paid:   lineAdvance,
+        bank_account,
+        note,
+        source_tx_id:   pendingTx ? pendingTx.id : null,
+        vat_mode,
+      }),
+    });
+
+    if (!r.id) { alert(l.name + ': ' + (r.error || 'Алдаа гарлаа')); return; }
+    if (branch && r.inventory_deducted === false) {
+      alert('⚠️ "' + l.name + '" борлуулалт бүртгэгдлээ. Гэхдээ "' + branch + '"-д энэ бараа олдоогүй тул складаас хасагдсангүй.');
     }
-    ['nQty','nAdvance','nNote'].forEach(id => document.getElementById(id).value = id === 'nQty' ? '1' : '');
-    document.getElementById('nBranch').selectedIndex = 0;
-    document.getElementById('nVatMode').value = 'with';
-    document.getElementById('nRecSettle').value = '';
-    document.getElementById('recAmtWrap').style.display = 'none';
-    document.getElementById('nRecAmount').value = '';
-    onProductChange();
-    pendingTx = null;
-    document.getElementById('txBanner').style.display = 'none';
-    await Promise.all([loadSales(), loadIncome()]);
-    showTab('dash');
-  } else {
-    alert(r.error || 'Алдаа гарлаа');
   }
+
+  invoiceCart = [];
+  renderCart();
+  ['nQty','nAdvance','nNote'].forEach(id => document.getElementById(id).value = id === 'nQty' ? '1' : '');
+  document.getElementById('nBranch').selectedIndex = 0;
+  document.getElementById('nVatMode').value = 'with';
+  document.getElementById('nRecSettle').value = '';
+  document.getElementById('recAmtWrap').style.display = 'none';
+  document.getElementById('nRecAmount').value = '';
+  onProductChange();
+  pendingTx = null;
+  document.getElementById('txBanner').style.display = 'none';
+  await Promise.all([loadSales(), loadIncome()]);
+  showTab('dash');
 }
 
 // ── Load sales ────────────────────────────────────────────

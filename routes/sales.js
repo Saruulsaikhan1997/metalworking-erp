@@ -60,10 +60,12 @@ function ensurePavementPrice16k(db) {
 
 // ── Migration: "Саарал суултуур" бараа нэмэх (нэг удаа) ──
 // Үнэ нь Жорлон бүхээгтэй адил — 1,760,000 (НӨАТ-тэй).
+// Анхаар: "Саарал суултуур" ба энгийн "Суултуур" хоёр ӨӨР бараа тул зөвхөн
+// "саарал"-тай хослосон нэрийг олж, ердийн "Суултуур" бүтээгдэхүүнд хүрэхгүй.
 function ensureSaaralSuultuur(db) {
   if (db.fix_saaral_suultuur_v1) return;
   if (!db.products) db.products = [];
-  const exists = db.products.find(p => /суултуур/i.test(p.name || ''));
+  const exists = db.products.find(p => /саарал/i.test(p.name || '') && /суултуур/i.test(p.name || ''));
   if (exists) { exists.name = 'Саарал суултуур'; exists.price = 1760000; exists.active = true; }
   else db.products.push({ id: 'saaral_suultuur', name: 'Саарал суултуур', price: 1760000, active: true });
   db.fix_saaral_suultuur_v1 = true;
