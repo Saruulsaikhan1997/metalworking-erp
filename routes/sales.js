@@ -58,6 +58,17 @@ function ensurePavementPrice16k(db) {
   db.fix_pavement_price_16k_v2 = true;
 }
 
+// ── Migration: "Саарал суултуур" бараа нэмэх (нэг удаа) ──
+// Үнэ нь Жорлон бүхээгтэй адил — 1,760,000 (НӨАТ-тэй).
+function ensureSaaralSuultuur(db) {
+  if (db.fix_saaral_suultuur_v1) return;
+  if (!db.products) db.products = [];
+  const exists = db.products.find(p => /суултуур/i.test(p.name || ''));
+  if (exists) { exists.name = 'Саарал суултуур'; exists.price = 1760000; exists.active = true; }
+  else db.products.push({ id: 'saaral_suultuur', name: 'Саарал суултуур', price: 1760000, active: true });
+  db.fix_saaral_suultuur_v1 = true;
+}
+
 // ── Migration: буруу борлуулалтыг склад хоорондын шилжүүлэг болгож засах ──
 // 2026-06-20-нд Нярав-Менежер "Жорлонгийн бүхээг"-ийг Төв складаас БОРЛУУЛАЛТ
 // (SALES_OUT → customer) болгож хассан нь үнэндээ склад хоорондын ШИЛЖҮҮЛЭГ
@@ -204,7 +215,7 @@ router.get('/sales', (req, res) => {
   // Revenue is owner/sales data — factory engineers don't see it.
   if (req.user.role === 'engineer') return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
   const db = load();
-  ensureSaleProducts(db); ensurePricesVat(db); ensurePavementPrice16k(db); fixBuheegSaleToTransfer(db); save(db);
+  ensureSaleProducts(db); ensurePricesVat(db); ensurePavementPrice16k(db); ensureSaaralSuultuur(db); fixBuheegSaleToTransfer(db); save(db);
   // Эх гүйлгээ (ангилахаас өмнөх банкны хуулга) — source_tx_id-тэй бичлэгт хавсаргана.
   const txById = new Map((db.transactions || []).map(t => [String(t.id), t]));
   const withTx = s => {
