@@ -440,13 +440,24 @@ function renderPurchasedMaterials(elId, items) {
       <div class="flow-qty buy">${fmt(p.amount)} <span>₮</span></div>
     </div>`;
   }).join('');
+  // Мөрүүд анхнаасаа нуугдсан — гарчиг дээр дарвал задарна/хумигдана.
   el.innerHTML = `<div class="buy-card">
-    <div class="buy-head">🛒 Худалдан авсан материал</div>${rows}
+    <div class="buy-head" onclick="toggleBuyRows()" style="cursor:pointer">🛒 Худалдан авсан материал <span id="buyArrow" style="float:right;color:#9ca3af">▾</span></div>
+    <div id="buyRows" style="display:none">${rows}</div>
     <div class="buy-row buy-total">
       <div class="flow-name" style="font-weight:800">НИЙТ (${items.length})</div>
       <div class="flow-qty buy" style="font-size:15px">${fmt(total)} <span>₮</span></div>
     </div>
   </div>`;
+}
+// Худалдан авсан материалын мөрүүдийг задлах/хумих
+function toggleBuyRows() {
+  const rows  = document.getElementById('buyRows');
+  const arrow = document.getElementById('buyArrow');
+  if (!rows) return;
+  const show = rows.style.display === 'none';
+  rows.style.display = show ? '' : 'none';
+  if (arrow) arrow.textContent = show ? '▴' : '▾';
 }
 function renderFlowLogs(elId, logs, emptyMsg) {
   const el = document.getElementById(elId);
