@@ -373,7 +373,7 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
     </div>
     <div class="efield">
       <label>Бараа</label>
-      <select id="eProduct"></select>
+      <select id="eProduct" onchange="onEditProductChange()"></select>
     </div>
     <div class="efield">
       <label>Аль складаас</label>
@@ -472,8 +472,8 @@ async function loadMasters() {
   productMap = {};
   prods.forEach(p => { productMap[p.id] = p.name; });
 
-  // Product select — одоогоор зөвхөн Замын хавтан + Жорлонгийн бүхээг
-  const SALE_KEYWORDS = /хавтан|бүхээг/i;
+  // Product select — одоогоор Замын хавтан + Жорлонгийн бүхээг + Суултуур
+  const SALE_KEYWORDS = /хавтан|бүхээг|суултуур/i;
   const ps = document.getElementById('nProduct');
   let saleProds = prods.filter(p => SALE_KEYWORDS.test(p.name || ''));
   if (!saleProds.length) saleProds = prods;   // тааруулсан бараа байхгүй бол бүгдийг харуулна
@@ -995,6 +995,17 @@ function openEditSale(id) {
 function closeEditSale() {
   document.getElementById('editOverlay').classList.remove('show');
   editingId = null;
+}
+// Засах формд бараа сонголт өөрчлөгдөхөд нэгжийн үнийг тухайн барааны
+// одоогийн үнэд шинэчилнэ (өмнө нь энэ нь хийгддэггүй байсан тул сонгосон
+// шинэ бараа ч хуучин барааны үнийг хэвээр харуулдаг байв).
+function onEditProductChange() {
+  const id   = document.getElementById('eProduct').value;
+  const prod = products.find(p => p.id === id);
+  if (prod && prod.price > 0) {
+    document.getElementById('ePrice').value = prod.price;
+    eCalc();
+  }
 }
 function eCalc() {
   const qty = parseInt(document.getElementById('eQty').value) || 0;

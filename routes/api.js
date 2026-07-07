@@ -54,10 +54,24 @@ router.get('/dashboard', (req, res) => {
   });
 });
 
+// ── Migration: "Суултуур" бүтээгдэхүүн нэмэх (нэг удаа) ──
+// НӨАТ-гүй суурь үнэ 1,600,000₮ × 1.1 = 1,760,000₮ (НӨАТ-тэй хадгалах конвенц,
+// бусад бараатай адил — sales.html НӨАТ-гүй горимд ÷1.1 хийж суурь үнийг гаргана).
+function ensureSuultuurProduct(db) {
+  if (db.add_suultuur_v1) return;
+  if (!db.products) db.products = [];
+  if (!db.products.some(p => /суултуур/i.test(p.name || ''))) {
+    db.products.push({ id: 'suultuur', name: 'Суултуур', price: 1760000, active: true });
+  }
+  db.add_suultuur_v1 = true;
+}
+
 // ── PRODUCTS ──
 router.get('/products', (req, res) => {
   const db = load();
   if (!db.products) { db.products = DEFAULT_PRODUCTS; save(db); }
+  ensureSuultuurProduct(db);
+  save(db);
   res.json(db.products.filter(p => p.active !== false));
 });
 
