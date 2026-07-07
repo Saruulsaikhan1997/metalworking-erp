@@ -910,7 +910,7 @@ async function loadIntakeForm() {
   if (!sel) return;
   sel.innerHTML = '<option value="">— сонгох —</option>' +
     catalogItems.filter(i => i.active !== false && !DROPDOWN_HIDE_CATS.includes(i.category)).map(i =>
-      `<option value="${i.id}">${(i.code ? i.code + ' · ' : '')}${i.name}</option>`
+      `<option value="${i.id}">${(i.code ? i.code + ' · ' : '')}${escapeHtml(i.name)}</option>`
     ).join('');
 
   document.getElementById('in-qty').value = '';
@@ -1112,7 +1112,7 @@ async function submitIntake() {
     const totalQty = selected.reduce((s, x) => s + x.qty, 0);
     const fmt = n => Number(n).toLocaleString('en-US');
     status.className = 'intake-status ok';
-    status.innerHTML = `✅ <b>${it.name}</b> +${fmt(totalQty)} ${it.unit||''} · Шинэ үлдэгдэл: <b>${lastResult.new_qty}</b>`;
+    status.innerHTML = `✅ <b>${escapeHtml(it.name)}</b> +${fmt(totalQty)} ${escapeHtml(it.unit||'')} · Шинэ үлдэгдэл: <b>${lastResult.new_qty}</b>`;
 
   } else {
     // ── Энгийн орлого ──
@@ -1128,7 +1128,7 @@ async function submitIntake() {
 
     if (r.ok) {
       status.className = 'intake-status ok';
-      status.innerHTML = `✅ Амжилттай · <b>${it ? it.name : ''}</b> +${qty} ${it ? (it.unit||'') : ''} · Шинэ үлдэгдэл: <b>${r.new_qty}</b>`;
+      status.innerHTML = `✅ Амжилттай · <b>${it ? escapeHtml(it.name) : ''}</b> +${qty} ${it ? escapeHtml(it.unit||'') : ''} · Шинэ үлдэгдэл: <b>${r.new_qty}</b>`;
     } else {
       showIntakeError(r.error || 'Алдаа гарлаа');
       btn.disabled = false; btn.textContent = '📥 Орлого бүртгэх';
@@ -1333,7 +1333,7 @@ async function loadStock() {
         <div class="cat-acc-header" onclick="toggleStock(${i.id})" style="padding:12px 14px">
           <div style="flex:1;min-width:0">
             ${i.code ? `<div style="font-family:monospace;font-size:10px;font-weight:800;color:var(--gray-400);margin-bottom:2px">${i.code}</div>` : ''}
-            <div class="item-name" style="font-size:13px">${i.name || '—'}</div>
+            <div class="item-name" style="font-size:13px">${escapeHtml(i.name) || '—'}</div>
             <div class="item-meta" style="margin-top:2px">📍 ${LOC_LABEL[i.location] || i.location || 'Төв склад'}</div>
             ${isLow ? '<div class="low-stock-badge">⚠ Доод хязгаарт</div>' : ''}
           </div>
@@ -1373,7 +1373,7 @@ async function loadStock() {
       <div class="item-card${isLow ? ' low-stock' : ''}">
         <div class="item-info">
           ${i.code ? `<span class="item-code">${i.code}</span>` : ''}
-          <div class="item-name">${i.name || '—'}</div>
+          <div class="item-name">${escapeHtml(i.name) || '—'}</div>
           ${locLine}
           ${priceLine}
           ${isLow ? '<div class="low-stock-badge">⚠ Доод хязгаарт</div>' : ''}
@@ -1460,7 +1460,7 @@ async function loadHistory() {
     const srcLabel = SOURCE_LABEL[l.source] || l.source || '';
     return `<div class="item-card">
     <div class="item-info">
-      <div class="item-name">${l.item_name} <span style="font-weight:400;color:${color};margin-left:6px">${isIn?'↑ Орлого':'↓ Гаралт'}</span></div>
+      <div class="item-name">${escapeHtml(l.item_name)} <span style="font-weight:400;color:${color};margin-left:6px">${isIn?'↑ Орлого':'↓ Гаралт'}</span></div>
       <div class="item-meta">${l.date}${l.time ? ' ' + l.time : ''} · ${l.by || ''}<span class="source-badge">${srcLabel}</span></div>
       <div class="item-meta">${l.before_qty != null ? l.before_qty + ' → ' + l.after_qty + ' ' + (l.unit||'') : ''}${l.note ? ' · ' + l.note : ''}${l.reason ? ' · 💬 ' + l.reason : ''}</div>
     </div>
@@ -1475,7 +1475,7 @@ function movementRowHtml(l) {
   const srcLabel = SOURCE_LABEL[l.source] || l.source || '';
   return `<div class="item-card">
     <div class="item-info">
-      <div class="item-name">${l.item_name || '—'}</div>
+      <div class="item-name">${escapeHtml(l.item_name) || '—'}</div>
       <div class="item-meta">${l.date||''}${l.time ? ' ' + l.time : ''} · ${l.by||''}<span class="source-badge">${srcLabel}</span></div>
       ${l.note ? `<div class="item-meta">📝 ${l.note}</div>` : ''}
     </div>
@@ -1528,7 +1528,7 @@ async function loadOutForm() {
   }
   sel.innerHTML = '<option value="">— сонгох —</option>' +
     catalogItems.filter(i => i.active !== false && i.qty > 0 && !DROPDOWN_HIDE_CATS.includes(i.category)).map(i =>
-      `<option value="${i.id}">${(i.code ? i.code + ' · ' : '')}${i.name} (${Number(i.qty).toLocaleString('en-US')} ${i.unit||''})</option>`
+      `<option value="${i.id}">${(i.code ? i.code + ' · ' : '')}${escapeHtml(i.name)} (${Number(i.qty).toLocaleString('en-US')} ${i.unit||''})</option>`
     ).join('');
   document.getElementById('out-qty').closest('.i-row2').style.display = '';
   document.getElementById('out-qty').value = '';
@@ -1706,7 +1706,7 @@ async function submitOut() {
     btn.disabled = false; btn.textContent = '📤 Гаралт бүртгэх';
     if (r && r.ok) {
       status.className = 'intake-status ok';
-      status.innerHTML = `✅ <b>${it?.name || ''}</b> 🖼 Үзүүлэн рүү шилжлээ`;
+      status.innerHTML = `✅ <b>${escapeHtml(it?.name)}</b> 🖼 Үзүүлэн рүү шилжлээ`;
       document.getElementById('out-item').value = '';
       loadStock();
     } else {
@@ -1762,7 +1762,7 @@ async function submitOut() {
     status.className = 'intake-status ok';
     status.innerHTML = `
       <div style="font-weight:700;margin-bottom:5px">
-        ✅ ${it.name} — <span style="color:#dc2626">−${fmt(totalQty)} ${it.unit||''}</span> гарсан
+        ✅ ${escapeHtml(it.name)} — <span style="color:#dc2626">−${fmt(totalQty)} ${escapeHtml(it.unit||'')}</span> гарсан
       </div>
       <div style="font-size:11.5px;margin-bottom:5px">
         Шинэ үлдэгдэл: <b>${lastResult.new_qty}</b> ${it.unit||''}
@@ -1794,7 +1794,7 @@ async function submitOut() {
 
     if (r.ok) {
       status.className = 'intake-status ok';
-      status.innerHTML = `✅ Амжилттай · <b>${it?.name||''}</b> −${qty} ${it?.unit||''} · Шинэ үлдэгдэл: <b>${r.new_qty}</b>`;
+      status.innerHTML = `✅ Амжилттай · <b>${escapeHtml(it?.name)}</b> −${qty} ${escapeHtml(it?.unit||'')} · Шинэ үлдэгдэл: <b>${r.new_qty}</b>`;
     } else {
       showOutError(r.error || 'Алдаа гарлаа'); return;
     }

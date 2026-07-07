@@ -612,7 +612,7 @@ function renderRecSettleOptions() {
   if (!sel) return;
   const recs = orders.filter(o => o.status === 'receivable' && (o.remaining_amount || 0) > 0);
   sel.innerHTML = '<option value="">— Үгүй —</option>' + recs.map(o =>
-    `<option value="${o.id}">${(productMap[o.product] || o.product)} · Үлд: ${fmt(o.remaining_amount)}₮${o.branch ? ' · ' + o.branch : ''}</option>`
+    `<option value="${o.id}">${(productMap[o.product] || o.product)} · Үлд: ${fmt(o.remaining_amount)}₮${o.branch ? ' · ' + escapeHtml(o.branch) : ''}</option>`
   ).join('');
 }
 
@@ -804,7 +804,7 @@ function renderAllDetail() {
         <div class="hist-name">${prodName(o.product)}${canEdit ? ' <span class="edit-pen">✎</span>' : ''}</div>
         <div class="hist-amt">${fmt(o.total_amount)} ₮</div>
       </div>
-      <div class="hist-meta">📅 ${o.date || '—'}${o.branch ? ' · ' + o.branch : ''} · ${o.quantity} ш</div>
+      <div class="hist-meta">📅 ${o.date || '—'}${o.branch ? ' · ' + escapeHtml(o.branch) : ''} · ${o.quantity} ш</div>
     </div>`).join('');
 }
 
@@ -832,11 +832,11 @@ function renderRec() {
           </div>
         </div>
         <div class="rec-meta">
-          ${o.customer_name || '—'}${o.customer_phone ? ' · ' + o.customer_phone : ''}<br>
-          ${o.date}${o.branch ? ' · ' + o.branch : ''} · ${o.quantity}ш × ${fmt(o.unit_price)}₮ = ${fmt(o.total_amount)}₮
+          ${escapeHtml(o.customer_name) || '—'}${o.customer_phone ? ' · ' + escapeHtml(o.customer_phone) : ''}<br>
+          ${o.date}${o.branch ? ' · ' + escapeHtml(o.branch) : ''} · ${o.quantity}ш × ${fmt(o.unit_price)}₮ = ${fmt(o.total_amount)}₮
           ${o.advance_paid > 0 ? '<br>Авсан: ' + fmt(o.advance_paid) + '₮' : ''}
           ${o.bank_account_name ? ' · ' + o.bank_account_name : ''}
-          ${o.note ? '<br>' + o.note : ''}
+          ${o.note ? '<br>' + escapeHtml(o.note) : ''}
         </div>
         ${o.source_tx ? `<div class="rec-srctx">🔗 Эх гүйлгээ: <b>${fmt(o.source_tx.amount)}₮</b> · ${o.source_tx.date || '—'} · ${escapeHtml(o.source_tx.memo) || '(утга байхгүй)'}</div>` : ''}
       </div>
@@ -917,11 +917,11 @@ function renderHistory() {
           <div class="hist-amt" style="color:${isComp?'#2e7d32':'#e53935'}">${fmt(o.total_amount)} ₮</div>
         </div>
         <div class="hist-meta">
-          ${o.date}${o.branch ? ' · ' + o.branch : ''} · ${o.customer_name||'—'}${o.customer_phone ? ' · ' + o.customer_phone : ''}<br>
+          ${o.date}${o.branch ? ' · ' + escapeHtml(o.branch) : ''} · ${escapeHtml(o.customer_name)||'—'}${o.customer_phone ? ' · ' + escapeHtml(o.customer_phone) : ''}<br>
           ${o.quantity}ш × ${fmt(o.unit_price)}₮${o.bank_account_name ? ' · ' + o.bank_account_name : ''}
           ${o.advance_paid > 0 ? ' · урьдчилгаа: ' + fmt(o.advance_paid) + '₮' : ''}
           ${!isComp ? ' · <span style="color:#e53935">үлдэгдэл: ' + fmt(o.remaining_amount) + '₮</span>' : ''}
-          ${o.note ? '<br>' + o.note : ''}
+          ${o.note ? '<br>' + escapeHtml(o.note) : ''}
         </div>
         <span class="stag ${o.status}">${isComp ? 'Бүрэн төлсөн' : 'Авлага'}</span>
       </div>`;
@@ -1011,7 +1011,7 @@ function renderEditRecSettleOptions() {
   if (!sel) return;
   const recs = orders.filter(o => o.status === 'receivable' && (o.remaining_amount || 0) > 0 && String(o.id) !== String(editingId));
   sel.innerHTML = '<option value="">— Үгүй —</option>' + recs.map(o =>
-    `<option value="${o.id}">${(productMap[o.product] || o.product)} · Үлд: ${fmt(o.remaining_amount)}₮${o.branch ? ' · ' + o.branch : ''}</option>`
+    `<option value="${o.id}">${(productMap[o.product] || o.product)} · Үлд: ${fmt(o.remaining_amount)}₮${o.branch ? ' · ' + escapeHtml(o.branch) : ''}</option>`
   ).join('');
 }
 function onEditRecSettleChange() {
