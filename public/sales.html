@@ -472,7 +472,7 @@ async function loadMasters() {
   productMap = {};
   prods.forEach(p => { productMap[p.id] = p.name; });
 
-  // Product select — одоогоор Замын хавтан + Жорлонгийн бүхээг + Суултуур
+  // Product select — Замын хавтан + Жорлонгийн бүхээг + Суултуур + Саарал суултуур
   const SALE_KEYWORDS = /хавтан|бүхээг|суултуур/i;
   const ps = document.getElementById('nProduct');
   let saleProds = prods.filter(p => SALE_KEYWORDS.test(p.name || ''));
