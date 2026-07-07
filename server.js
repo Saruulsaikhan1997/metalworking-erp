@@ -4,8 +4,23 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 
 const app = express();
+app.set('trust proxy', 1); // Nginx/Render ард — req.ip нь бодит клиентийн IP (rate-limit-д хэрэгтэй)
 app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
+
+// ── Хамгаалалтын HTTP header-үүд (пакетгүй) ──
+app.use((req, res, next) => {
+  res.set('X-Frame-Options', 'SAMEORIGIN');            // clickjacking
+  res.set('X-Content-Type-Options', 'nosniff');
+  res.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.set('Strict-Transport-Security', 'max-age=15552000'); // 180 хоног (HTTPS)
+  // CSP: апп inline script/style ихтэй тул зөөлөн — эх сурвалж self, frame-ancestors
+  // clickjacking хамгаална. (Inline зөвшөөрөх нь одоогийн бүтцээс шалтгаална.)
+  res.set('Content-Security-Policy',
+    "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; " +
+    "script-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'");
+  next();
+});
 // Prevent stale HTML cache on mobile browsers (Safari aggressive caching)
 app.use((req, res, next) => {
   if (req.url.endsWith('.html') || req.url.endsWith('.js') || req.url === '/' || !req.url.includes('.')) {
