@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+<title>НӨАТ-ын тайлан — Метал ворkинг Центр</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --brand: #6d28d9; --brand-dark: #5b21b6; --gray-50:#f9fafb; --gray-100:#f3f4f6; --gray-200:#e5e7eb; --gray-400:#9ca3af; --gray-600:#4b5563; --gray-900:#111827; }
+body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; background: var(--gray-50); color: var(--gray-900); padding-bottom: 30px; -webkit-font-smoothing: antialiased; }
+
+.id-bar { background: linear-gradient(135deg, #5b21b6 0%, #6d28d9 100%); color:#fff; padding:18px 20px; border-radius:0 0 20px 20px; box-shadow:0 4px 12px rgba(91,33,182,0.18); }
+.id-top { display:flex; align-items:center; gap:12px; }
+.id-back { font-size:22px; color:#fff; text-decoration:none; padding:4px 8px; }
+.id-title { font-size:17px; font-weight:700; }
+.id-sub { font-size:11px; opacity:0.85; margin-top:3px; }
+
+.section { padding: 16px 14px 0; }
+.section-label { font-size:11px; font-weight:700; color:var(--gray-400); text-transform:uppercase; letter-spacing:1.3px; margin-bottom:10px; padding:0 4px; }
+
+.filter-card { background:#fff; border-radius:14px; padding:14px; box-shadow:0 1px 6px rgba(0,0,0,0.05); margin-bottom:14px; }
+.filter-row { display:flex; gap:8px; margin-bottom:10px; }
+.filter-row label { display:flex; flex-direction:column; gap:4px; font-size:11px; color:var(--gray-600); font-weight:600; flex:1; }
+.filter-row input { padding:8px 10px; border:1px solid var(--gray-200); border-radius:8px; font-size:13px; }
+.filter-actions { display:flex; gap:8px; }
+.filter-btn { flex:1; padding:10px; border:none; border-radius:10px; font-size:12.5px; font-weight:700; cursor:pointer; }
+.filter-btn.primary { background:var(--brand); color:#fff; }
+.filter-btn.ghost { background:var(--gray-100); color:var(--gray-900); }
+
+.note-box { background:#fffbeb; border-left:4px solid #f59e0b; border-radius:10px; padding:12px 14px; font-size:11.5px; color:#92400e; margin-bottom:14px; line-height:1.5; }
+
+.hero { background:linear-gradient(135deg,#1f2937 0%,#374151 100%); color:#fff; border-radius:18px; padding:22px; margin-bottom:14px; box-shadow:0 6px 20px rgba(0,0,0,0.15); }
+.hero-lbl { font-size:11px; opacity:0.7; text-transform:uppercase; letter-spacing:1.2px; font-weight:700; }
+.hero-val { font-size:30px; font-weight:900; margin-top:8px; letter-spacing:-0.5px; }
+.hero-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.15); }
+.hero-item .hi-lbl { font-size:10.5px; opacity:0.7; }
+.hero-item .hi-val { font-size:15px; font-weight:800; margin-top:2px; }
+
+.month-table { background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 1px 6px rgba(0,0,0,0.05); }
+.mt-row { display:grid; grid-template-columns: 1.1fr 1fr 1fr 0.6fr; gap:6px; padding:12px 14px; border-bottom:1px solid #f0f0f0; align-items:center; }
+.mt-row:last-child { border-bottom:none; }
+.mt-row.head { background:var(--gray-50); font-size:10px; font-weight:700; color:var(--gray-400); text-transform:uppercase; letter-spacing:0.5px; }
+.mt-month { font-size:13px; font-weight:700; }
+.mt-val { font-size:12.5px; font-weight:700; text-align:right; }
+.mt-val.vat { color:var(--brand); }
+.mt-cnt { font-size:11px; color:var(--gray-600); text-align:right; }
+
+.empty { text-align:center; padding:40px 20px; color:var(--gray-400); font-size:13px; }
+.export-btn { display:block; width:100%; margin-top:14px; padding:12px; background:#fff; border:1px solid var(--gray-200); border-radius:12px; font-size:12.5px; font-weight:700; color:var(--gray-900); cursor:pointer; }
+</style>
+</head>
+<body>
+
+<div class="id-bar">
+  <div class="id-top">
+    <a class="id-back" href="/finance">‹</a>
+    <div style="flex:1">
+      <div class="id-title">🧾 НӨАТ-ын тайлан</div>
+      <div class="id-sub">Борлуулалтын гарах НӨАТ (output VAT), сар бүрээр</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="filter-card">
+    <div class="filter-row">
+      <label>Эхлэх огноо
+        <input type="date" id="fFrom">
+      </label>
+      <label>Дуусах огноо
+        <input type="date" id="fTo">
+      </label>
+    </div>
+    <div class="filter-actions">
+      <button class="filter-btn ghost" onclick="setThisYear()">Энэ жил</button>
+      <button class="filter-btn primary" onclick="loadReport()">Шүүх</button>
+    </div>
+  </div>
+
+  <div class="note-box" id="noteBox"></div>
+
+  <div class="hero">
+    <div class="hero-lbl">Нийт гарах НӨАТ (төлөх)</div>
+    <div class="hero-val" id="grandVat">— ₮</div>
+    <div class="hero-grid">
+      <div class="hero-item"><div class="hi-lbl">НӨАТ-тэй борлуулалт (нийт дүн)</div><div class="hi-val" id="grandWithVat">— ₮</div></div>
+      <div class="hero-item"><div class="hi-lbl">НӨАТ-гүй борлуулалт</div><div class="hi-val" id="grandWithoutVat">— ₮</div></div>
+      <div class="hero-item"><div class="hi-lbl">НӨАТ-гүй суурь дүн</div><div class="hi-val" id="grandBase">— ₮</div></div>
+      <div class="hero-item"><div class="hi-lbl">Борлуулалтын тоо</div><div class="hi-val" id="grandCount">—</div></div>
+    </div>
+  </div>
+
+  <div class="section-label">📅 Сарын задаргаа</div>
+  <div class="month-table" id="monthTable">
+    <div class="mt-row head">
+      <div>Сар</div><div style="text-align:right">Суурь дүн</div><div style="text-align:right">НӨАТ</div><div style="text-align:right">Тоо</div>
+    </div>
+  </div>
+
+  <button class="export-btn" onclick="exportCsv()">⬇️ CSV татаж авах</button>
+</div>
+
+<script src="/js/bottom-nav.js"></script>
+<script>
+const token = localStorage.getItem('token');
+const user  = JSON.parse(localStorage.getItem('user') || '{}');
+if (!token) window.location.href = '/';
+if (!['admin','shareholder','accountant'].includes(user.role)) { window.location.href = '/finance'; }
+
+function fmt(n) { return Number(n||0).toLocaleString('mn-MN'); }
+
+let lastData = null;
+
+function setThisYear() {
+  const y = new Date().getFullYear();
+  document.getElementById('fFrom').value = y + '-01-01';
+  document.getElementById('fTo').value   = y + '-12-31';
+  loadReport();
+}
+
+async function loadReport() {
+  const from = document.getElementById('fFrom').value;
+  const to   = document.getElementById('fTo').value;
+  const params = new URLSearchParams();
+  if (from) params.set('from', from);
+  if (to)   params.set('to', to);
+
+  const r = await fetch('/api/sales/vat-report?' + params.toString(), { headers: { 'Authorization': 'Bearer ' + token }});
+  if (r.status === 401) { localStorage.clear(); window.location.href = '/'; return; }
+  if (r.status === 403) { document.getElementById('noteBox').textContent = 'Энэ тайланг харах эрхгүй байна.'; return; }
+  const data = await r.json();
+  lastData = data;
+  render(data);
+}
+
+function render(data) {
+  document.getElementById('noteBox').textContent = data.note || '';
+  const g = data.grand || {};
+  document.getElementById('grandVat').textContent        = fmt(g.vat_amount) + ' ₮';
+  document.getElementById('grandWithVat').textContent     = fmt(g.total_with_vat) + ' ₮';
+  document.getElementById('grandWithoutVat').textContent  = fmt(g.total_without_vat) + ' ₮';
+  document.getElementById('grandBase').textContent        = fmt(g.vat_base) + ' ₮';
+  document.getElementById('grandCount').textContent       = g.count || 0;
+
+  const wrap = document.getElementById('monthTable');
+  const rows = (data.monthly || []);
+  wrap.innerHTML = '<div class="mt-row head"><div>Сар</div><div style="text-align:right">Суурь дүн</div><div style="text-align:right">НӨАТ</div><div style="text-align:right">Тоо</div></div>';
+  if (!rows.length) {
+    wrap.innerHTML += '<div class="empty">Тухайн хугацаанд борлуулалт бүртгэгдээгүй байна</div>';
+    return;
+  }
+  for (const m of rows) {
+    wrap.innerHTML += `<div class="mt-row">
+      <div class="mt-month">${m.month}</div>
+      <div class="mt-val">${fmt(m.vat_base)} ₮</div>
+      <div class="mt-val vat">${fmt(m.vat_amount)} ₮</div>
+      <div class="mt-cnt">${m.count}</div>
+    </div>`;
+  }
+}
+
+function exportCsv() {
+  if (!lastData) return;
+  const rows = [['Сар','НӨАТ-тэй нийт дүн','НӨАТ-гүй суурь дүн','НӨАТ дүн','НӨАТ-гүй борлуулалт','Тоо']];
+  for (const m of (lastData.monthly || [])) {
+    rows.push([m.month, m.total_with_vat, m.vat_base, m.vat_amount, m.total_without_vat, m.count]);
+  }
+  const g = lastData.grand || {};
+  rows.push(['НИЙТ', g.total_with_vat, g.vat_base, g.vat_amount, g.total_without_vat, g.count]);
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'noat-tailan.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+setThisYear();
+</script>
+</body>
+</html>

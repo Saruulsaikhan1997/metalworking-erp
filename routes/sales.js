@@ -259,6 +259,52 @@ router.get('/sales-income', (req, res) => {
   res.json(list);
 });
 
+// ── НӨАТ-ын тайлан (борлуулалтын гарах НӨАТ, output VAT) ──
+// Зөвхөн санхүүгийн эрхтэй хэрэглэгч (admin/shareholder/accountant) харна.
+// Тайлан бүрэн НЭГ талын (борлуулалт) НӨАТ-ыг сар бүрээр нэгтгэнэ. Худалдан
+// авалт/импортын орох НӨАТ (input VAT) энэ системд тусад нь бүртгэгддэггүй
+// тул энд ОРОХГҮЙ — зөвхөн output VAT-ыг харуулна (тайлбарыг response-д
+// оруулсан, frontend дээр ил тод анхааруулна).
+router.get('/sales/vat-report', (req, res) => {
+  if (!['admin', 'shareholder', 'accountant'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
+  const db = load();
+  const { from, to } = req.query;
+  let sales = (db.sales || []).filter(s => !s.archived);
+  if (from) sales = sales.filter(s => (s.date || '') >= from);
+  if (to)   sales = sales.filter(s => (s.date || '') <= to);
+
+  const months = {};
+  const grand = { total_with_vat: 0, total_without_vat: 0, vat_base: 0, vat_amount: 0, count: 0 };
+
+  for (const s of sales) {
+    const month = (s.date || '').slice(0, 7) || 'unknown'; // YYYY-MM
+    if (!months[month]) months[month] = { month, total_with_vat: 0, total_without_vat: 0, vat_base: 0, vat_amount: 0, count: 0 };
+    const amt = s.total_amount || 0;
+    months[month].count++; grand.count++;
+    if (s.vat_included) {
+      // Хадгалагдсан дүн НӨАТ-тэй → суурь = ÷1.1, НӨАТ = дүн - суурь.
+      const base = Math.round(amt / 1.1);
+      const vat  = amt - base;
+      months[month].total_with_vat += amt;
+      months[month].vat_base       += base;
+      months[month].vat_amount     += vat;
+      grand.total_with_vat += amt;
+      grand.vat_base       += base;
+      grand.vat_amount     += vat;
+    } else {
+      months[month].total_without_vat += amt;
+      grand.total_without_vat += amt;
+    }
+  }
+
+  const monthly = Object.values(months).sort((a, b) => a.month.localeCompare(b.month));
+  res.json({
+    monthly,
+    grand,
+    note: 'Зөвхөн борлуулалтын ГАРАХ НӨАТ (output VAT). Худалдан авалт/импортын ОРОХ НӨАТ (input VAT) энэ тайланд тооцогдоогүй — татварын албанд илгээхийн өмнө нягтлантай баталгаажуулна уу.',
+  });
+});
+
 router.post('/sales', (req, res) => {
   if (!['admin', 'sales', 'manager'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
   const db = load();
