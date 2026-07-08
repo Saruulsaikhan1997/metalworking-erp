@@ -498,9 +498,10 @@ async function loadMasters() {
   const ps = document.getElementById('nProduct');
   let saleProds = prods.filter(p => SALE_KEYWORDS.test(p.name || ''));
   if (!saleProds.length) saleProds = prods;   // тааруулсан бараа байхгүй бол бүгдийг харуулна
-  ps.innerHTML = saleProds.map(p =>
+  const opts = saleProds.map(p =>
     `<option value="${p.id}">${p.name}${p.price > 0 ? ' — ' + fmt(p.price) + '₮' : ''}</option>`
   ).join('');
+  ps.innerHTML = opts;
 
   // Product filter in history
   const hProd = document.getElementById('hProd');
