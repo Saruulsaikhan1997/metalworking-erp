@@ -111,6 +111,9 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 .buy-row:last-child { border-bottom: none; }
 .buy-row.buy-total { border-top: 2px solid var(--gray-200); }
 .buy-head { font-size: 13px; font-weight: 800; color: var(--gray-900); padding: 11px 2px 9px; border-bottom: 2px solid var(--gray-200); }
+.buy-card.used { border-left-color: #16a34a; }
+.use-btn { flex-shrink: 0; background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; border-radius: 8px; font-size: 11px; font-weight: 700; padding: 6px 9px; cursor: pointer; }
+.use-btn:disabled { opacity: .55; cursor: default; }
 .flow-card.flow-prod { border-left: 3px solid #16a34a; cursor: pointer; transition: background .15s, box-shadow .15s; }
 .flow-card.flow-prod:hover { background: #f0fdf4; box-shadow: 0 2px 8px rgba(22,163,74,0.15); }
 .flow-go { font-size: 10.5px; font-weight: 800; color: #16a34a; white-space: nowrap; margin-left: 4px; }
@@ -202,6 +205,7 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 <div class="section" id="flowSection" style="display:none">
   <div class="section-label">📦 Материалын урсгал</div>
   <div id="flowBuyList"></div>
+  <div id="flowUsedList"></div>
   <div class="flow-sub">📥 Складаас авсан материал</div>
   <div id="flowOutList"></div>
   <div class="flow-sub">📤 Үйлдвэрт хийсэн — <span style="color:#16a34a">дарж склад руу өгнө</span></div>
@@ -384,18 +388,21 @@ async function loadExec() {
 // Материалын урсгал: складаас авсан (PRODUCTION_OUT log) + үйлдвэрт хийсэн (production)
 let PRODS = [];
 async function loadMaterialFlow() {
-  const [logs, prods, purchased] = await Promise.all([
+  const [logs, prods, purchased, usedRes] = await Promise.all([
     api('/inventory/log'),
     api('/production'),
     api('/internal-purchases?module=production&status=routed'),
+    api('/internal-purchases?module=production&status=received'),
   ]);
   const outs = (Array.isArray(logs) ? logs : []).filter(l => l.source === 'PRODUCTION_OUT');
   PRODS = Array.isArray(prods) ? prods : [];
   const purch = Array.isArray(purchased) ? purchased : [];
+  const used  = Array.isArray(usedRes) ? usedRes : [];
   const pending = PRODS.filter(p => !p.warehoused);
   const sec = document.getElementById('flowSection');
-  sec.style.display = (outs.length || PRODS.length || purch.length) ? '' : 'none';
+  sec.style.display = (outs.length || PRODS.length || purch.length || used.length) ? '' : 'none';
   renderPurchasedMaterials('flowBuyList', purch);
+  renderUsedMaterials('flowUsedList', used);
   renderFlowLogs('flowOutList', outs, 'Складаас үйлдвэрт гаргасан бараа байхгүй');
   renderProduced('flowInList', pending);
   renderWarehoused();
@@ -423,6 +430,9 @@ function renderProducedTotal() {
 }
 // Санхүүгээс "Үйлдвэрлэл" рүү шилжүүлсэн (routed) дотоод худалдан авалт = үйлдвэрт
 // орж ирсэн худалдан авсан материал. Зөвхөн унших — феедээс шилжиж ирсэн мөрүүд.
+function purchName(p) {
+  return (p.description || '').replace(/^(EQP|MAT_PROD|MAT)\s*:\s*/i, '').trim() || (p.description || '—');
+}
 function renderPurchasedMaterials(elId, items) {
   const el = document.getElementById(elId);
   if (!el) return;
@@ -430,14 +440,14 @@ function renderPurchasedMaterials(elId, items) {
   items.sort((a, b) => (b.destination_at || b.date || '').localeCompare(a.destination_at || a.date || ''));
   let total = 0;
   const rows = items.map(p => {
-    const name = (p.description || '').replace(/^(EQP|MAT_PROD|MAT)\s*:\s*/i, '').trim() || (p.description || '—');
     total += (p.amount || 0);
     return `<div class="buy-row">
       <div style="flex:1;min-width:0">
-        <div class="flow-name">${name}</div>
+        <div class="flow-name">${purchName(p)}</div>
         <div class="flow-meta">📅 ${p.date || ''}${p.destination_by ? ' · ' + p.destination_by : ''}</div>
       </div>
       <div class="flow-qty buy">${fmt(p.amount)} <span>₮</span></div>
+      <button class="use-btn" onclick="useInProduction('${p.id}', this)" title="Үйлдвэрт ашигласныг баталгаажуулна">🏭 Ашигласан</button>
     </div>`;
   }).join('');
   // Мөрүүд анхнаасаа нуугдсан — гарчиг дээр дарвал задарна/хумигдана.
@@ -458,6 +468,59 @@ function toggleBuyRows() {
   const show = rows.style.display === 'none';
   rows.style.display = show ? '' : 'none';
   if (arrow) arrow.textContent = show ? '▴' : '▾';
+}
+// Үйлдвэрт ашигласан гэж баталгаажуулсан (status=received) материалууд — эвхэгддэг карт.
+function renderUsedMaterials(elId, items) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (!items.length) { el.innerHTML = ''; return; }
+  items.sort((a, b) => (b.received_at || b.date || '').localeCompare(a.received_at || a.date || ''));
+  let total = 0;
+  const rows = items.map(p => {
+    total += (p.amount || 0);
+    const when = (p.received_at || '').slice(0, 10);
+    return `<div class="buy-row">
+      <div style="flex:1;min-width:0">
+        <div class="flow-name">${purchName(p)}</div>
+        <div class="flow-meta">✅ ${when}${p.received_by ? ' · ' + p.received_by : ''}</div>
+      </div>
+      <div class="flow-qty in">${fmt(p.amount)} <span>₮</span></div>
+    </div>`;
+  }).join('');
+  el.innerHTML = `<div class="buy-card used">
+    <div class="buy-head" onclick="toggleUsedRows()" style="cursor:pointer">✅ Үйлдвэрт ашигласан материал <span id="usedArrow" style="float:right;color:#9ca3af">▾</span></div>
+    <div id="usedRows" style="display:none">${rows}</div>
+    <div class="buy-row buy-total">
+      <div class="flow-name" style="font-weight:800">НИЙТ (${items.length})</div>
+      <div class="flow-qty in" style="font-size:15px">${fmt(total)} <span>₮</span></div>
+    </div>
+  </div>`;
+}
+function toggleUsedRows() {
+  const rows  = document.getElementById('usedRows');
+  const arrow = document.getElementById('usedArrow');
+  if (!rows) return;
+  const show = rows.style.display === 'none';
+  rows.style.display = show ? '' : 'none';
+  if (arrow) arrow.textContent = show ? '▴' : '▾';
+}
+// "🏭 Ашигласан" товч: худалдан авсан материалыг үйлдвэрт ашигласан гэж баталгаажуулна.
+async function useInProduction(id, btn) {
+  btn.disabled = true;
+  const old = btn.textContent;
+  btn.textContent = '⏳...';
+  try {
+    const r = await fetch('/api/internal-purchase/' + encodeURIComponent(id) + '/use-production', {
+      method: 'POST', headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+    });
+    const data = await r.json().catch(() => ({}));
+    if (data.ok) { loadMaterialFlow(); return; }
+    btn.textContent = data.error || 'Алдаа';
+    setTimeout(() => { btn.textContent = old; btn.disabled = false; }, 2000);
+  } catch (e) {
+    btn.textContent = 'Сүлжээний алдаа';
+    setTimeout(() => { btn.textContent = old; btn.disabled = false; }, 2000);
+  }
 }
 function renderFlowLogs(elId, logs, emptyMsg) {
   const el = document.getElementById(elId);

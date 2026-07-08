@@ -562,6 +562,23 @@ router.post('/internal-purchase/:id/route', (req, res) => {
   res.json({ ok: true, destination, category: cat || null, routed: true });
 });
 
+// ── Худалдан авсан материалыг "үйлдвэрт ашигласан" болгож баталгаажуулах ──
+// routed → received. Менежер материалыг үйлдвэрт оруулж ашигласныг тэмдэглэнэ.
+// "Худалдан авсан материал" жагсаалтаас гарч "Үйлдвэрт ашигласан материал"-д харагдана.
+router.post('/internal-purchase/:id/use-production', (req, res) => {
+  if (!['admin','warehouse','manager','engineer'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
+  const db = load();
+  const p = (db.internal_purchases || []).find(x => String(x.id) === String(req.params.id));
+  if (!p) return res.status(404).json({ error: 'Худалдан авалт олдсонгүй' });
+  if (p.destination !== 'production') return res.status(400).json({ error: 'Үйлдвэрлэлийн материал биш' });
+  if (p.status !== 'routed') return res.status(400).json({ error: 'Зөвхөн шилжүүлсэн материалыг баталгаажуулна' });
+  p.status      = 'received';
+  p.received_by = req.user.name;
+  p.received_at = new Date().toISOString();
+  save(db);
+  res.json({ ok: true });
+});
+
 // ── Create item (catalog only — qty always starts at 0) ──
 router.post('/inventory/item', (req, res) => {
   if (!['admin','warehouse','manager'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
