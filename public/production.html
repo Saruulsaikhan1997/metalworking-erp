@@ -112,6 +112,7 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
 .buy-row.buy-total { border-top: 2px solid var(--gray-200); }
 .buy-head { font-size: 13px; font-weight: 800; color: var(--gray-900); padding: 11px 2px 9px; border-bottom: 2px solid var(--gray-200); }
 .buy-card.used { border-left-color: #16a34a; }
+.buy-card.out { border-left-color: #ea580c; }
 .use-btn { flex-shrink: 0; background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; border-radius: 8px; font-size: 11px; font-weight: 700; padding: 6px 9px; cursor: pointer; }
 .use-btn:disabled { opacity: .55; cursor: default; }
 .flow-card.flow-prod { border-left: 3px solid #16a34a; cursor: pointer; transition: background .15s, box-shadow .15s; }
@@ -206,7 +207,6 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
   <div class="section-label">📦 Материалын урсгал</div>
   <div id="flowBuyList"></div>
   <div id="flowUsedList"></div>
-  <div class="flow-sub">📥 Складаас авсан материал</div>
   <div id="flowOutList"></div>
   <div class="flow-sub">📤 Үйлдвэрт хийсэн — <span style="color:#16a34a">дарж склад руу өгнө</span></div>
   <div id="flowInList"></div>
@@ -522,17 +522,35 @@ async function useInProduction(id, btn) {
     setTimeout(() => { btn.textContent = old; btn.disabled = false; }, 2000);
   }
 }
+// Складаас үйлдвэрт гаргасан материал (PRODUCTION_OUT) — нэг эвхэгддэг карт.
+// Нэгж (кг/м²/ш) өөр тул дүн нэгтгэхгүй, зөвхөн мөрийн тоог гарчиглана.
 function renderFlowLogs(elId, logs, emptyMsg) {
   const el = document.getElementById(elId);
+  if (!el) return;
   if (!logs.length) { el.innerHTML = `<div class="flow-empty">${emptyMsg}</div>`; return; }
   logs.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
-  el.innerHTML = logs.map(l => `<div class="flow-card flow-out">
+  const rows = logs.map(l => `<div class="buy-row">
     <div style="flex:1;min-width:0">
       <div class="flow-name">${l.item_name || '—'}</div>
       <div class="flow-meta">📅 ${l.date || ''}${l.by ? ' · ' + l.by : ''}</div>
     </div>
     <div class="flow-qty out">−${fmt(l.qty)} <span>${l.unit || 'ш'}</span></div>
   </div>`).join('');
+  el.innerHTML = `<div class="buy-card out">
+    <div class="buy-head" onclick="toggleOutRows()" style="cursor:pointer">📥 Складаас авсан материал <span id="outArrow" style="float:right;color:#9ca3af">▾</span></div>
+    <div id="outRows" style="display:none">${rows}</div>
+    <div class="buy-row buy-total">
+      <div class="flow-name" style="font-weight:800">НИЙТ (${logs.length})</div>
+    </div>
+  </div>`;
+}
+function toggleOutRows() {
+  const rows  = document.getElementById('outRows');
+  const arrow = document.getElementById('outArrow');
+  if (!rows) return;
+  const show = rows.style.display === 'none';
+  rows.style.display = show ? '' : 'none';
+  if (arrow) arrow.textContent = show ? '▴' : '▾';
 }
 function renderProduced(elId, prods) {
   const el = document.getElementById(elId);
