@@ -521,8 +521,8 @@ async function sendToWarehouse(id) {
 }
 
 // ── Хийсэн бараа нэмэх ──
-// Одоогоор зөвхөн нэг бараа. Шинэ бараа нэмэхдээ энэ жагсаалтад нэмнэ.
-const PRODUCED_PRODUCTS = ['Жорлонгийн бүхээг'];
+// Шинэ бараа нэмэхдээ энэ жагсаалтад нэмнэ.
+const PRODUCED_PRODUCTS = ['Жорлонгийн бүхээг', 'Суултуур'];
 function initProduceForm() {
   const sel = document.getElementById('pdProduct');
   sel.innerHTML = PRODUCED_PRODUCTS.map(n => `<option value="${n}">${n}</option>`).join('');

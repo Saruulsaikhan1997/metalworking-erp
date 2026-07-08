@@ -60,10 +60,12 @@ function ensurePavementPrice16k(db) {
 
 // ── Migration: "Саарал суултуур" бараа нэмэх (нэг удаа) ──
 // Үнэ нь Жорлон бүхээгтэй адил — 1,760,000 (НӨАТ-тэй).
+// Анхаар: "Саарал суултуур" ба энгийн "Суултуур" хоёр ӨӨР бараа тул зөвхөн
+// "саарал"-тай хослосон нэрийг олж, ердийн "Суултуур" бүтээгдэхүүнд хүрэхгүй.
 function ensureSaaralSuultuur(db) {
   if (db.fix_saaral_suultuur_v1) return;
   if (!db.products) db.products = [];
-  const exists = db.products.find(p => /суултуур/i.test(p.name || ''));
+  const exists = db.products.find(p => /саарал/i.test(p.name || '') && /суултуур/i.test(p.name || ''));
   if (exists) { exists.name = 'Саарал суултуур'; exists.price = 1760000; exists.active = true; }
   else db.products.push({ id: 'saaral_suultuur', name: 'Саарал суултуур', price: 1760000, active: true });
   db.fix_saaral_suultuur_v1 = true;
@@ -255,6 +257,52 @@ router.get('/sales-income', (req, res) => {
     }))
     .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
   res.json(list);
+});
+
+// ── НӨАТ-ын тайлан (борлуулалтын гарах НӨАТ, output VAT) ──
+// Зөвхөн санхүүгийн эрхтэй хэрэглэгч (admin/shareholder/accountant) харна.
+// Тайлан бүрэн НЭГ талын (борлуулалт) НӨАТ-ыг сар бүрээр нэгтгэнэ. Худалдан
+// авалт/импортын орох НӨАТ (input VAT) энэ системд тусад нь бүртгэгддэггүй
+// тул энд ОРОХГҮЙ — зөвхөн output VAT-ыг харуулна (тайлбарыг response-д
+// оруулсан, frontend дээр ил тод анхааруулна).
+router.get('/sales/vat-report', (req, res) => {
+  if (!['admin', 'shareholder', 'accountant'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
+  const db = load();
+  const { from, to } = req.query;
+  let sales = (db.sales || []).filter(s => !s.archived);
+  if (from) sales = sales.filter(s => (s.date || '') >= from);
+  if (to)   sales = sales.filter(s => (s.date || '') <= to);
+
+  const months = {};
+  const grand = { total_with_vat: 0, total_without_vat: 0, vat_base: 0, vat_amount: 0, count: 0 };
+
+  for (const s of sales) {
+    const month = (s.date || '').slice(0, 7) || 'unknown'; // YYYY-MM
+    if (!months[month]) months[month] = { month, total_with_vat: 0, total_without_vat: 0, vat_base: 0, vat_amount: 0, count: 0 };
+    const amt = s.total_amount || 0;
+    months[month].count++; grand.count++;
+    if (s.vat_included) {
+      // Хадгалагдсан дүн НӨАТ-тэй → суурь = ÷1.1, НӨАТ = дүн - суурь.
+      const base = Math.round(amt / 1.1);
+      const vat  = amt - base;
+      months[month].total_with_vat += amt;
+      months[month].vat_base       += base;
+      months[month].vat_amount     += vat;
+      grand.total_with_vat += amt;
+      grand.vat_base       += base;
+      grand.vat_amount     += vat;
+    } else {
+      months[month].total_without_vat += amt;
+      grand.total_without_vat += amt;
+    }
+  }
+
+  const monthly = Object.values(months).sort((a, b) => a.month.localeCompare(b.month));
+  res.json({
+    monthly,
+    grand,
+    note: 'Зөвхөн борлуулалтын ГАРАХ НӨАТ (output VAT). Худалдан авалт/импортын ОРОХ НӨАТ (input VAT) энэ тайланд тооцогдоогүй — татварын албанд илгээхийн өмнө нягтлантай баталгаажуулна уу.',
+  });
 });
 
 router.post('/sales', (req, res) => {

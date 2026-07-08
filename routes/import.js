@@ -2,26 +2,20 @@ const express = require('express');
 const router = express.Router();
 const { load, save } = require('../database');
 const cw = require('../lib/cost_workspace');
-
-// Auth middleware
-function authRequired(req, res, next) {
-  const jwt = require('jsonwebtoken');
-  const token = (req.headers.authorization || '').replace('Bearer ', '');
-  try {
-    req.user = jwt.verify(token, process.env.JWT_SECRET || 'metalworking-secret-2026');
-    next();
-  } catch { res.status(401).json({ error: 'Нэвтрэх шаардлагатай' }); }
-}
-function adminOnly(req, res, next) {
-  if (!['admin'].includes(req.user?.role)) return res.status(403).json({ error: 'Зөвхөн админ' });
-  next();
-}
+// Shared auth (same JWT_SECRET-required check + cookie/header support as the
+// rest of the app). Previously this file had its own copy with a hardcoded
+// fallback secret ('metalworking-secret-2026') if JWT_SECRET was unset —
+// a committed, guessable secret that would let anyone forge an admin token
+// for this owner-only finance/import module. Reuse the shared middleware
+// instead so there is exactly one auth implementation and one fail-closed
+// behavior (throws at startup if JWT_SECRET is missing).
+const { authMiddleware, adminOnly } = require('../middleware/auth');
 function adminOrWarehouse(req, res, next) {
   if (!['admin', 'warehouse', 'manager'].includes(req.user?.role)) return res.status(403).json({ error: 'Эрх хүрэхгүй' });
   next();
 }
 
-router.use(authRequired);
+router.use(authMiddleware);
 
 // The whole import/cost surface is the owner's private section.
 // Factory engineers must not see landed costs, supplier prices, or payments.
