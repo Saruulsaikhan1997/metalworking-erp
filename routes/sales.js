@@ -160,6 +160,8 @@ const SALE_LOC_MAP = {
 // "Явган замын хавтан"/"Явган хавтан" = "Замын хавтан"; "Жорлон(гийн) бүхээг" — нэг бараа
 const isPav = s => /(зам|явган)/.test(s) && /хавтан/.test(s);
 const isCab = s => /бүхээг/.test(s);
+// "Саарал суултуур" = складын "Vacuum Toilet Household" (Public/VIP-тэй андуурахгүй)
+const isSuult = s => /суултуур/.test(s) || (/vacuum/.test(s) && /household/.test(s));
 
 // Бараа id → нэр
 function prodNameById(db, id) {
@@ -181,7 +183,8 @@ function findSaleInvItem(db, branch, productName, itemId) {
   return db.inventory.find(i => {
     const inName = (i.name || '').trim().toLowerCase();
     return (i.location || 'central') === locCode &&
-      (inName === pn || (isPav(inName) && isPav(pn)) || (isCab(inName) && isCab(pn)));
+      (inName === pn || (isPav(inName) && isPav(pn)) || (isCab(inName) && isCab(pn)) ||
+       (isSuult(inName) && isSuult(pn)));
   });
 }
 
