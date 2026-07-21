@@ -461,8 +461,9 @@ let products   = [];
 let productMap = {};   // id → display name lookup
 let banks      = [];   // bank accounts (засах формд ашиглана)
 let qfMode     = 'month';
-// Склад / байршил — Үлдэгдэл (склад) хуудасны нэрстэй ижил
-const WAREHOUSES = ['Төв склад', 'Үйлдвэр', 'ТЭЦ 4 склад', '7 буудал склад', 'Склад 3', 'Үзүүлэн'];
+// Склад / байршил — зөвхөн Төв склад (бусад складыг хассан). Бүх борлуулалт
+// Төв складаас хасагдана.
+const WAREHOUSES = ['Төв склад'];
 
 // ── Tab switching ─────────────────────────────────────────
 function showTab(name) {
@@ -509,10 +510,9 @@ async function loadMasters() {
     hProd.appendChild(o);
   });
 
-  // Склад / байршил — Үлдэгдэл (склад) хуудасны нэрс
+  // Склад / байршил — зөвхөн Төв склад (автоматаар сонгогдоно)
   const bs = document.getElementById('nBranch');
-  bs.innerHTML = '<option value="">— Сонгоно уу —</option>' +
-    WAREHOUSES.map(w => `<option value="${w}">${w}</option>`).join('');
+  bs.innerHTML = WAREHOUSES.map(w => `<option value="${w}">${w}</option>`).join('');
 
   // Bank account select
   const bk = document.getElementById('nBank');
