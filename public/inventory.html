@@ -773,18 +773,26 @@ function showTab(name) {
 
 // ══════════ ⚖️ Үйлдвэрлэлийн тэнцүүр (зөвхөн эзэн = admin) ══════════
 const BAL_MATS = {
-  p2040:    { name: "Хоолой 20×40 (6м бар)", unit: "ш" },
-  pvc:      { name: "PVC хавтан",            unit: "м²" },
-  floor:    { name: "Пластик шал",           unit: "кг" },
-  door:     { name: "Хаалга",                unit: "ш" },
-  paint:    { name: "Шүршдэг будаг",         unit: "ш" },
-  silicone: { name: "Силикон",               unit: "ш" },
-  shrup:    { name: "Шрүп",                  unit: "₮" },
+  temr:      { name: "40×20 төмөр",        unit: "м" },
+  door:      { name: "Хаалга",             unit: "ш" },
+  upvc:      { name: "UPVC хавтан",        unit: "м²" },
+  paint:     { name: "Шүршдэг будаг",      unit: "ш" },
+  silicone:  { name: "Силикон",            unit: "ш" },
+  shrup570:  { name: "M5×70 шруп",         unit: "ш" },
+  shrup15:   { name: "1.5мм мөөгөн шруп",  unit: "ш" },
+  garniz:    { name: "Гарниз",             unit: "м²" },
+  floor:     { name: "Шал",                unit: "кг" },
+  cutter:    { name: "Таслагчийн ир",      unit: "ш" },
+  grind:     { name: "Точильны ир",        unit: "ш" },
+  electrode: { name: "Электрод",           unit: "хайрцаг" },
 };
-// Орц — 1 ш Жорлонгийн бүхээгт зарцуулах материал (бодит орц, 2026-06-12)
-// 20×40 хоолой 36м = 6м бар × 6ш. Шрүп нь дүнгээр (10,000₮).
+// Орц — 1 ш Жорлонгийн бүхээгт зарцуулах материал (бүхээгний өртгийн
+// эцсийн тооцоогоор, 00_cabin_cost_table). Ажлын хөлс (150,000₮) нь материал
+// биш тул тэнцүүрт оруулаагүй.
 const BAL_PRODUCTS = {
-  buheeg: { emoji:"🚻", name:"Жорлонгийн бүхээг", bom:{ p2040:6, pvc:12.883, floor:69, door:1, paint:1, silicone:1, shrup:10000 } },
+  buheeg: { emoji:"🚻", name:"Жорлонгийн бүхээг", bom:{
+    temr:38.3, door:1, upvc:12.44, paint:1, silicone:0.5, shrup570:25, shrup15:70,
+    garniz:0.66, floor:60, cutter:2, grind:0.1, electrode:0.1 } },
 };
 let balSelected = null, balReady = false;
 
