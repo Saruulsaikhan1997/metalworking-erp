@@ -845,8 +845,12 @@ router.post('/production/:id/to-warehouse', (req, res) => {
   const qty  = parseInt(p.qty) || 0;
   if (!name || qty <= 0) return res.status(400).json({ error: 'Бүтээгдэхүүн/тоо буруу' });
 
-  // Бэлэн бараа нэрээр олох, байхгүй бол үүсгэх
-  let item = db.inventory.find(i => (i.name || '').trim().toLowerCase() === name.toLowerCase());
+  // Бэлэн бараа нэрээр олох — ЗӨВХӨН Төв склад (central), байхгүй бол үүсгэх.
+  // (Ижил нэртэй бараа олон салбарт байдаг тул байршлаар шүүхгүй бол буруу
+  //  складад — жишээ нь Үзүүлэн рүү — нэмэгдэх алдаа гардаг байсан.)
+  let item = db.inventory.find(i =>
+    (i.name || '').trim().toLowerCase() === name.toLowerCase() &&
+    (i.location || 'central') === 'central');
   if (!item) {
     const id = Math.max(0, ...db.inventory.map(i => i.id || 0)) + 1;
     item = {
