@@ -213,6 +213,23 @@ function logInvMove(db, item, deltaOut, { source, source_id, note, user, branch 
   });
 }
 
+// ── БАРАА ТОДОРХОЙГҮЙ ОРЛОГО ──
+// Мөнгө орсон боловч ЯМАР бараа зарагдсаныг мэдэхгүй үед энэ бараагаар
+// бүртгэнэ. Дүн нь шууд орлогод тооцогдоно (склад хөндөгдөхгүй), дараа нь
+// зарлагын баримт ирэхэд барааны задаргаа хийж баталгаажуулна.
+const UNASSIGNED_PRODUCT = 'unassigned';
+
+// Аль хэдийн борлуулалт болгож бүртгэсэн банкны гүйлгээнүүд.
+// Нэг борлуулалт олон гүйлгээг хааж болно (зарлагын баримт) → source_tx_ids.
+function classifiedTxIds(db) {
+  const set = new Set();
+  (db.sales || []).filter(s => !s.archived).forEach(s => {
+    if (s.source_tx_id != null) set.add(String(s.source_tx_id));
+    (s.source_tx_ids || []).forEach(id => set.add(String(id)));
+  });
+  return set;
+}
+
 // ── БОРЛУУЛАЛТ ──
 router.get('/sales', (req, res) => {
   // Revenue is owner/sales data — factory engineers don't see it.
@@ -245,9 +262,7 @@ router.get('/sales', (req, res) => {
 router.get('/sales-income', (req, res) => {
   const db = load();
   // Аль хэдийн борлуулалт болгож ангилсан гүйлгээг хасна
-  const classified = new Set(
-    (db.sales || []).filter(s => !s.archived && s.source_tx_id != null).map(s => String(s.source_tx_id))
-  );
+  const classified = classifiedTxIds(db);
   const list = (db.transactions || [])
     .filter(t => t.code === 'SALE' && !classified.has(String(t.id)))
     .map(t => ({
@@ -258,6 +273,197 @@ router.get('/sales-income', (req, res) => {
     }))
     .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
   res.json(list);
+});
+
+// ── ШУУД ОРУУЛАХ: банкны SALE гүйлгээг бараагүйгээр орлогод бүртгэх ──
+// Мөнгө орж ирсэн боловч аль бараа зарагдсаныг мэдэхгүй тул бараа сонгуулахгүй.
+// Дүн бүтнээрээ орлогод тооцогдоно (авлага үүсэхгүй), склад ХӨНДӨГДӨХГҮЙ.
+// Дараа нь зарлагын баримт (POST /sales-receipt) ирэхэд барааны задаргаа хийнэ.
+router.post('/sales-income/:txId/direct', (req, res) => {
+  if (!['admin', 'sales', 'manager'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
+  const db = load();
+  if (!db.sales) db.sales = [];
+
+  const tx = (db.transactions || []).find(t => String(t.id) === String(req.params.txId) && t.code === 'SALE');
+  if (!tx) return res.status(404).json({ error: 'Гүйлгээ олдсонгүй' });
+  if (classifiedTxIds(db).has(String(tx.id))) return res.status(400).json({ error: 'Энэ гүйлгээ аль хэдийн бүртгэгдсэн' });
+
+  const amount = parseInt(tx.amount) || 0;
+  if (amount <= 0) return res.status(400).json({ error: 'Гүйлгээний дүн 0 байна' });
+
+  const now = new Date().toISOString();
+  const record = {
+    id:                require('crypto').randomUUID(),
+    date:              tx.date || now.slice(0, 10),
+    branch:            '',
+    product:           UNASSIGNED_PRODUCT,
+    quantity:          0,
+    unit_price:        0,
+    total_amount:      amount,
+    advance_paid:      amount,
+    remaining_amount:  0,
+    bank_account:      tx.account || '',
+    bank_account_name: tx.account_name || '',
+    customer_name:     '',
+    customer_phone:    '',
+    note:              tx.note || tx.description || tx.raw_memo || '',
+    source_tx_id:      tx.id,
+    vat_included:      true,
+    status:            'completed',
+    items_pending:     true,          // ← зарлагын баримт хүлээж буй
+    archived:          false,
+    created_by:        req.user.name,
+    created_at:        now,
+  };
+  db.sales.push(record);
+  save(db);
+  res.json({ id: record.id, amount });
+});
+
+// ── ЗАРЛАГЫН БАРИМТ: бараагүй орлогуудыг барааны задаргаатай тэнцүүлэх ──
+// income_ids = "бараа тодорхойгүй" орлогууд (нэг баримтад олон орлого).
+// items    = баримт дээрх барааны мөрүүд.
+// Тэнцэл: орлого > бараа → илүү дүн шинэ "бараагүй орлого" болж үлдэнэ,
+//         бараа > орлого → зөрүү нь авлага болно.
+router.post('/sales-receipt', (req, res) => {
+  if (!['admin', 'sales', 'manager'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
+  const db = load();
+  if (!db.sales) db.sales = [];
+
+  const { date, branch, note, vat_mode } = req.body;
+  const incomeIds = Array.isArray(req.body.income_ids) ? req.body.income_ids.map(String) : [];
+  const rawItems  = Array.isArray(req.body.items) ? req.body.items : [];
+  if (!rawItems.length)  return res.status(400).json({ error: 'Бараа оруулна уу' });
+  if (!incomeIds.length) return res.status(400).json({ error: 'Орлого сонгоно уу' });
+
+  // 1) Сонгосон бараагүй орлогууд
+  const incomes = incomeIds.map(id =>
+    db.sales.find(s => String(s.id) === id && s.items_pending && !s.archived));
+  if (incomes.some(o => !o)) return res.status(400).json({ error: 'Сонгосон орлого олдсонгүй (аль хэдийн бүртгэгдсэн байж болзошгүй)' });
+  const incomeTotal = incomes.reduce((s, o) => s + (parseInt(o.total_amount) || 0), 0);
+
+  // 2) Барааны мөр бүрийн үнэ — бараа мастераас (түүхэн үнэ хадгална)
+  const noVat = vat_mode === 'without';
+  const items = [];
+  for (const it of rawItems) {
+    const productDef = (db.products || []).find(p => p.id === it.product);
+    let unit_price = (!productDef || productDef.price === 0) ? parseInt(it.unit_price) || 0 : productDef.price;
+    if (noVat && productDef && productDef.price > 0) unit_price = Math.round(productDef.price / 1.1);
+    const qty = parseInt(it.quantity) || 0;
+    if (qty < 1)        return res.status(400).json({ error: 'Тоо ширхэг оруулна уу' });
+    if (unit_price < 1) return res.status(400).json({ error: 'Үнэ оруулна уу' });
+    items.push({ product: it.product, quantity: qty, unit_price, total: qty * unit_price, productDef });
+  }
+  const goodsTotal = items.reduce((s, it) => s + it.total, 0);
+
+  // 3) Орлогыг бараа тус бүрт хувь тэнцүүлэн хуваарилах (мөрийн дүнгээс хэтрэхгүй)
+  const allocTotal = Math.min(incomeTotal, goodsTotal);
+  let left = allocTotal;
+  items.forEach((it, i) => {
+    const share = (i === items.length - 1) ? left : Math.round(allocTotal * it.total / goodsTotal);
+    it.advance_paid = Math.max(0, Math.min(it.total, Math.min(left, share)));
+    left -= it.advance_paid;
+  });
+
+  // 4) Бараа бүрийг борлуулалт болгож бүртгэх (склад хасна)
+  const now    = new Date().toISOString();
+  const txIds  = incomes.map(o => o.source_tx_id).filter(x => x != null);
+  const bankId = req.body.bank_account || incomes[0].bank_account || '';
+  const bankDef = (db.bank_accounts || []).find(a => a.id === bankId);
+  const created = [];
+  items.forEach((it, i) => {
+    const remaining_amount = Math.max(0, it.total - it.advance_paid);
+    const rec = {
+      id:                require('crypto').randomUUID(),
+      date:              date || now.slice(0, 10),
+      branch:            branch || '',
+      product:           it.product,
+      quantity:          it.quantity,
+      unit_price:        it.unit_price,
+      total_amount:      it.total,
+      advance_paid:      it.advance_paid,
+      remaining_amount,
+      bank_account:      bankId,
+      bank_account_name: bankId === 'cash' ? 'Бэлэн (касс)' : (bankDef ? bankDef.name : (incomes[0].bank_account_name || '')),
+      customer_name:     req.body.customer_name || '',
+      customer_phone:    '',
+      note:              note || '',
+      // Эх гүйлгээнүүд зөвхөн 1-р мөрөнд (давхар тоологдохгүй)
+      source_tx_id:      i === 0 ? (txIds[0] != null ? txIds[0] : null) : null,
+      vat_included:      !noVat,
+      status:            remaining_amount === 0 ? 'completed' : 'receivable',
+      from_receipt:      true,
+      archived:          false,
+      created_by:        req.user.name,
+      created_at:        now,
+    };
+    if (i === 0 && txIds.length) rec.source_tx_ids = txIds;
+
+    const invItem = findSaleInvItem(db, branch, it.productDef ? it.productDef.name : '');
+    if (invItem && it.quantity > 0) {
+      logInvMove(db, invItem, it.quantity, {
+        source: 'SALES_OUT', source_id: rec.id,
+        note: 'Зарлагын баримт (' + (rec.note || '') + ')', user: req.user, branch,
+      });
+      rec.inventory_item_id  = invItem.id;
+      rec.inventory_deducted = true;
+    }
+    db.sales.push(rec);
+    created.push(rec);
+  });
+
+  // 5) Хуучин "бараагүй орлого"-уудыг архивлах (дүн нь одоо бараанд шилжсэн)
+  incomes.forEach(o => {
+    o.archived       = true;
+    o.archived_by    = req.user.name;
+    o.archived_at    = now;
+    o.archive_reason = 'Зарлагын баримтаар барааны задаргаа хийсэн';
+    o.converted_to   = created.map(r => r.id);
+  });
+
+  // 6) Орлого илүү гарвал үлдэгдлийг дахин "бараагүй орлого" болгож үлдээх
+  const excess = incomeTotal - goodsTotal;
+  let residualId = null;
+  if (excess > 0) {
+    const residual = {
+      id:                require('crypto').randomUUID(),
+      date:              date || now.slice(0, 10),
+      branch:            '',
+      product:           UNASSIGNED_PRODUCT,
+      quantity:          0,
+      unit_price:        0,
+      total_amount:      excess,
+      advance_paid:      excess,
+      remaining_amount:  0,
+      bank_account:      bankId,
+      bank_account_name: incomes[0].bank_account_name || '',
+      customer_name:     '',
+      customer_phone:    '',
+      note:              'Үлдэгдэл орлого (зарлагын баримтын дараа)' + (note ? ' — ' + note : ''),
+      source_tx_id:      null,
+      vat_included:      true,
+      status:            'completed',
+      items_pending:     true,
+      from_receipt_id:   created[0].id,
+      archived:          false,
+      created_by:        req.user.name,
+      created_at:        now,
+    };
+    db.sales.push(residual);
+    residualId = residual.id;
+  }
+
+  save(db);
+  res.json({
+    ok:               true,
+    ids:              created.map(r => r.id),
+    income_total:     incomeTotal,
+    goods_total:      goodsTotal,
+    receivable:       Math.max(0, goodsTotal - incomeTotal),
+    residual_amount:  Math.max(0, incomeTotal - goodsTotal),
+    residual_id:      residualId,
+    inventory_missed: created.filter(r => !r.inventory_deducted).length,
+  });
 });
 
 router.post('/sales', (req, res) => {
