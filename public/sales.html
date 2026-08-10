@@ -88,13 +88,13 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
 .inc-btn:active { opacity:0.85; }
 .tx-banner { background:#ecfdf5; border:1px solid #a7f3d0; border-radius:10px; padding:9px 12px; font-size:11.5px; color:#065f46; margin-bottom:10px; line-height:1.5; }
 
-/* ── Бараа тодорхойгүй орлого (зарлагын баримт хүлээж буй) ── */
+/* ── Бараа тодорхойгүй орлого (борлуулалтын баримт хүлээж буй) ── */
 .pend-card { background:#fff; border-radius:12px; padding:12px 14px; margin-bottom:9px; box-shadow:0 1px 4px rgba(0,0,0,0.07); border-left:4px solid #f59e0b; }
 .pend-amt  { font-size:15px; font-weight:800; color:#b45309; white-space:nowrap; }
 .pend-btn  { width:100%; margin-top:10px; padding:9px; border:none; border-radius:8px; background:#f59e0b; color:#fff; font-size:12.5px; font-weight:700; cursor:pointer; }
 .pend-btn:active { opacity:0.85; }
 
-/* ── Зарлагын баримт (орлого ↔ бараа тэнцүүлэх) ── */
+/* ── Борлуулалтын баримт (орлого ↔ бараа тэнцүүлэх) ── */
 .inc-pick { display:flex; align-items:flex-start; gap:9px; padding:9px 0; border-bottom:1px solid #f2f2f2; cursor:pointer; }
 .inc-pick:last-child { border-bottom:none; }
 .inc-pick input { width:18px; height:18px; margin-top:2px; flex-shrink:0; }
@@ -219,7 +219,7 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
   <div class="sec" id="incSecLbl" style="display:none">🆕 Шинэ SALE орлого — ангилаагүй</div>
   <div id="incList"></div>
 
-  <div class="sec" id="pendSecLbl" style="display:none">📄 Бараа тодорхойгүй орлого — зарлагын баримт хүлээж буй</div>
+  <div class="sec" id="pendSecLbl" style="display:none">📄 Бараа тодорхойгүй орлого — борлуулалтын баримт хүлээж буй</div>
   <div id="pendList"></div>
 
   <div class="kpi-grid">
@@ -389,9 +389,9 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
   <div class="card" id="histList"></div>
 </div>
 
-<!-- PANEL: ЗАРЛАГЫН БАРИМТ (таб биш — орлогын картаас нээгдэнэ) -->
+<!-- PANEL: БОРЛУУЛАЛТЫН БАРИМТ (таб биш — орлогын картаас нээгдэнэ) -->
 <div id="panel-receipt" class="panel">
-  <div class="sec">📄 Зарлагын баримт — орлого ↔ бараа тэнцүүлэх</div>
+  <div class="sec">📄 Борлуулалтын баримт — орлого ↔ бараа тэнцүүлэх</div>
   <div class="card">
     <div class="g2">
       <div class="field" style="margin-top:0">
@@ -574,7 +574,7 @@ async function loadMasters() {
     `<option value="${p.id}">${p.name}${p.price > 0 ? ' — ' + fmt(p.price) + '₮' : ''}</option>`
   ).join('');
   ps.innerHTML = opts;
-  saleOpts = opts;                            // зарлагын баримтын мөрд ашиглана
+  saleOpts = opts;                            // борлуулалтын баримтын мөрд ашиглана
   // 2 дахь бараа — ижил сонголт + "— Үгүй —"
   const ps2 = document.getElementById('nProduct2');
   if (ps2) ps2.innerHTML = '<option value="">— Үгүй —</option>' + opts;
@@ -712,7 +712,7 @@ async function loadIncome() {
 }
 
 // ⚡ Шууд оруулах — бараа сонгохгүйгээр дүнг орлогод бүртгэнэ.
-// Склад хөндөгдөхгүй; зарлагын баримт ирэхэд барааны задаргаа хийнэ.
+// Склад хөндөгдөхгүй; борлуулалтын баримт ирэхэд барааны задаргаа хийнэ.
 async function directIncome(txId) {
   const r = await api('/sales-income/' + txId + '/direct', { method: 'POST' });
   if (!r || !r.id) { alert((r && r.error) || 'Алдаа гарлаа'); return; }
@@ -720,7 +720,7 @@ async function directIncome(txId) {
   renderDash();
 }
 
-// ── Бараа тодорхойгүй орлого (зарлагын баримт хүлээж буй) ──
+// ── Бараа тодорхойгүй орлого (борлуулалтын баримт хүлээж буй) ──
 function pendingIncomes() {
   return orders.filter(o => o.items_pending)
     .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
@@ -744,7 +744,7 @@ function renderPending() {
         </div>
         <div class="pend-amt">${fmt(o.total_amount)} ₮</div>
       </div>
-      <button class="pend-btn" onclick="openReceipt('${o.id}')">📄 Зарлагын баримт оруулах</button>
+      <button class="pend-btn" onclick="openReceipt('${o.id}')">📄 Борлуулалтын баримт оруулах</button>
     </div>`).join('');
 }
 
@@ -795,7 +795,7 @@ function onRecSettleChange() {
   calcTotal();
 }
 
-// ── ЗАРЛАГЫН БАРИМТ: бараагүй орлогуудыг барааны задаргаатай тэнцүүлэх ──
+// ── БОРЛУУЛАЛТЫН БАРИМТ: бараагүй орлогуудыг барааны задаргаатай тэнцүүлэх ──
 let rRowIds = [];   // идэвхтэй барааны мөрүүдийн дугаар
 let rRowSeq = 0;
 
@@ -956,7 +956,7 @@ async function submitReceipt() {
   });
   if (!r || !r.ok) { alert((r && r.error) || 'Алдаа гарлаа'); return; }
 
-  let msg = '✅ Зарлагын баримт бүртгэгдлээ.';
+  let msg = '✅ Борлуулалтын баримт бүртгэгдлээ.';
   if (r.receivable > 0)      msg += '\n⏳ Авлага үүслээ: ' + fmt(r.receivable) + ' ₮';
   if (r.residual_amount > 0) msg += '\n💰 Үлдэгдэл орлого: ' + fmt(r.residual_amount) + ' ₮ (бараа тодорхойгүй хэвээр)';
   if (r.inventory_missed)    msg += '\n⚠️ ' + r.inventory_missed + ' бараа "' + branch + '"-д олдоогүй тул складаас хасагдсангүй.';
@@ -1309,7 +1309,7 @@ function openEditSale(id) {
   if (!['admin', 'manager'].includes(user.role)) return;
   const o = orders.find(x => String(x.id) === String(id));
   if (!o) return;
-  // Бараа тодорхойгүй орлогыг засах биш — зарлагын баримтаар задална
+  // Бараа тодорхойгүй орлогыг засах биш — борлуулалтын баримтаар задална
   if (o.items_pending) { openReceipt(o.id); return; }
   editingId = id;
 

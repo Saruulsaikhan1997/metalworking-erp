@@ -216,11 +216,11 @@ function logInvMove(db, item, deltaOut, { source, source_id, note, user, branch 
 // ── БАРАА ТОДОРХОЙГҮЙ ОРЛОГО ──
 // Мөнгө орсон боловч ЯМАР бараа зарагдсаныг мэдэхгүй үед энэ бараагаар
 // бүртгэнэ. Дүн нь шууд орлогод тооцогдоно (склад хөндөгдөхгүй), дараа нь
-// зарлагын баримт ирэхэд барааны задаргаа хийж баталгаажуулна.
+// борлуулалтын баримт ирэхэд барааны задаргаа хийж баталгаажуулна.
 const UNASSIGNED_PRODUCT = 'unassigned';
 
 // Аль хэдийн борлуулалт болгож бүртгэсэн банкны гүйлгээнүүд.
-// Нэг борлуулалт олон гүйлгээг хааж болно (зарлагын баримт) → source_tx_ids.
+// Нэг борлуулалт олон гүйлгээг хааж болно (борлуулалтын баримт) → source_tx_ids.
 function classifiedTxIds(db) {
   const set = new Set();
   (db.sales || []).filter(s => !s.archived).forEach(s => {
@@ -278,7 +278,7 @@ router.get('/sales-income', (req, res) => {
 // ── ШУУД ОРУУЛАХ: банкны SALE гүйлгээг бараагүйгээр орлогод бүртгэх ──
 // Мөнгө орж ирсэн боловч аль бараа зарагдсаныг мэдэхгүй тул бараа сонгуулахгүй.
 // Дүн бүтнээрээ орлогод тооцогдоно (авлага үүсэхгүй), склад ХӨНДӨГДӨХГҮЙ.
-// Дараа нь зарлагын баримт (POST /sales-receipt) ирэхэд барааны задаргаа хийнэ.
+// Дараа нь борлуулалтын баримт (POST /sales-receipt) ирэхэд барааны задаргаа хийнэ.
 router.post('/sales-income/:txId/direct', (req, res) => {
   if (!['admin', 'sales', 'manager'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
   const db = load();
@@ -310,7 +310,7 @@ router.post('/sales-income/:txId/direct', (req, res) => {
     source_tx_id:      tx.id,
     vat_included:      true,
     status:            'completed',
-    items_pending:     true,          // ← зарлагын баримт хүлээж буй
+    items_pending:     true,          // ← борлуулалтын баримт хүлээж буй
     archived:          false,
     created_by:        req.user.name,
     created_at:        now,
@@ -320,7 +320,7 @@ router.post('/sales-income/:txId/direct', (req, res) => {
   res.json({ id: record.id, amount });
 });
 
-// ── ЗАРЛАГЫН БАРИМТ: бараагүй орлогуудыг барааны задаргаатай тэнцүүлэх ──
+// ── БОРЛУУЛАЛТЫН БАРИМТ: бараагүй орлогуудыг барааны задаргаатай тэнцүүлэх ──
 // income_ids = "бараа тодорхойгүй" орлогууд (нэг баримтад олон орлого).
 // items    = баримт дээрх барааны мөрүүд.
 // Тэнцэл: орлого > бараа → илүү дүн шинэ "бараагүй орлого" болж үлдэнэ,
@@ -403,7 +403,7 @@ router.post('/sales-receipt', (req, res) => {
     if (invItem && it.quantity > 0) {
       logInvMove(db, invItem, it.quantity, {
         source: 'SALES_OUT', source_id: rec.id,
-        note: 'Зарлагын баримт (' + (rec.note || '') + ')', user: req.user, branch,
+        note: 'Борлуулалтын баримт (' + (rec.note || '') + ')', user: req.user, branch,
       });
       rec.inventory_item_id  = invItem.id;
       rec.inventory_deducted = true;
@@ -417,7 +417,7 @@ router.post('/sales-receipt', (req, res) => {
     o.archived       = true;
     o.archived_by    = req.user.name;
     o.archived_at    = now;
-    o.archive_reason = 'Зарлагын баримтаар барааны задаргаа хийсэн';
+    o.archive_reason = 'Борлуулалтын баримтаар барааны задаргаа хийсэн';
     o.converted_to   = created.map(r => r.id);
   });
 
@@ -439,7 +439,7 @@ router.post('/sales-receipt', (req, res) => {
       bank_account_name: incomes[0].bank_account_name || '',
       customer_name:     '',
       customer_phone:    '',
-      note:              'Үлдэгдэл орлого (зарлагын баримтын дараа)' + (note ? ' — ' + note : ''),
+      note:              'Үлдэгдэл орлого (борлуулалтын баримтын дараа)' + (note ? ' — ' + note : ''),
       source_tx_id:      null,
       vat_included:      true,
       status:            'completed',
