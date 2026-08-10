@@ -84,8 +84,33 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
 .inc-btn { flex:1; padding:9px; border:none; border-radius:8px; font-size:12.5px; font-weight:700; cursor:pointer; }
 .inc-btn.green { background:#2e7d32; color:#fff; }
 .inc-btn.amber { background:#f59e0b; color:#fff; }
+.inc-btn.blue  { background:#1565c0; color:#fff; }
 .inc-btn:active { opacity:0.85; }
 .tx-banner { background:#ecfdf5; border:1px solid #a7f3d0; border-radius:10px; padding:9px 12px; font-size:11.5px; color:#065f46; margin-bottom:10px; line-height:1.5; }
+
+/* ── Бараа тодорхойгүй орлого (борлуулалтын баримт хүлээж буй) ── */
+.pend-card { background:#fff; border-radius:12px; padding:12px 14px; margin-bottom:9px; box-shadow:0 1px 4px rgba(0,0,0,0.07); border-left:4px solid #f59e0b; }
+.pend-amt  { font-size:15px; font-weight:800; color:#b45309; white-space:nowrap; }
+.pend-btn  { width:100%; margin-top:10px; padding:9px; border:none; border-radius:8px; background:#f59e0b; color:#fff; font-size:12.5px; font-weight:700; cursor:pointer; }
+.pend-btn:active { opacity:0.85; }
+
+/* ── Борлуулалтын баримт (орлого ↔ бараа тэнцүүлэх) ── */
+.inc-pick { display:flex; align-items:flex-start; gap:9px; padding:9px 0; border-bottom:1px solid #f2f2f2; cursor:pointer; }
+.inc-pick:last-child { border-bottom:none; }
+.inc-pick input { width:18px; height:18px; margin-top:2px; flex-shrink:0; }
+.inc-pick .ip-body { flex:1; min-width:0; }
+.inc-pick .ip-memo { font-size:12.5px; font-weight:600; color:#1a1a2e; line-height:1.35; word-break:break-word; }
+.inc-pick .ip-date { font-size:10.5px; color:#999; margin-top:2px; }
+.inc-pick .ip-amt  { font-size:13px; font-weight:800; color:#2e7d32; white-space:nowrap; }
+.ri-row  { border:1.5px solid #eee; border-radius:10px; padding:10px 11px; margin-bottom:9px; }
+.ri-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:7px; }
+.ri-no   { font-size:10px; font-weight:700; color:#888; letter-spacing:1px; }
+.ri-del  { background:none; border:none; color:#c62828; font-size:11.5px; font-weight:700; cursor:pointer; padding:0; }
+.ri-tot  { text-align:right; font-size:11.5px; font-weight:700; color:#1a1a2e; margin-top:7px; }
+.add-row-btn { width:100%; padding:10px; border:1.5px dashed #cfcfcf; border-radius:10px; background:#fafafa; color:#555; font-size:12.5px; font-weight:700; cursor:pointer; }
+.calc-bar.amber { background:#fff7ed; color:#b45309; }
+.bal-note { font-size:11px; color:#888; margin-top:7px; line-height:1.5; }
+.ghost-btn { width:100%; padding:12px; background:#eee; color:#555; border:none; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; margin-top:8px; }
 
 /* ── Receivable cards ── */
 .rec-card { background: #fff; border-radius: 12px; padding: 13px 15px; margin-bottom: 8px; box-shadow: 0 1px 5px rgba(229,57,53,0.1); border-left: 4px solid #e53935; }
@@ -193,6 +218,9 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
 <div id="panel-dash" class="panel active">
   <div class="sec" id="incSecLbl" style="display:none">🆕 Шинэ SALE орлого — ангилаагүй</div>
   <div id="incList"></div>
+
+  <div class="sec" id="pendSecLbl" style="display:none">📄 Бараа тодорхойгүй орлого — борлуулалтын баримт хүлээж буй</div>
+  <div id="pendList"></div>
 
   <div class="kpi-grid">
     <div class="kpi green">
@@ -361,6 +389,53 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
   <div class="card" id="histList"></div>
 </div>
 
+<!-- PANEL: БОРЛУУЛАЛТЫН БАРИМТ (таб биш — орлогын картаас нээгдэнэ) -->
+<div id="panel-receipt" class="panel">
+  <div class="sec">📄 Борлуулалтын баримт — орлого ↔ бараа тэнцүүлэх</div>
+  <div class="card">
+    <div class="g2">
+      <div class="field" style="margin-top:0">
+        <label>Огноо</label>
+        <input type="date" id="rDate">
+      </div>
+      <div class="field" style="margin-top:0">
+        <label>Аль складаас</label>
+        <select id="rBranch"></select>
+      </div>
+    </div>
+    <div class="field">
+      <label>НӨАТ</label>
+      <select id="rVatMode" onchange="rebuildReceiptPrices()">
+        <option value="with">НӨАТ-тэй</option>
+        <option value="without">НӨАТ-гүй</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Тайлбар <span style="color:#aaa;font-weight:400">(баримтын дугаар, худалдан авагч)</span></label>
+      <input type="text" id="rNote" placeholder="">
+    </div>
+  </div>
+
+  <div class="sec">1. Аль орлогыг хаах вэ</div>
+  <div class="card" id="rIncomePick"></div>
+
+  <div class="sec">2. Баримт дээрх бараа</div>
+  <div class="card">
+    <div id="rItems"></div>
+    <button class="add-row-btn" onclick="addReceiptRow()">＋ Бараа нэмэх</button>
+  </div>
+
+  <div class="sec">3. Тэнцэл</div>
+  <div class="card">
+    <div class="calc-bar gray" id="rIncomeBar" style="margin-top:0"><span>Орлогын дүн</span><span>0 ₮</span></div>
+    <div class="calc-bar gray" id="rGoodsBar"><span>Барааны дүн</span><span>0 ₮</span></div>
+    <div class="calc-bar gray" id="rDiffBar"><span>Зөрүү</span><span>—</span></div>
+    <div class="bal-note" id="rDiffNote"></div>
+    <button class="save-btn" onclick="submitReceipt()">Баримт бүртгэх</button>
+    <button class="ghost-btn" onclick="closeReceipt()">Болих</button>
+  </div>
+</div>
+
 <!-- BOTTOM TAB BAR -->
 <div class="tab-bar">
   <button class="tab-btn active" id="tb-dash" onclick="showTab('dash')">
@@ -460,6 +535,7 @@ let orders     = [];
 let products   = [];
 let productMap = {};   // id → display name lookup
 let banks      = [];   // bank accounts (засах формд ашиглана)
+let saleOpts   = '';   // зарагддаг барааны <option> жагсаалт (баримтын мөрд дахин ашиглана)
 let qfMode     = 'month';
 // Склад / байршил — зөвхөн Төв склад (бусад складыг хассан). Бүх борлуулалт
 // Төв складаас хасагдана.
@@ -498,6 +574,7 @@ async function loadMasters() {
     `<option value="${p.id}">${p.name}${p.price > 0 ? ' — ' + fmt(p.price) + '₮' : ''}</option>`
   ).join('');
   ps.innerHTML = opts;
+  saleOpts = opts;                            // борлуулалтын баримтын мөрд ашиглана
   // 2 дахь бараа — ижил сонголт + "— Үгүй —"
   const ps2 = document.getElementById('nProduct2');
   if (ps2) ps2.innerHTML = '<option value="">— Үгүй —</option>' + opts;
@@ -625,9 +702,49 @@ async function loadIncome() {
         <div class="inc-amt">${fmt(t.amount)} ₮</div>
       </div>
       <div class="inc-acts">
+        <button class="inc-btn blue" onclick="directIncome('${t.id}')">⚡ Шууд оруулах — бараа нь дараа</button>
+      </div>
+      <div class="inc-acts">
         <button class="inc-btn green" onclick="classifyIncome('${t.id}','income')">💰 Орлого</button>
         <button class="inc-btn amber" onclick="classifyIncome('${t.id}','advance')">⏳ Урьдчилгаа</button>
       </div>
+    </div>`).join('');
+}
+
+// ⚡ Шууд оруулах — бараа сонгохгүйгээр дүнг орлогод бүртгэнэ.
+// Склад хөндөгдөхгүй; борлуулалтын баримт ирэхэд барааны задаргаа хийнэ.
+async function directIncome(txId) {
+  const r = await api('/sales-income/' + txId + '/direct', { method: 'POST' });
+  if (!r || !r.id) { alert((r && r.error) || 'Алдаа гарлаа'); return; }
+  await Promise.all([loadSales(), loadIncome()]);
+  renderDash();
+}
+
+// ── Бараа тодорхойгүй орлого (борлуулалтын баримт хүлээж буй) ──
+function pendingIncomes() {
+  return orders.filter(o => o.items_pending)
+    .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+}
+
+function renderPending() {
+  const list = pendingIncomes();
+  const el   = document.getElementById('pendList');
+  const lbl  = document.getElementById('pendSecLbl');
+  if (!el) return;
+  if (!list.length) { el.innerHTML = ''; lbl.style.display = 'none'; return; }
+  const tot = list.reduce((s, o) => s + o.total_amount, 0);
+  lbl.style.display = '';
+  lbl.textContent = `📄 Бараа тодорхойгүй орлого — ${list.length} ш · ${fmt(tot)} ₮`;
+  el.innerHTML = list.map(o => `
+    <div class="pend-card">
+      <div class="inc-top">
+        <div style="flex:1;min-width:0">
+          <div class="inc-memo">${escapeHtml(o.note) || '<span style=color:#9ca3af>(утга байхгүй)</span>'}</div>
+          <div class="inc-date">📅 ${escapeHtml(o.date || '—')} · бараа тодорхойгүй</div>
+        </div>
+        <div class="pend-amt">${fmt(o.total_amount)} ₮</div>
+      </div>
+      <button class="pend-btn" onclick="openReceipt('${o.id}')">📄 Борлуулалтын баримт оруулах</button>
     </div>`).join('');
 }
 
@@ -676,6 +793,177 @@ function onRecSettleChange() {
   document.getElementById('nRecAmount').value = settle;
   if (txAmt) document.getElementById('nAdvance').value = Math.max(0, txAmt - settle);
   calcTotal();
+}
+
+// ── БОРЛУУЛАЛТЫН БАРИМТ: бараагүй орлогуудыг барааны задаргаатай тэнцүүлэх ──
+let rRowIds = [];   // идэвхтэй барааны мөрүүдийн дугаар
+let rRowSeq = 0;
+
+function openReceipt(incomeId) {
+  const list = pendingIncomes();
+  if (!list.length) { alert('Бараа тодорхойгүй орлого байхгүй байна'); return; }
+
+  document.querySelectorAll('.panel').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('panel-receipt').classList.add('active');
+
+  document.getElementById('rDate').value    = today();
+  document.getElementById('rVatMode').value = 'with';
+  document.getElementById('rNote').value    = '';
+  document.getElementById('rBranch').innerHTML =
+    WAREHOUSES.map(w => `<option value="${w}">${w}</option>`).join('');
+
+  // 1. Аль орлогыг хаах — олон орлого сонгож болно
+  document.getElementById('rIncomePick').innerHTML = list.map(o => `
+    <label class="inc-pick">
+      <input type="checkbox" class="r-inc" value="${o.id}"${String(o.id) === String(incomeId) ? ' checked' : ''} onchange="calcReceipt()">
+      <div class="ip-body">
+        <div class="ip-memo">${escapeHtml(o.note) || '(утга байхгүй)'}</div>
+        <div class="ip-date">📅 ${escapeHtml(o.date || '—')}</div>
+      </div>
+      <div class="ip-amt">${fmt(o.total_amount)} ₮</div>
+    </label>`).join('');
+
+  // 2. Барааны мөр — нэгээс эхэлнэ
+  rRowIds = [];
+  document.getElementById('rItems').innerHTML = '';
+  addReceiptRow();
+  window.scrollTo(0, 0);
+}
+
+function closeReceipt() { showTab('dash'); }
+
+function addReceiptRow() {
+  const n = ++rRowSeq;
+  rRowIds.push(n);
+  const div = document.createElement('div');
+  div.className = 'ri-row';
+  div.id = 'rrow_' + n;
+  div.innerHTML = `
+    <div class="ri-head">
+      <span class="ri-no">БАРАА ${rRowIds.length}</span>
+      <button class="ri-del" onclick="removeReceiptRow(${n})">✕ Хасах</button>
+    </div>
+    <div class="field" style="margin-top:0">
+      <select id="rp_${n}" onchange="onReceiptProduct(${n})">${saleOpts}</select>
+    </div>
+    <div class="g2" style="margin-top:9px">
+      <div class="field" style="margin-top:0">
+        <label>Тоо ширхэг</label>
+        <input type="number" id="rq_${n}" min="1" value="1" oninput="calcReceipt()">
+      </div>
+      <div class="field" style="margin-top:0">
+        <label>Нэгжийн үнэ ₮</label>
+        <input type="number" id="rpr_${n}" oninput="calcReceipt()">
+      </div>
+    </div>
+    <div class="ri-tot" id="rt_${n}">0 ₮</div>`;
+  document.getElementById('rItems').appendChild(div);
+  onReceiptProduct(n);
+}
+
+function removeReceiptRow(n) {
+  if (rRowIds.length <= 1) { alert('Дор хаяж 1 бараа байх ёстой'); return; }
+  rRowIds = rRowIds.filter(x => x !== n);
+  const el = document.getElementById('rrow_' + n);
+  if (el) el.remove();
+  rRowIds.forEach((id, i) => {
+    const lbl = document.querySelector('#rrow_' + id + ' .ri-no');
+    if (lbl) lbl.textContent = 'БАРАА ' + (i + 1);
+  });
+  calcReceipt();
+}
+
+// Бараа сонгоход үнийг мастераас автоматаар (НӨАТ-гүй бол ÷1.1)
+function onReceiptProduct(n) {
+  const prod    = products.find(p => p.id === document.getElementById('rp_' + n).value);
+  const el      = document.getElementById('rpr_' + n);
+  const withVat = document.getElementById('rVatMode').value !== 'without';
+  if (!prod || prod.price === 0) {
+    el.removeAttribute('readonly'); el.value = ''; el.placeholder = 'Үнэ оруулна уу';
+  } else {
+    el.setAttribute('readonly', true);
+    el.value = withVat ? prod.price : Math.round(prod.price / 1.1);
+    el.placeholder = '';
+  }
+  calcReceipt();
+}
+
+function rebuildReceiptPrices() { rRowIds.forEach(n => onReceiptProduct(n)); }
+
+function receiptIncomeIds() {
+  return [...document.querySelectorAll('.r-inc:checked')].map(c => c.value);
+}
+
+function calcReceipt() {
+  let goods = 0;
+  rRowIds.forEach(n => {
+    const q = parseInt(document.getElementById('rq_'  + n).value) || 0;
+    const p = parseInt(document.getElementById('rpr_' + n).value) || 0;
+    goods += q * p;
+    document.getElementById('rt_' + n).textContent = fmt(q * p) + ' ₮';
+  });
+  const ids = receiptIncomeIds();
+  const inc = orders.filter(o => ids.includes(String(o.id))).reduce((s, o) => s + o.total_amount, 0);
+
+  const ib = document.getElementById('rIncomeBar');
+  ib.innerHTML = `<span>Орлогын дүн (${ids.length} гүйлгээ)</span><span>${fmt(inc)} ₮</span>`;
+  ib.className = 'calc-bar ' + (inc ? 'green' : 'gray');
+  const gb = document.getElementById('rGoodsBar');
+  gb.innerHTML = `<span>Барааны дүн</span><span>${fmt(goods)} ₮</span>`;
+  gb.className = 'calc-bar ' + (goods ? 'green' : 'gray');
+
+  const diff = goods - inc;
+  const bar  = document.getElementById('rDiffBar');
+  const note = document.getElementById('rDiffNote');
+  if (!inc && !goods) {
+    bar.innerHTML = '<span>Зөрүү</span><span>—</span>'; bar.className = 'calc-bar gray'; note.textContent = '';
+  } else if (diff === 0) {
+    bar.innerHTML = '<span>Зөрүү</span><span>Тэнцсэн ✓</span>'; bar.className = 'calc-bar green';
+    note.textContent = 'Орлого ба барааны дүн яг тэнцэж байна.';
+  } else if (diff > 0) {
+    bar.innerHTML = `<span>Бараа илүү</span><span>${fmt(diff)} ₮</span>`; bar.className = 'calc-bar red';
+    note.textContent = 'Барааны дүн орлогоос ' + fmt(diff) + '₮ их байна → зөрүү нь АВЛАГА болж бүртгэгдэнэ.';
+  } else {
+    bar.innerHTML = `<span>Орлого илүү</span><span>${fmt(-diff)} ₮</span>`; bar.className = 'calc-bar amber';
+    note.textContent = 'Орлого барааны дүнгээс ' + fmt(-diff) + '₮ их байна → үлдэгдэл нь "бараа тодорхойгүй орлого" болж хэвээр үлдэнэ.';
+  }
+}
+
+async function submitReceipt() {
+  const income_ids = receiptIncomeIds();
+  if (!income_ids.length) { alert('Аль орлогыг хаахаа сонгоно уу'); return; }
+
+  const items = [];
+  for (const n of rRowIds) {
+    const quantity   = parseInt(document.getElementById('rq_'  + n).value) || 0;
+    const unit_price = parseInt(document.getElementById('rpr_' + n).value) || 0;
+    if (quantity < 1)   { alert('Тоо ширхэг оруулна уу'); return; }
+    if (unit_price < 1) { alert('Үнэ оруулна уу'); return; }
+    items.push({ product: document.getElementById('rp_' + n).value, quantity, unit_price });
+  }
+
+  const branch = document.getElementById('rBranch').value;
+  const r = await api('/sales-receipt', {
+    method: 'POST',
+    body: JSON.stringify({
+      date:     document.getElementById('rDate').value,
+      branch,
+      vat_mode: document.getElementById('rVatMode').value,
+      note:     document.getElementById('rNote').value.trim(),
+      income_ids, items,
+    }),
+  });
+  if (!r || !r.ok) { alert((r && r.error) || 'Алдаа гарлаа'); return; }
+
+  let msg = '✅ Борлуулалтын баримт бүртгэгдлээ.';
+  if (r.receivable > 0)      msg += '\n⏳ Авлага үүслээ: ' + fmt(r.receivable) + ' ₮';
+  if (r.residual_amount > 0) msg += '\n💰 Үлдэгдэл орлого: ' + fmt(r.residual_amount) + ' ₮ (бараа тодорхойгүй хэвээр)';
+  if (r.inventory_missed)    msg += '\n⚠️ ' + r.inventory_missed + ' бараа "' + branch + '"-д олдоогүй тул складаас хасагдсангүй.';
+  alert(msg);
+
+  await Promise.all([loadSales(), loadIncome()]);
+  showTab('dash');
 }
 
 async function submitSale() {
@@ -787,6 +1075,7 @@ function normalize(o) {
     note:              o.note || '',
     source_tx_id:      o.source_tx_id || null,
     source_tx:         o.source_tx || null,   // ангилахаас өмнөх эх гүйлгээ
+    items_pending:     !!o.items_pending,     // бараа тодорхойгүй (баримт хүлээж буй)
     status,
     created_by:        o.created_by || '',
   };
@@ -806,6 +1095,7 @@ function updateRecBadge() {
 }
 
 function prodName(id) {
+  if (id === 'unassigned') return '❓ Бараа тодорхойгүй';
   return productMap[id] || id || 'Бусад';
 }
 
@@ -813,6 +1103,7 @@ function prodName(id) {
 function renderDash() {
   const t   = today();
   const mon = thisMonth();
+  renderPending();
 
   // ONLY completed sales count in analytics
   const done    = orders.filter(o => o.status === 'completed');
@@ -1018,6 +1309,8 @@ function openEditSale(id) {
   if (!['admin', 'manager'].includes(user.role)) return;
   const o = orders.find(x => String(x.id) === String(id));
   if (!o) return;
+  // Бараа тодорхойгүй орлогыг засах биш — борлуулалтын баримтаар задална
+  if (o.items_pending) { openReceipt(o.id); return; }
   editingId = id;
 
   // Устгах нь admin болон manager (Нярав-Менежер)-т харагдана
