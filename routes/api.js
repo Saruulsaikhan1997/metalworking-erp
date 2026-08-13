@@ -239,6 +239,15 @@ router.get('/finance/summary', (req, res) => {
   const otherAmount = txs.filter(t => t.code === 'OTHER').reduce((s,t) => s + t.amount, 0);
   const otherWarning = totalAmount > 0 && (otherAmount / totalAmount) > 0.10;
 
+  // ── Пластик авлага (derive-don't-store) ──
+  // Бүх борлуулалт Пластикаар явдаг. Менежер зарагдсан барааг бүртгэдэг (db.sales),
+  // мөнгө нь дараа Пластикаас бөөнөөр банкинд ирдэг (SALE гүйлгээ).
+  // Авлага = менежерийн зарсан нийт − банкинд орсон борлуулалтын орлого.
+  // Тусдаа хадгалахгүй; зарагдах бүрт нэмэгдэж, мөнгө орох бүрт буурна.
+  const salesTotal = (db.sales || []).filter(s => !s.archived).reduce((s, x) => s + (x.total_amount || 0), 0);
+  const saleIncome = txs.filter(t => t.code === 'SALE' && t.direction === 'credit').reduce((s, t) => s + Math.abs(t.amount || 0), 0);
+  const plasticReceivable = Math.max(0, salesTotal - saleIncome);
+
   res.json({
     count: txs.length,
     balances,
@@ -246,6 +255,9 @@ router.get('/finance/summary', (req, res) => {
     needs_review: needsReview,
     other_warning: otherWarning,
     other_percent: totalAmount > 0 ? Math.round((otherAmount / totalAmount) * 100) : 0,
+    plastic_receivable: plasticReceivable,
+    sales_total: salesTotal,
+    sale_income: saleIncome,
   });
 });
 
