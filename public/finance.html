@@ -212,6 +212,12 @@ body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; backgrou
       <div class="fin-amt" style="color:#b45309" id="totalLoanOut">— ₮</div>
       <div class="fin-sub" id="totalLoanOutSub">авлага</div>
     </a>
+    <a class="fin-btn" href="/sales-entry" style="border-left:3px solid #db2777">
+      <div class="fin-icon">🧾</div>
+      <div class="fin-title">Пластик авлага</div>
+      <div class="fin-amt" style="color:#db2777" id="plasticReceivable">— ₮</div>
+      <div class="fin-sub" id="plasticReceivableSub">Пластикаас авах</div>
+    </a>
     <a class="fin-btn" id="claudeCard" href="/claude-costs" style="display:none;border-left:4px solid #6d28d9">
       <div class="fin-icon">🤖</div>
       <div class="fin-title">Хуваарилаагүй (Claude)</div>
@@ -334,6 +340,11 @@ async function load() {
   const loanOutActive = Math.max(0, loanOutSum - loanInSum);
   document.getElementById('totalLoanOut').textContent = fmt(loanOutActive) + ' ₮';
   document.getElementById('totalLoanOutSub').textContent = `${fmt(loanOutSum)} олгосон · ${fmt(loanInSum)} буцсан`;
+
+  // Пластик авлага (зарагдсан − орсон, backend-ээс)
+  document.getElementById('plasticReceivable').textContent = fmt(sum.plastic_receivable || 0) + ' ₮';
+  document.getElementById('plasticReceivableSub').textContent =
+    `Зарсан ${fmt(sum.sales_total || 0)} − Орсон ${fmt(sum.sale_income || 0)}`;
 
   // Хөрөнгө оруулалт карт (admin/shareholder) — loans_received-ээс
   if (['admin','shareholder'].includes(user.role)) {
