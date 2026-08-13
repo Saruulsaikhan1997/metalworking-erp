@@ -261,6 +261,39 @@ router.get('/finance/summary', (req, res) => {
   });
 });
 
+// ── БОРЛУУЛАЛТЫН ОРЛОГЫН ТҮҮХ (менежер авлага тааруулахад) ──
+// Пластикаас банкинд орж ирсэн БҮХ SALE орлого (ангилсан эсэхээс үл хамааран),
+// аль нь борлуулалттай холбогдсоныг (matched) харуулна. Менежер үүгээр
+// "Пластик хэзээ хэдэн төгрөг өгснийг" харж, авлагаа тэмдэглэнэ.
+// Зөвхөн УНШИХ, зөвхөн SALE. Санхүүгийн бусад дата admin/shareholder хэвээр.
+router.get('/finance/income-log', (req, res) => {
+  if (!['admin', 'shareholder', 'manager'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
+  const db = load();
+  const matched = new Set((db.sales || [])
+    .filter(s => !s.archived && s.source_tx_id != null)
+    .map(s => String(s.source_tx_id)));
+  const list = (db.transactions || [])
+    .filter(t => t.code === 'SALE' && t.direction === 'credit')
+    .map(t => ({
+      id:      t.id,
+      date:    t.date,
+      amount:  Math.abs(t.amount || 0),
+      memo:    t.note || t.description || t.raw_memo || '',
+      bank:    t.account_label || '',
+      matched: matched.has(String(t.id)),
+    }))
+    .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+  const total        = list.reduce((s, x) => s + x.amount, 0);
+  const matchedTotal = list.filter(x => x.matched).reduce((s, x) => s + x.amount, 0);
+  res.json({
+    income: list,
+    count: list.length,
+    total,
+    matched_total: matchedTotal,
+    unmatched_total: total - matchedTotal,
+  });
+});
+
 // ════════════════════════════════════════════════════════════
 // ── ЭД ХӨРӨНГӨ (Company assets) — finance-derived view ──
 // ASSET зарлагын гүйлгээ бүр = нэг эд хөрөнгө. Өгөгдөл санхүүгээс
