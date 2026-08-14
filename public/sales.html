@@ -1237,8 +1237,11 @@ function renderDash() {
   document.getElementById('dTodaySub').textContent = todayD.length + ' борлуулалт';
   document.getElementById('dMonth').textContent    = fmt(sum(monthD)) + ' ₮';
   document.getElementById('dMonthSub').textContent = monthD.length + ' борлуулалт';
-  document.getElementById('dAll').textContent      = fmt(sum(done)) + ' ₮';
-  document.getElementById('dAllSub').textContent   = done.length + ' борлуулалт';
+  // "Нийт орлого" = МӨНГӨ НЬ ОРСОН борлуулалт. Банкны хуулгагүй нь орлого биш —
+  // тэр нь Пластикаас авах өглөг тул тусдаа картад тоологдоно.
+  const paid = done.filter(o => o.source_tx_id != null);
+  document.getElementById('dAll').textContent      = fmt(sum(paid)) + ' ₮';
+  document.getElementById('dAllSub').textContent   = paid.length + ' борлуулалт · банкны хуулгатай';
   updatePlKpi();   // "Нийт авлага"-ын оронд Пластикаас авах
 
   // 7-day bar chart
@@ -1282,7 +1285,8 @@ function toggleAllDetail() {
   if (show) renderAllDetail();
 }
 function renderAllDetail() {
-  const done = orders.filter(o => o.status === 'completed')
+  // Дүнтэй нийцүүлж зөвхөн хуулгатай (мөнгө нь орсон) борлуулалтыг харуулна
+  const done = orders.filter(o => o.status === 'completed' && o.source_tx_id != null)
     .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   const el = document.getElementById('allDetail');
   if (!done.length) { el.innerHTML = '<div class="empty">Бүртгэл байхгүй</div>'; return; }
