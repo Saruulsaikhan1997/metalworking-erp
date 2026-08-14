@@ -240,11 +240,15 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
       <div class="val" id="dAll">0 ₮</div>
       <div class="sub" id="dAllSub">0 борлуулалт</div>
     </div>
-    <div class="kpi red">
-      <div class="lbl">Нийт авлага</div>
-      <div class="val" id="dRec">0 ₮</div>
-      <div class="sub" id="dRecSub">0 захиалга</div>
+    <div class="kpi red" onclick="togglePlDetail()" style="cursor:pointer">
+      <div class="lbl">🏭 Пластикаас авах <span style="opacity:.6">▾</span></div>
+      <div class="val" id="dPl">0 ₮</div>
+      <div class="sub" id="dPlSub">—</div>
     </div>
+  </div>
+  <div id="plDetailWrap" style="display:none">
+    <div class="sec">Банкны хуулгагүй борлуулалт</div>
+    <div class="card" id="plDetail"></div>
   </div>
 
   <div id="allDetailWrap" style="display:none">
@@ -356,7 +360,25 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
   <div id="recList"></div>
 </div>
 
-<!-- TAB 4: HISTORY -->
+<!-- TAB 4: ПЛАСТИКААС АВАХ -->
+<div id="panel-plastic" class="panel">
+  <div class="sec">🏭 Пластикийн тооцоо</div>
+  <div class="kpi-grid">
+    <div class="kpi red" style="grid-column:1/-1">
+      <div class="lbl">Пластикаас авах</div>
+      <div class="val" id="plBal">0 ₮</div>
+      <div class="sub" id="plBalSub">—</div>
+    </div>
+  </div>
+
+  <div class="sec">Хуулгагүй борлуулалт — бараагаар</div>
+  <div class="card" id="plByProd"></div>
+
+  <div class="sec">Банкинд орсон борлуулалтын орлого</div>
+  <div id="plIncomeList"></div>
+</div>
+
+<!-- TAB 5: HISTORY -->
 <div id="panel-hist" class="panel">
   <!-- Print header (hidden on screen) -->
   <div class="print-header" id="printHeader">
@@ -447,6 +469,9 @@ body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; color
   <button class="tab-btn" id="tb-rec" onclick="showTab('rec')">
     <span class="ti">⏳</span>
     <span class="tl">Авлага<span class="rbadge" id="recBadge" style="display:none"></span></span>
+  </button>
+  <button class="tab-btn" id="tb-plastic" onclick="showTab('plastic')">
+    <span class="ti">🏭</span><span class="tl">Пластик</span>
   </button>
   <button class="tab-btn" id="tb-hist" onclick="showTab('hist')">
     <span class="ti">📋</span><span class="tl">Түүх</span>
@@ -547,9 +572,10 @@ function showTab(name) {
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
   document.getElementById('tb-'    + name).classList.add('active');
-  if (name === 'dash') renderDash();
-  if (name === 'rec')  renderRec();
-  if (name === 'hist') renderHistory();
+  if (name === 'dash')    renderDash();
+  if (name === 'rec')     renderRec();
+  if (name === 'hist')    renderHistory();
+  if (name === 'plastic') renderPlastic();
 }
 
 // ── Load master data ──────────────────────────────────────
@@ -1088,6 +1114,101 @@ async function loadSales() {
   renderRecSettleOptions();
 }
 
+// ── 🏭 Пластикаас авах ────────────────────────────────────
+// Бүх борлуулалт Пластикаар явдаг. Менежер зарагдсан барааг бүртгэдэг, мөнгө нь
+// дараа Пластикаас бөөнөөр банкинд ирдэг. Тиймээс:
+//     авах дүн = нийт зарагдсан − банкинд орсон SALE орлого
+// Санхүү хуудсан дээрх "Пластик авлага" картын томьёотой ЯГ ИЖИЛ (нэг тоо, нэг
+// эх сурвалж). Тусад нь хадгалахгүй — зарагдах бүрт нэмэгдэж, мөнгө орох бүрт буурна.
+let saleIncome = { list: [], total: 0 };
+
+async function loadIncomeLog() {
+  const r = await api('/finance/income-log');
+  saleIncome = (r && Array.isArray(r.income))
+    ? { list: r.income, total: r.total || 0 }
+    : { list: [], total: 0 };
+}
+
+function plasticTotals() {
+  const soldTotal = orders.reduce((s, o) => s + o.total_amount, 0);
+  return { soldTotal, income: saleIncome.total, balance: Math.max(0, soldTotal - saleIncome.total) };
+}
+
+// Банкны хуулгад холбогдоогүй борлуулалт (аль бараа нь тайлагдаагүйг харуулна)
+function noTxSales() {
+  return orders.filter(o => o.source_tx_id == null)
+    .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+}
+
+function updatePlKpi() {
+  const el = document.getElementById('dPl');
+  if (!el) return;
+  const t = plasticTotals();
+  el.textContent = fmt(t.balance) + ' ₮';
+  document.getElementById('dPlSub').textContent =
+    'Зарсан ' + fmt(t.soldTotal) + ' − Орсон ' + fmt(t.income);
+}
+
+function togglePlDetail() {
+  const w = document.getElementById('plDetailWrap');
+  const show = w.style.display === 'none';
+  w.style.display = show ? '' : 'none';
+  if (!show) return;
+  const list = noTxSales();
+  document.getElementById('plDetail').innerHTML = !list.length
+    ? '<div class="empty">Бүх борлуулалт хуулгатай холбогдсон</div>'
+    : list.map(o => `
+      <div class="hist-row">
+        <div class="hist-top">
+          <div class="hist-name">${prodName(o.product)}</div>
+          <div class="hist-amt">${fmt(o.total_amount)} ₮</div>
+        </div>
+        <div class="hist-meta">📅 ${o.date || '—'} · ${o.quantity} ш${o.note ? ' · ' + escapeHtml(o.note) : ''}</div>
+      </div>`).join('');
+}
+
+function renderPlastic() {
+  const t = plasticTotals();
+  document.getElementById('plBal').textContent = fmt(t.balance) + ' ₮';
+  document.getElementById('plBalSub').textContent =
+    'Зарсан ' + fmt(t.soldTotal) + '₮ − Банкинд орсон ' + fmt(t.income) + '₮';
+
+  // Хуулгагүй борлуулалт — бараагаар
+  const list = noTxSales();
+  const byProd = {};
+  list.forEach(o => {
+    const n = prodName(o.product);
+    byProd[n] = byProd[n] || { q: 0, t: 0 };
+    byProd[n].q += o.quantity; byProd[n].t += o.total_amount;
+  });
+  const noTxTotal = list.reduce((s, o) => s + o.total_amount, 0);
+  document.getElementById('plByProd').innerHTML = !list.length
+    ? '<div class="empty">Бүх борлуулалт хуулгатай холбогдсон</div>'
+    : Object.entries(byProd).sort((a, b) => b[1].t - a[1].t).map(([n, o]) => `
+        <div class="bar-row">
+          <div class="bar-lbl">${n}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.round(o.t / noTxTotal * 100)}%"></div></div>
+          <div class="bar-val">${fmt(o.q)} ш · ${fmt(o.t)} ₮</div>
+        </div>`).join('')
+      + `<div class="calc-bar red" style="margin-top:10px"><span>${list.length} борлуулалт</span><span>${fmt(noTxTotal)} ₮</span></div>`;
+
+  // Банкинд орсон орлого
+  const inc = saleIncome.list.slice().sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  document.getElementById('plIncomeList').innerHTML = !inc.length
+    ? '<div class="no-rec" style="background:#f5f5f5;color:#999">Орлого олдсонгүй</div>'
+    : inc.map(x => `
+      <div class="inc-card" style="border-left-color:${x.matched ? '#2e7d32' : '#f59e0b'}">
+        <div class="inc-top">
+          <div style="flex:1;min-width:0">
+            <div class="inc-memo">${escapeHtml(x.memo) || '(утга байхгүй)'}</div>
+            <div class="inc-date">📅 ${escapeHtml(x.date || '—')}${x.bank ? ' · ' + escapeHtml(x.bank) : ''}
+              · ${x.matched ? '✓ бараатай холбогдсон' : '⏳ холбогдоогүй'}</div>
+          </div>
+          <div class="inc-amt">${fmt(x.amount)} ₮</div>
+        </div>
+      </div>`).join('');
+}
+
 function updateRecBadge() {
   const cnt = orders.filter(o => o.status === 'receivable').length;
   const el  = document.getElementById('recBadge');
@@ -1109,10 +1230,8 @@ function renderDash() {
   const done    = orders.filter(o => o.status === 'completed');
   const todayD  = done.filter(o => o.date === t);
   const monthD  = done.filter(o => o.date.slice(0,7) === mon);
-  const recvbl  = orders.filter(o => o.status === 'receivable');
 
   const sum = arr => arr.reduce((s,o) => s + o.total_amount, 0);
-  const recSum = recvbl.reduce((s,o) => s + o.remaining_amount, 0);
 
   document.getElementById('dToday').textContent    = fmt(sum(todayD)) + ' ₮';
   document.getElementById('dTodaySub').textContent = todayD.length + ' борлуулалт';
@@ -1120,8 +1239,7 @@ function renderDash() {
   document.getElementById('dMonthSub').textContent = monthD.length + ' борлуулалт';
   document.getElementById('dAll').textContent      = fmt(sum(done)) + ' ₮';
   document.getElementById('dAllSub').textContent   = done.length + ' борлуулалт';
-  document.getElementById('dRec').textContent      = fmt(recSum) + ' ₮';
-  document.getElementById('dRecSub').textContent   = recvbl.length + ' захиалга';
+  updatePlKpi();   // "Нийт авлага"-ын оронд Пластикаас авах
 
   // 7-day bar chart
   const days = [];
@@ -1479,7 +1597,7 @@ function doPrint() {
 // ── Init ─────────────────────────────────────────────────
 document.getElementById('nDate').value = today();
 
-Promise.all([loadMasters(), loadSales(), loadIncome()]).then(() => renderDash());
+Promise.all([loadMasters(), loadSales(), loadIncome(), loadIncomeLog()]).then(() => renderDash());
 </script>
 <script src="/js/bottom-nav.js"></script>
 </body>
