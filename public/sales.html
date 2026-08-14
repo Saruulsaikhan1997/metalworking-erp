@@ -1120,13 +1120,14 @@ async function loadSales() {
 //     авах дүн = нийт зарагдсан − банкинд орсон SALE орлого
 // Санхүү хуудсан дээрх "Пластик авлага" картын томьёотой ЯГ ИЖИЛ (нэг тоо, нэг
 // эх сурвалж). Тусад нь хадгалахгүй — зарагдах бүрт нэмэгдэж, мөнгө орох бүрт буурна.
-let saleIncome = { list: [], total: 0 };
+let saleIncome = { list: [], total: 0, matched: 0, unmatched: 0 };
 
 async function loadIncomeLog() {
   const r = await api('/finance/income-log');
   saleIncome = (r && Array.isArray(r.income))
-    ? { list: r.income, total: r.total || 0 }
-    : { list: [], total: 0 };
+    ? { list: r.income, total: r.total || 0,
+        matched: r.matched_total || 0, unmatched: r.unmatched_total || 0 }
+    : { list: [], total: 0, matched: 0, unmatched: 0 };
 }
 
 function plasticTotals() {
@@ -1237,8 +1238,14 @@ function renderDash() {
   document.getElementById('dTodaySub').textContent = todayD.length + ' борлуулалт';
   document.getElementById('dMonth').textContent    = fmt(sum(monthD)) + ' ₮';
   document.getElementById('dMonthSub').textContent = monthD.length + ' борлуулалт';
-  document.getElementById('dAll').textContent      = fmt(sum(done)) + ' ₮';
-  document.getElementById('dAllSub').textContent   = done.length + ' борлуулалт';
+  // "Нийт орлого" = ДАНСАНД ОРСОН, АНГИЛСАН мөнгө. Банкны гүйлгээ орж ирээд
+  // ангилагдмагц энэ дүн нэмэгдэнэ; ангилаагүй байхад тоологдохгүй.
+  const matched   = saleIncome.matched;
+  const unmatched = saleIncome.unmatched;
+  document.getElementById('dAll').textContent    = fmt(matched) + ' ₮';
+  document.getElementById('dAllSub').textContent =
+    saleIncome.list.filter(x => x.matched).length + ' гүйлгээ · дансанд орсон'
+    + (unmatched ? ' · ангилаагүй ' + fmt(unmatched) + '₮ хүлээгдэж буй' : '');
   updatePlKpi();   // "Нийт авлага"-ын оронд Пластикаас авах
 
   // 7-day bar chart
@@ -1281,19 +1288,19 @@ function toggleAllDetail() {
   wrap.style.display = show ? '' : 'none';
   if (show) renderAllDetail();
 }
+// "Нийт орлого" картын задаргаа — дансанд орсон, ангилсан гүйлгээнүүд
 function renderAllDetail() {
-  const done = orders.filter(o => o.status === 'completed')
-    .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const list = saleIncome.list.filter(x => x.matched)
+    .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
   const el = document.getElementById('allDetail');
-  if (!done.length) { el.innerHTML = '<div class="empty">Бүртгэл байхгүй</div>'; return; }
-  const canEdit = ['admin', 'manager'].includes(user.role);
-  el.innerHTML = done.map(o => `
-    <div class="hist-row${canEdit ? ' editable' : ''}"${canEdit ? ` onclick="openEditSale('${o.id}')"` : ''}>
+  if (!list.length) { el.innerHTML = '<div class="empty">Ангилсан орлого байхгүй</div>'; return; }
+  el.innerHTML = list.map(x => `
+    <div class="hist-row">
       <div class="hist-top">
-        <div class="hist-name">${prodName(o.product)}${canEdit ? ' <span class="edit-pen">✎</span>' : ''}</div>
-        <div class="hist-amt">${fmt(o.total_amount)} ₮</div>
+        <div class="hist-name">${escapeHtml(x.memo) || '(утга байхгүй)'}</div>
+        <div class="hist-amt">${fmt(x.amount)} ₮</div>
       </div>
-      <div class="hist-meta">📅 ${o.date || '—'}${o.branch ? ' · ' + o.branch : ''} · ${o.quantity} ш</div>
+      <div class="hist-meta">📅 ${escapeHtml(x.date || '—')}${x.bank ? ' · ' + escapeHtml(x.bank) : ''}</div>
     </div>`).join('');
 }
 

@@ -596,6 +596,30 @@ router.put('/sales/:id', (req, res) => {
   res.json({ ok: true, status: db.sales[idx].status, remaining_amount: db.sales[idx].remaining_amount });
 });
 
+// ── Төлөгдсөн дүнг ЯГ тааруулах (склад хөндөхгүй) ──
+// PUT /sales/:id-ийн received_amount нь зөвхөн НЭМДЭГ, бууруулж чаддаггүй.
+// Банкинд орсон мөнгийг борлуулалтад хуваарилахад (илүү нь авлага болох)
+// төлөгдсөн дүнг доош нь ч тааруулах шаардлагатай. Энэ нь зөвхөн төлбөрийн
+// талбарыг өөрчилнө — бараа, тоо, склад ХӨНДӨГДӨХГҮЙ.
+router.post('/sales/:id/paid', (req, res) => {
+  if (!['admin', 'manager'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
+  const db  = load();
+  const rec = (db.sales || []).find(s => String(s.id) === String(req.params.id) && !s.archived);
+  if (!rec) return res.status(404).json({ error: 'Олдсонгүй' });
+
+  const total = parseInt(rec.total_amount) || 0;
+  const paid  = Math.max(0, Math.min(total, parseInt(req.body.paid) || 0));
+
+  rec.advance_paid     = paid;
+  rec.remaining_amount = total - paid;
+  rec.status           = rec.remaining_amount === 0 ? 'completed' : 'receivable';
+  rec.paid_adjusted_by = req.user.name;
+  rec.paid_adjusted_at = new Date().toISOString();
+
+  save(db);
+  res.json({ ok: true, total, paid, remaining: rec.remaining_amount, status: rec.status });
+});
+
 // Soft delete — never permanently removes accounting records
 router.delete('/sales/:id', (req, res) => {
   if (!['admin', 'manager'].includes(req.user.role)) return res.status(403).json({ error: 'Зөвшөөрөл хүрэлцэхгүй' });
